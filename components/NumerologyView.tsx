@@ -76,7 +76,7 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
     try {
       const canvas = await html2canvas(element, {
         scale: 2,
-        backgroundColor: '#0f172a',
+        backgroundColor: '#010204',
         useCORS: true,
         logging: false,
         windowWidth: element.scrollWidth,
@@ -85,26 +85,25 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      let heightLeft = pdfHeight;
+      let heightLeft = imgHeight;
       let position = 0;
 
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      while (heightLeft >= 0) {
-        position = heightLeft - pdfHeight;
+      while (heightLeft > 0) {
+        position -= pageHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`Numerology_Report_${dob}.pdf`);
+      pdf.save(`Numerology_Report_2026_${dob}.pdf`);
     } catch (err) {
       console.error("PDF Export failed", err);
     } finally {
@@ -114,7 +113,7 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto pb-12">
-      <section className="bg-slate-800/40 p-8 rounded-3xl border border-slate-700 shadow-2xl">
+      <section className="bg-slate-800/40 p-8 rounded-3xl border border-slate-700 shadow-2xl no-print">
         <div className="mb-8 text-center">
           <h2 className="text-3xl font-cinzel text-amber-400 mb-2">Numerology & Loshu Grid</h2>
           <p className="text-slate-400">Discover your Mulank (Psychic) and Bhagyank (Destiny) numbers.</p>
@@ -166,10 +165,10 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
       </section>
 
       {analysis && !loading && (
-        <div id="numerology-content" className="space-y-6 animate-in slide-in-from-bottom-10 duration-700">
-          <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col md:flex-row gap-8 items-start justify-center">
+        <div id="numerology-content" className="space-y-6 animate-in slide-in-from-bottom-10 duration-700 bg-[#010204] rounded-3xl p-1">
+          <div className="bg-slate-800/20 p-6 rounded-2xl border border-white/10 flex flex-col md:flex-row gap-8 items-start justify-center">
             
-            <div className="w-full md:w-auto p-4 bg-slate-900/40 rounded-3xl border border-slate-800 self-stretch flex flex-col items-center">
+            <div className="w-full md:w-auto p-4 bg-slate-900/40 rounded-3xl border border-white/5 self-stretch flex flex-col items-center">
               <h3 className="text-lg font-cinzel text-amber-400 mb-6 text-center">Loshu Grid Analysis</h3>
               
               <div className="grid grid-cols-[auto_repeat(3,minmax(0,1fr))] gap-2 w-full max-w-[280px]">
@@ -198,22 +197,11 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
                   </React.Fragment>
                 ))}
               </div>
-
-              <div className="mt-6 space-y-2 w-full max-w-[240px]">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-widest">Present Vibrations</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-slate-800"></div>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-widest">Missing Planes</span>
-                </div>
-              </div>
             </div>
             
             <div className="flex-1 space-y-4 w-full">
               <div className="flex justify-between items-center no-print">
-                <h3 className="text-xl font-cinzel text-white">Interpretations</h3>
+                <h3 className="text-xl font-cinzel text-white">Interpretations (2026)</h3>
                 <button 
                   onClick={downloadPDF}
                   disabled={exporting}
@@ -222,7 +210,7 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
                   {exporting ? 'Generating...' : <><span>📥</span> Save as PDF</>}
                 </button>
               </div>
-              <div className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 prose prose-invert prose-amber max-w-none shadow-inner">
+              <div className="bg-slate-900/60 p-6 rounded-2xl border border-white/5 prose prose-invert prose-amber max-w-none shadow-inner">
                 <ReactMarkdown>{analysis}</ReactMarkdown>
               </div>
             </div>

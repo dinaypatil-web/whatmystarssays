@@ -45,20 +45,39 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
 
     setExporting(true);
     try {
+      // Create high-quality canvas of the report area
       const canvas = await html2canvas(element, {
         scale: 2,
-        backgroundColor: '#020617',
+        backgroundColor: '#010204',
         useCORS: true,
         logging: false,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight
       });
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${selectedSign}_${timeframe}_Report.pdf`);
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // First page
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      // Additional pages if content is long
+      while (heightLeft > 0) {
+        position -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`${selectedSign}_${timeframe}_Report_2026.pdf`);
     } catch (err) {
       console.error("PDF Export failed", err);
     } finally {
@@ -68,7 +87,7 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-12 px-2 md:px-0">
-      <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-6 gap-3 md:gap-4">
+      <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-6 gap-3 md:gap-4 no-print">
         {ZODIAC_SIGNS.map((sign) => (
           <button
             key={sign.name}
@@ -86,7 +105,7 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
         ))}
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mirror-card p-4 md:p-6 rounded-2xl">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mirror-card p-4 md:p-6 rounded-2xl no-print">
         <div className="flex items-center gap-2 bg-white/5 p-1 rounded-xl border border-white/5">
           {(['daily', 'weekly', 'monthly'] as Timeframe[]).map((tf) => (
             <button
@@ -116,8 +135,8 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
           <p className="text-slate-400 font-cinzel tracking-widest animate-pulse uppercase text-sm">Consulting the Stars...</p>
         </div>
       ) : prediction ? (
-        <div id="horoscope-content" className="space-y-8">
-          <div className="flex justify-between items-center no-print">
+        <div id="horoscope-content" className="space-y-8 bg-[#010204] rounded-[40px] p-1">
+          <div className="flex justify-between items-center no-print px-4 py-2">
             <h2 className="text-2xl md:text-4xl font-cinzel text-amber-100">{selectedSign} {timeframe} Reading</h2>
             <button 
               onClick={downloadPDF}
@@ -128,10 +147,10 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 p-4">
             <div className="col-span-1 md:col-span-2 mirror-card p-6 md:p-10 rounded-[32px] border-amber-500/10">
               <h3 className="text-xl md:text-2xl font-cinzel text-amber-400 mb-6 flex items-center gap-3">
-                <span className="opacity-60">✨</span> Cosmic Overview
+                <span className="opacity-60">✨</span> Cosmic Overview (2026)
               </h3>
               <p className="text-slate-300 leading-relaxed text-lg md:text-xl font-light italic opacity-90">"{prediction.overview}"</p>
             </div>

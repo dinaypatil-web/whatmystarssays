@@ -53,7 +53,7 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
     try {
       const canvas = await html2canvas(element, {
         scale: 2,
-        backgroundColor: '#0f172a',
+        backgroundColor: '#010204',
         useCORS: true,
         logging: false,
         windowWidth: element.scrollWidth,
@@ -62,26 +62,27 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      let heightLeft = pdfHeight;
+      let heightLeft = imgHeight;
       let position = 0;
 
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+      // Add first page
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      while (heightLeft >= 0) {
-        position = heightLeft - pdfHeight;
+      // Loop for multi-page reports
+      while (heightLeft > 0) {
+        position -= pageHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`Matchmaking_${details.boy.name}_${details.girl.name}.pdf`);
+      pdf.save(`Matchmaking_Report_2026_${details.boy.name}_${details.girl.name}.pdf`);
     } catch (err) {
       console.error("PDF Export failed", err);
     } finally {
@@ -94,7 +95,7 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
       {!result && (
         <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="text-center space-y-2">
-            <h2 className="text-3xl font-cinzel text-pink-400">Ashtakoot Milan</h2>
+            <h2 className="text-3xl font-cinzel text-pink-400">Ashtakoot Milan (2026)</h2>
             <p className="text-slate-400">Traditional 36 Guna compatibility analysis for a blissful union.</p>
           </div>
           
@@ -135,9 +136,9 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
 
       {result && !loading && (
         <div className="max-w-4xl mx-auto space-y-6 animate-in zoom-in-95 duration-500">
-          <div id="matchmaking-content">
-            <div className="bg-slate-800/40 p-8 rounded-3xl border border-slate-700 prose prose-invert prose-rose max-w-none shadow-2xl">
-              <div className="flex justify-between items-start mb-8 not-prose">
+          <div id="matchmaking-content" className="bg-[#010204] rounded-3xl p-1">
+            <div className="bg-slate-800/20 p-8 rounded-3xl border border-white/10 prose prose-invert prose-rose max-w-none shadow-2xl">
+              <div className="flex justify-between items-start mb-8 not-prose no-print">
                 <div className="flex items-center gap-6">
                   <div className="text-center">
                     <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center text-3xl mb-2">♂️</div>
@@ -158,7 +159,7 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-8 not-prose border-y border-slate-700 py-4">
+              <div className="grid grid-cols-2 gap-4 mb-8 not-prose border-y border-white/10 py-4">
                 <div>
                   <p className="text-[10px] text-slate-500 uppercase font-bold">Boy's Birth Co-ordinates</p>
                   <p className="text-blue-400 font-mono text-xs">{coords.boy?.formattedAddress}</p>

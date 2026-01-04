@@ -83,18 +83,36 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
     try {
       const canvas = await html2canvas(element, {
         scale: 2,
-        backgroundColor: '#020617',
+        backgroundColor: '#010204',
         useCORS: true,
         logging: false,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight
       });
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`StarsReport_${details.name}.pdf`);
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Add first page
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      // Loop for multi-page reports
+      while (heightLeft > 0) {
+        position -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`Divine_Report_2026_${details.name}.pdf`);
     } catch (err) {
       console.error("PDF Export failed", err);
     } finally {
@@ -108,7 +126,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
         <section className="mirror-card p-6 md:p-12 rounded-3xl animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="mb-10 text-center">
             <h2 className="text-3xl md:text-5xl font-cinzel text-amber-100 mb-4 tracking-tight">Divine Chart Analysis</h2>
-            <p className="text-slate-400 max-w-xl mx-auto text-sm md:text-base">Enter your birth details to reveal the cosmic alignment of 2025.</p>
+            <p className="text-slate-400 max-w-xl mx-auto text-sm md:text-base">Enter your birth details to reveal the cosmic alignment of 2026.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8 max-w-3xl mx-auto">
@@ -162,14 +180,14 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
           </div>
           <div className="text-center space-y-2">
             <p className="text-2xl font-cinzel text-amber-200">Aligning Planetary Transits</p>
-            <p className="text-slate-500 text-sm italic">Synchronizing 2025 ephemeris data...</p>
+            <p className="text-slate-500 text-sm italic">Synchronizing 2026 ephemeris data...</p>
           </div>
         </div>
       )}
 
       {analysis && !loading && (
         <div className="space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-1000">
-          <div id="kundali-report" className="mirror-card rounded-[40px] overflow-hidden border-amber-500/10">
+          <div id="kundali-report" className="bg-[#010204] rounded-[40px] overflow-hidden border border-amber-500/10">
             <div className="bg-white/5 p-6 md:p-10 border-b border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
               <div className="text-center md:text-left">
                 <h2 className="text-3xl font-cinzel text-amber-400 drop-shadow-md">{details.name}'s Deep Analysis</h2>
@@ -208,7 +226,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                 <div className="text-center py-16 text-slate-500 space-y-6">
                   <p className="italic text-sm">The cosmos awaits your specific inquiry...</p>
                   <div className="flex flex-wrap justify-center gap-3">
-                    {['My career in 2025?', 'Best gemstones for me?', 'Marriage prospects?', 'Health precautions?'].map(q => (
+                    {['My career in 2026?', 'Best gemstones for me?', 'Marriage prospects?', 'Health precautions?'].map(q => (
                       <button 
                         key={q} 
                         onClick={() => setUserQuery(q)}

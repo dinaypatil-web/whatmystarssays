@@ -91,33 +91,34 @@ const PalmistryView: React.FC<PalmistryViewProps> = ({ language }) => {
     try {
       const canvas = await html2canvas(element, {
         scale: 2,
-        backgroundColor: '#0f172a',
+        backgroundColor: '#010204',
         useCORS: true,
-        logging: false
+        logging: false,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight
       });
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      let heightLeft = pdfHeight;
+      let heightLeft = imgHeight;
       let position = 0;
 
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      while (heightLeft >= 0) {
-        position = heightLeft - pdfHeight;
+      while (heightLeft > 0) {
+        position -= pageHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`Palmistry_Analysis.pdf`);
+      pdf.save(`Palmistry_Revelation_2026.pdf`);
     } catch (err) {
       console.error("PDF Export failed", err);
     } finally {
@@ -128,10 +129,10 @@ const PalmistryView: React.FC<PalmistryViewProps> = ({ language }) => {
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
       {!analysis && (
-        <section className="bg-slate-800/40 p-8 rounded-3xl border border-slate-700 shadow-2xl space-y-8 animate-in fade-in duration-500">
+        <section className="mirror-card p-8 rounded-3xl border border-white/10 shadow-2xl space-y-8 animate-in fade-in duration-500">
           <div className="text-center space-y-2">
             <h2 className="text-3xl font-cinzel text-amber-400">Digital Palmistry</h2>
-            <p className="text-slate-400">The secrets of your life are etched in your palms. Scan your right hand (or left if dominant) for insights.</p>
+            <p className="text-slate-400">The secrets of your life are etched in your palms. Scan your right hand for 2026 insights.</p>
           </div>
 
           {!image && !cameraActive ? (
@@ -205,21 +206,21 @@ const PalmistryView: React.FC<PalmistryViewProps> = ({ language }) => {
       )}
 
       {analysis && !loading && (
-        <div id="palm-content" className="space-y-6 animate-in slide-in-from-bottom-10 duration-700">
-           <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col md:flex-row gap-8 items-start">
+        <div id="palm-content" className="space-y-6 animate-in slide-in-from-bottom-10 duration-700 bg-[#010204] rounded-3xl p-1">
+           <div className="bg-slate-800/20 p-6 rounded-2xl border border-white/10 flex flex-col md:flex-row gap-8 items-start">
              <div className="w-full md:w-64 space-y-4 no-print">
-                <div className="rounded-2xl overflow-hidden border border-slate-700 shadow-lg">
+                <div className="rounded-2xl overflow-hidden border border-white/10 shadow-lg">
                   <img src={image!} alt="Your Palm" className="w-full h-auto" />
                 </div>
                 <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl text-center">
                    <p className="text-[10px] text-amber-500/60 uppercase font-bold">Image Scanned</p>
-                   <p className="text-slate-400 text-xs italic">High resolution spectral capture</p>
+                   <p className="text-slate-400 text-xs italic">Spectral capture analysis</p>
                 </div>
              </div>
 
              <div className="flex-1 space-y-4 w-full">
                 <div className="flex justify-between items-center no-print">
-                   <h2 className="text-2xl font-cinzel text-amber-400">Palmistry Revelation</h2>
+                   <h2 className="text-2xl font-cinzel text-amber-400">Palmistry Revelation (2026)</h2>
                    <button 
                      onClick={downloadPDF}
                      disabled={exporting}
@@ -228,7 +229,7 @@ const PalmistryView: React.FC<PalmistryViewProps> = ({ language }) => {
                      {exporting ? 'Generating...' : 'Save Report'}
                    </button>
                 </div>
-                <div className="bg-slate-900/60 p-8 rounded-3xl border border-slate-800 prose prose-invert prose-amber max-w-none shadow-inner leading-relaxed">
+                <div className="bg-slate-900/60 p-8 rounded-3xl border border-white/5 prose prose-invert prose-amber max-w-none shadow-inner leading-relaxed">
                    <ReactMarkdown>{analysis}</ReactMarkdown>
                 </div>
              </div>
