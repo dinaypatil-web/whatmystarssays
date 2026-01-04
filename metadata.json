@@ -1,0 +1,8 @@
+{
+  "name": "JyotishAI - Vedic Kundali & Horoscope",
+  "description": "A comprehensive Vedic Astrology app for personalized Kundali, accurate horoscope predictions (Daily, Weekly, Monthly), and Ashtakoot Matchmaking powered by Gemini AI.",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera"
+  ]
+}
