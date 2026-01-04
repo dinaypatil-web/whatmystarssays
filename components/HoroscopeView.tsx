@@ -182,6 +182,12 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
             <ResultCard title="Health" content={prediction.health} icon="🩺" />
             <ResultCard title="Relationships" content={prediction.relationships} icon="💍" />
           </div>
+
+          <div className="p-8 opacity-40">
+            <p className="text-[10px] italic leading-relaxed text-center">
+              Disclaimer regarding AI Generation: This application utilizes Artificial Intelligence to analyze birth data based on Vedic astrological principles. The resulting content is intended for informational, educational, and personal insight purposes only. Please be aware that AI-generated interpretations may lack the nuance of a human astrologer and may occasionally produce inconsistent results.
+            </p>
+          </div>
         </div>
       )}
     </div>

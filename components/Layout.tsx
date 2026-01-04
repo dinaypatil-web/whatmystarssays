@@ -93,12 +93,17 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, lang
             </React.Fragment>
           ))}
         </div>
+        <div className="max-w-3xl mx-auto mb-10 px-4">
+          <p className="text-[9px] leading-relaxed text-slate-500 font-medium italic">
+            Disclaimer regarding AI Generation: This application utilizes Artificial Intelligence to analyze birth data based on Vedic astrological principles. The resulting content is intended for informational, educational, and personal insight purposes only. Please be aware that AI-generated interpretations may lack the nuance of a human astrologer and may occasionally produce inconsistent results. The information provided herein should not be construed as professional advice (medical, legal, or financial) or factual prophecy. The creators assume no liability for choices made based on this algorithmic analysis.
+          </p>
+        </div>
         <div className="space-y-2">
           <p className="text-[10px] uppercase tracking-[0.5em] font-black text-amber-500/40">
             WHAT MY STARS SAYS!!!
           </p>
           <p className="text-[8px] uppercase tracking-[0.2em] font-medium text-slate-700">
-            Powered by Celestial AI Logic • Real-time 2025/2026 Transits
+            Powered by Celestial AI Logic • Real-time Vedic Transits
           </p>
         </div>
       </footer>

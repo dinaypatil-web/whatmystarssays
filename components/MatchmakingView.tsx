@@ -182,6 +182,12 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
               </div>
 
               <ReactMarkdown>{result}</ReactMarkdown>
+
+              <div className="mt-12 pt-6 border-t border-white/10 opacity-40 not-prose">
+                <p className="text-[10px] italic leading-relaxed text-center">
+                  Disclaimer regarding AI Generation: This application utilizes Artificial Intelligence to analyze birth data based on Vedic astrological principles. The resulting content is intended for informational, educational, and personal insight purposes only.
+                </p>
+              </div>
             </div>
           </div>
           

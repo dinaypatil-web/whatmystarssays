@@ -94,7 +94,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
           if (clonedElement) {
             clonedElement.style.backgroundColor = 'white';
             clonedElement.style.color = 'black';
-            clonedElement.style.padding = '40px';
+            clonedElement.style.padding = '20px';
             clonedElement.style.borderRadius = '0px';
             clonedElement.style.border = 'none';
 
@@ -234,6 +234,30 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
               </div>
               <div className="lg:col-span-7 prose prose-invert prose-amber max-w-none prose-h1:font-cinzel prose-h2:font-cinzel prose-h2:text-amber-400 prose-h3:text-amber-200 prose-p:text-slate-300 leading-relaxed text-sm md:text-base">
                 <ReactMarkdown>{analysis.report}</ReactMarkdown>
+                
+                {chatHistory.length > 0 && (
+                  <div className="mt-16 pt-8 border-t border-white/10">
+                    <h3 className="text-xl font-cinzel text-amber-200 mb-6">Celestial Queries & Insights</h3>
+                    <div className="space-y-6">
+                      {chatHistory.map((msg, idx) => (
+                        <div key={idx} className="space-y-2">
+                          <p className={`text-[10px] font-black uppercase tracking-widest ${msg.role === 'user' ? 'text-amber-500' : 'text-slate-500'}`}>
+                            {msg.role === 'user' ? 'Question' : 'Counsel'}
+                          </p>
+                          <div className="text-slate-300 text-sm italic">
+                             <ReactMarkdown>{msg.text}</ReactMarkdown>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-16 pt-8 border-t border-white/10 opacity-40">
+                  <p className="text-[10px] italic leading-relaxed">
+                    Disclaimer regarding AI Generation: This application utilizes Artificial Intelligence to analyze birth data based on Vedic astrological principles. The resulting content is intended for informational, educational, and personal insight purposes only. Please be aware that AI-generated interpretations may lack the nuance of a human astrologer and may occasionally produce inconsistent results. The information provided herein should not be construed as professional advice (medical, legal, or financial) or factual prophecy. The creators assume no liability for choices made based on this algorithmic analysis.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

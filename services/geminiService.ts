@@ -40,7 +40,8 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 2000): Pr
 
 export const getCoordinates = async (location: string) => {
   const cacheKey = `coords_${location.toLowerCase().replace(/\s/g, '_')}`;
-  const cached = StorageService.get<any>(cacheKey);
+  // Fix: changed 'cached' to 'cacheKey' to avoid using the variable before its declaration
+  const cached = StorageService.get<any>(cacheKey) || null;
   if (cached) return cached;
 
   const result = await withRetry(async () => {
@@ -65,12 +66,28 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
   const result = await withRetry(async () => {
     const ai = new GoogleGenAI({ apiKey: getSafeApiKey() });
     const prompt = `As a Vedic Astrologer, current date ${getCurrentDate()}. Provide a ${timeframe} horoscope for Moon Sign ${sign} in ${language}. 
-    Include detailed predictions for: overview, career, health, relationships, finance, and spirituality. 
-    Also provide a lucky color and lucky number. Return strictly as JSON.`;
+    Focus on planetary transits relevant to this timeframe.`;
+    
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
-      config: { responseMimeType: "application/json" }
+      config: { 
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            overview: { type: Type.STRING, description: "General summary of the period" },
+            career: { type: Type.STRING, description: "Job and professional outlook" },
+            health: { type: Type.STRING, description: "Physical and mental well-being" },
+            relationships: { type: Type.STRING, description: "Love, family, and social life" },
+            finance: { type: Type.STRING, description: "Money and investment guidance" },
+            spirituality: { type: Type.STRING, description: "Inner growth and peace" },
+            luckyColor: { type: Type.STRING, description: "The color for the period" },
+            luckyNumber: { type: Type.STRING, description: "The number for the period" }
+          },
+          required: ["overview", "career", "health", "relationships", "finance", "spirituality", "luckyColor", "luckyNumber"]
+        }
+      }
     });
     return parseAIResponse(response.text || "{}");
   });
@@ -121,6 +138,20 @@ export const askKundaliQuestion = async (q: string, context: string, history: Ch
       config: { systemInstruction: `You are the User's Personal Vedic Guide. Use the provided Kundali context: ${context}. Language: ${lang}. Current Date: ${getCurrentDate()}.` }
     });
     return response.text || "The cosmos is currently silent.";
+  });
+};
+
+export const askNumerologyQuestion = async (q: string, dob: string, mulank: number, bhagyank: number, loshu: any, history: ChatMessage[], lang: Language) => {
+  return await withRetry(async () => {
+    const ai = new GoogleGenAI({ apiKey: getSafeApiKey() });
+    const chatHistory = history.map(msg => ({ role: msg.role === 'user' ? 'user' : 'model', parts: [{ text: msg.text }] }));
+    const context = `User DOB: ${dob}, Mulank: ${mulank}, Bhagyank: ${bhagyank}, Loshu Grid: ${JSON.stringify(loshu)}`;
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [...chatHistory, { role: 'user', parts: [{ text: q }] }],
+      config: { systemInstruction: `You are a Numerology expert. Based on the user's numerological data: ${context}, provide insights and answers. Language: ${lang}. Current Date: ${getCurrentDate()}.` }
+    });
+    return response.text || "The numbers are currently unclear.";
   });
 };
 
