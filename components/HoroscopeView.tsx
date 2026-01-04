@@ -43,15 +43,32 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
   };
 
   const downloadPDF = async () => {
-    const element = document.getElementById('horoscope-content');
+    const elementId = 'horoscope-content';
+    const element = document.getElementById(elementId);
     if (!element || exporting) return;
 
     setExporting(true);
     try {
       const canvas = await html2canvas(element, {
         scale: 2,
-        backgroundColor: '#010204',
+        backgroundColor: '#ffffff',
         useCORS: true,
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.getElementById(elementId);
+          if (clonedElement) {
+            clonedElement.style.backgroundColor = 'white';
+            clonedElement.style.color = 'black';
+            const allElements = clonedElement.querySelectorAll('*');
+            allElements.forEach((el: any) => {
+              el.style.backgroundColor = 'transparent';
+              el.style.color = 'black';
+              el.style.backgroundImage = 'none';
+              el.style.borderColor = '#dddddd';
+              el.style.boxShadow = 'none';
+              el.style.textShadow = 'none';
+            });
+          }
+        }
       });
 
       const imgData = canvas.toDataURL('image/png');

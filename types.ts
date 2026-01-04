@@ -40,9 +40,12 @@ export interface PredictionResult {
   luckyNumber: string;
 }
 
-export interface KundaliAnalysis {
-  chartData: string; // Base64 or Description
-  planetsPositions: string;
-  detailedAnalysis: string;
-  remedies: string;
+export interface KundaliChartData {
+  [houseNumber: number]: string[]; // House 1-12 mapped to array of planet names
+}
+
+export interface KundaliResponse {
+  report: string;
+  chart: KundaliChartData;
+  lagnaSign: number; // 1-12 representing the zodiac sign in the 1st house
 }

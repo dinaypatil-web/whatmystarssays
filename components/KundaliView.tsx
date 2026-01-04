@@ -1,7 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { BirthDetails, Language, ChatMessage } from '../types';
+import { BirthDetails, Language, ChatMessage, KundaliResponse } from '../types';
 import { getCoordinates, getKundaliAnalysis, askKundaliQuestion } from '../services/geminiService';
+import KundaliChart from './KundaliChart';
 import ReactMarkdown from 'https://esm.sh/react-markdown';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -20,9 +21,8 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
-  const [analysis, setAnalysis] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<KundaliResponse | null>(null);
   
-  // Chat state
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [userQuery, setUserQuery] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
@@ -52,7 +52,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
       setAnalysis(result);
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Celestial connection failed. Please check your inputs and try again.");
+      setError(err.message || "Celestial connection failed. Please check your inputs.");
     } finally {
       setLoading(false);
     }
@@ -68,29 +68,64 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
     setChatLoading(true);
 
     try {
-      const response = await askKundaliQuestion(currentQuery, analysis, chatHistory, language);
+      const response = await askKundaliQuestion(currentQuery, analysis.report, chatHistory, language);
       setChatHistory(prev => [...prev, { role: 'model', text: response }]);
     } catch (error) {
       console.error(error);
-      setChatHistory(prev => [...prev, { role: 'model', text: "The heavens are clouded. Please try again later." }]);
+      setChatHistory(prev => [...prev, { role: 'model', text: "The astral connection was interrupted." }]);
     } finally {
       setChatLoading(false);
     }
   };
 
   const downloadPDF = async () => {
-    const element = document.getElementById('kundali-report');
+    const elementId = 'kundali-report';
+    const element = document.getElementById(elementId);
     if (!element || exporting) return;
 
     setExporting(true);
     try {
       const canvas = await html2canvas(element, {
         scale: 2,
-        backgroundColor: '#010204',
+        backgroundColor: '#ffffff',
         useCORS: true,
-        logging: false,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.getElementById(elementId);
+          if (clonedElement) {
+            clonedElement.style.backgroundColor = 'white';
+            clonedElement.style.color = 'black';
+            clonedElement.style.padding = '40px';
+            clonedElement.style.borderRadius = '0px';
+            clonedElement.style.border = 'none';
+
+            const allElements = clonedElement.querySelectorAll('*');
+            allElements.forEach((el: any) => {
+              el.style.backgroundColor = 'transparent';
+              el.style.color = 'black';
+              el.style.backgroundImage = 'none';
+              el.style.borderColor = '#dddddd';
+              el.style.boxShadow = 'none';
+              el.style.textShadow = 'none';
+              
+              if (el.classList.contains('prose-invert')) {
+                el.classList.remove('prose-invert');
+              }
+
+              if (el.tagName.toLowerCase() === 'svg') {
+                el.style.filter = 'none';
+                const svgParts = el.querySelectorAll('line, rect, text, path');
+                svgParts.forEach((part: any) => {
+                  part.setAttribute('stroke', 'black');
+                  if (part.tagName.toLowerCase() === 'text' || part.tagName.toLowerCase() === 'path') {
+                    part.setAttribute('fill', 'black');
+                    part.style.fill = 'black';
+                  }
+                  part.style.stroke = 'black';
+                });
+              }
+            });
+          }
+        }
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -113,9 +148,9 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`Divine_Report_2026_${details.name}.pdf`);
+      pdf.save(`Life_Kundali_Report_${details.name}.pdf`);
     } catch (err) {
-      console.error("PDF Export failed", err);
+      console.error("PDF generation failed", err);
     } finally {
       setExporting(false);
     }
@@ -126,48 +161,24 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
       {!analysis && !loading && (
         <section className="mirror-card p-6 md:p-12 rounded-3xl animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="mb-10 text-center">
-            <h2 className="text-3xl md:text-5xl font-cinzel text-amber-100 mb-4 tracking-tight">Divine Chart Analysis</h2>
-            <p className="text-slate-400 max-w-xl mx-auto text-sm md:text-base">Enter your birth details to reveal the cosmic alignment of 2026.</p>
+            <h2 className="text-3xl md:text-5xl font-cinzel text-amber-100 mb-4 tracking-tight">Vedic Life Analysis</h2>
+            <p className="text-slate-400 max-w-xl mx-auto text-sm md:text-base">Decode your entire life journey, from personality traits to long-term planetary dashas.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8 max-w-3xl mx-auto">
             {error && (
-              <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-200 text-xs text-center animate-in zoom-in-95">
+              <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-200 text-xs text-center">
                 {error}
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-              <InputField 
-                label="Full Name" 
-                placeholder="Enter your name" 
-                value={details.name} 
-                onChange={(v) => setDetails({ ...details, name: v })} 
-              />
-              <InputField 
-                label="Birth City" 
-                placeholder="City, State" 
-                value={details.location} 
-                onChange={(v) => setDetails({ ...details, location: v })} 
-              />
-              <InputField 
-                label="Date of Birth" 
-                type="date" 
-                value={details.dob} 
-                onChange={(v) => setDetails({ ...details, dob: v })} 
-              />
-              <InputField 
-                label="Time of Birth" 
-                type="time" 
-                value={details.tob} 
-                onChange={(v) => setDetails({ ...details, tob: v })} 
-              />
+              <InputField label="Full Name" value={details.name} onChange={(v) => setDetails({ ...details, name: v })} />
+              <InputField label="Birth Place" placeholder="City, State" value={details.location} onChange={(v) => setDetails({ ...details, location: v })} />
+              <InputField label="Birth Date" type="date" value={details.dob} onChange={(v) => setDetails({ ...details, dob: v })} />
+              <InputField label="Birth Time" type="time" value={details.tob} onChange={(v) => setDetails({ ...details, tob: v })} />
             </div>
-
-            <button
-              disabled={loading}
-              className="w-full glossy-button text-white font-bold py-4 md:py-5 rounded-2xl transition-all disabled:opacity-50 text-base md:text-lg tracking-widest uppercase font-cinzel"
-            >
-              Invoke Celestial Secrets
+            <button disabled={loading} className="w-full glossy-button text-white font-bold py-4 rounded-2xl text-lg tracking-widest uppercase font-cinzel shadow-2xl">
+              Generate Life Kundali
             </button>
           </form>
         </section>
@@ -177,121 +188,129 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
         <div className="flex flex-col items-center justify-center py-24 space-y-8">
           <div className="relative">
             <div className="w-24 h-24 border-4 border-amber-500/10 border-t-amber-500 rounded-full animate-spin"></div>
-            <div className="absolute inset-0 flex items-center justify-center text-3xl animate-pulse">🕉️</div>
+            <div className="absolute inset-0 flex items-center justify-center text-2xl animate-pulse">☀️</div>
           </div>
-          <div className="text-center space-y-2">
-            <p className="text-2xl font-cinzel text-amber-200">Aligning Planetary Transits</p>
-            <p className="text-slate-500 text-sm italic">Synchronizing 2026 ephemeris data...</p>
-          </div>
+          <p className="text-2xl font-cinzel text-amber-200 tracking-widest">Consulting Celestial Akashic Records...</p>
         </div>
       )}
 
       {analysis && !loading && (
-        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-1000">
-          <div id="kundali-report" className="bg-[#010204] rounded-[40px] overflow-hidden border border-amber-500/10">
-            <div className="bg-white/5 p-6 md:p-10 border-b border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
-              <div className="text-center md:text-left">
-                <h2 className="text-3xl font-cinzel text-amber-400 drop-shadow-md">{details.name}'s Deep Analysis</h2>
-                <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-2 text-xs text-slate-400 font-medium">
-                  <span className="bg-white/5 px-3 py-1 rounded-full border border-white/5">{details.dob}</span>
-                  <span className="bg-white/5 px-3 py-1 rounded-full border border-white/5">{details.tob}</span>
-                  <span className="bg-white/5 px-3 py-1 rounded-full border border-white/5">{details.location}</span>
+        <div className="space-y-12 animate-in fade-in duration-1000">
+          <div id="kundali-report" className="bg-[#010204] rounded-[40px] border border-amber-500/10 overflow-hidden shadow-[0_0_100px_rgba(251,191,36,0.05)]">
+            <div className="p-6 md:p-10 border-b border-white/10 flex flex-col md:flex-row justify-between items-center gap-6 bg-gradient-to-b from-white/5 to-transparent">
+              <div>
+                <h2 className="text-3xl font-cinzel text-amber-400">The Mirror of Fate: {details.name}</h2>
+                <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">
+                  <span className="flex items-center gap-1">📅 {details.dob}</span> 
+                  <span className="flex items-center gap-1">⏰ {details.tob}</span> 
+                  <span className="flex items-center gap-1">📍 {details.location}</span>
                 </div>
               </div>
-              <button 
-                onClick={downloadPDF}
-                disabled={exporting}
-                className="bg-white/10 hover:bg-white/20 text-white text-xs px-6 py-3 rounded-full transition-all border border-white/10 no-print flex items-center gap-2"
-              >
-                {exporting ? 'Generating...' : '📥 Export Insights'}
+              <button onClick={downloadPDF} disabled={exporting} className="bg-white/10 hover:bg-white/20 text-white text-[10px] px-8 py-3 rounded-full border border-white/10 no-print transition-all font-black uppercase tracking-widest">
+                {exporting ? 'Processing...' : 'Save Life Report'}
               </button>
             </div>
 
-            <div className="p-6 md:p-12 prose prose-invert prose-amber max-w-none prose-headings:font-cinzel prose-headings:text-amber-100 prose-p:text-slate-300 prose-li:text-slate-300 prose-strong:text-amber-200">
-               <ReactMarkdown>{analysis}</ReactMarkdown>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 p-6 md:p-12">
+              <div className="lg:col-span-5 space-y-8">
+                <KundaliChart data={analysis.chart} lagnaSign={analysis.lagnaSign} />
+                
+                <div className="p-8 bg-amber-500/5 border border-amber-500/10 rounded-[32px] no-print">
+                   <h4 className="text-xs font-black text-amber-500 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
+                     <span className="text-lg">✨</span> Chart Legend
+                   </h4>
+                   <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-[11px] text-slate-400 font-medium">
+                      <div className="flex justify-between border-b border-white/5 pb-1"><span>Su</span> <span className="text-slate-200">Sun (Surya)</span></div>
+                      <div className="flex justify-between border-b border-white/5 pb-1"><span>Mo</span> <span className="text-slate-200">Moon (Chandra)</span></div>
+                      <div className="flex justify-between border-b border-white/5 pb-1"><span>Ma</span> <span className="text-slate-200">Mars (Mangal)</span></div>
+                      <div className="flex justify-between border-b border-white/5 pb-1"><span>Me</span> <span className="text-slate-200">Mercury (Budh)</span></div>
+                      <div className="flex justify-between border-b border-white/5 pb-1"><span>Ju</span> <span className="text-slate-200">Jupiter (Guru)</span></div>
+                      <div className="flex justify-between border-b border-white/5 pb-1"><span>Ve</span> <span className="text-slate-200">Venus (Shukra)</span></div>
+                      <div className="flex justify-between border-b border-white/5 pb-1"><span>Sa</span> <span className="text-slate-200">Saturn (Shani)</span></div>
+                      <div className="flex justify-between border-b border-white/5 pb-1"><span>Ra</span> <span className="text-slate-200">Rahu</span></div>
+                      <div className="flex justify-between border-b border-white/5 pb-1"><span>Ke</span> <span className="text-slate-200">Ketu</span></div>
+                   </div>
+                </div>
+              </div>
+              <div className="lg:col-span-7 prose prose-invert prose-amber max-w-none prose-h1:font-cinzel prose-h2:font-cinzel prose-h2:text-amber-400 prose-h3:text-amber-200 prose-p:text-slate-300 leading-relaxed text-sm md:text-base">
+                <ReactMarkdown>{analysis.report}</ReactMarkdown>
+              </div>
             </div>
           </div>
 
-          {/* Interactive Consultation Q&A */}
-          <section className="mirror-card rounded-[40px] p-6 md:p-10 space-y-6 no-print">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center text-2xl border border-amber-500/20">🔮</div>
-              <div>
-                <h3 className="text-xl font-cinzel text-amber-200">Consult the Stars Directly</h3>
-                <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Ask about Wealth, Health, or Karma</p>
-              </div>
+          <section className="mirror-card rounded-[40px] p-8 md:p-12 space-y-8 no-print shadow-2xl">
+            <div className="flex items-center gap-4">
+               <div className="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center text-2xl">🔮</div>
+               <div>
+                 <h3 className="text-2xl font-cinzel text-amber-200">Celestial Consultation</h3>
+                 <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Ask detailed questions about your life path</p>
+               </div>
             </div>
-
-            <div className="max-h-[500px] overflow-y-auto space-y-6 pr-2 scroll-smooth no-scrollbar">
+            
+            <div className="max-h-[500px] overflow-y-auto space-y-6 pr-4 no-scrollbar border-y border-white/5 py-6">
+              {chatHistory.length === 0 && (
+                <div className="text-center py-10 text-slate-600 text-sm italic font-light">
+                  "How will my career progress in my 40s?" • "Which gemstone is best for my health?"
+                </div>
+              )}
               {chatHistory.map((msg, idx) => (
-                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in duration-500`}>
-                  <div className={`max-w-[85%] p-5 rounded-3xl ${
+                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] p-5 rounded-3xl text-sm leading-relaxed ${
                     msg.role === 'user' 
-                      ? 'bg-amber-600/20 border border-amber-500/30 text-amber-50 rounded-tr-none' 
-                      : 'bg-white/5 border border-white/10 text-slate-300 rounded-tl-none'
+                    ? 'bg-amber-600/20 border border-amber-500/30 text-amber-50 rounded-tr-none shadow-lg' 
+                    : 'bg-white/5 border border-white/10 text-slate-300 rounded-tl-none prose prose-invert prose-sm'
                   }`}>
-                    <p className="text-sm leading-relaxed">{msg.text}</p>
+                    {msg.role === 'user' ? msg.text : <ReactMarkdown>{msg.text}</ReactMarkdown>}
                   </div>
                 </div>
               ))}
               {chatLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-white/5 border border-white/10 p-5 rounded-3xl rounded-tl-none flex items-center gap-2">
-                    <div className="flex gap-1.5">
-                      <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse"></div>
-                      <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse [animation-delay:0.2s]"></div>
-                      <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse [animation-delay:0.4s]"></div>
-                    </div>
-                  </div>
+                <div className="flex gap-2 items-center text-amber-500/50 text-[10px] font-black uppercase tracking-[0.2em]">
+                  <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-bounce" />
+                  <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-bounce delay-75" />
+                  <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-bounce delay-150" />
+                  Meditating on the stars...
                 </div>
               )}
               <div ref={chatEndRef} />
             </div>
 
-            <form onSubmit={handleAskQuestion} className="flex gap-3 pt-6 border-t border-white/5">
-              <input
-                type="text"
-                placeholder="Seek answers from the astral plane..."
-                className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm md:text-base focus:ring-1 focus:ring-amber-500 outline-none text-white placeholder-slate-600 transition-all"
-                value={userQuery}
-                onChange={(e) => setUserQuery(e.target.value)}
+            <form onSubmit={handleAskQuestion} className="flex gap-4">
+              <input 
+                value={userQuery} 
+                onChange={(e) => setUserQuery(e.target.value)} 
+                type="text" 
+                placeholder="Seek deeper insights from your chart..." 
+                className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-5 text-sm focus:ring-1 focus:ring-amber-500 outline-none text-white transition-all placeholder-slate-700 font-medium" 
               />
-              <button
-                disabled={chatLoading || !userQuery.trim()}
-                className="bg-amber-500 hover:bg-amber-400 text-slate-900 font-black px-8 rounded-2xl transition-all disabled:opacity-30 shadow-xl active:scale-95 uppercase text-xs tracking-tighter"
+              <button 
+                disabled={chatLoading || !userQuery.trim()} 
+                className="bg-amber-500 hover:bg-amber-400 text-slate-900 font-black px-10 rounded-2xl text-xs uppercase transition-all shadow-xl active:scale-95 disabled:opacity-50"
               >
-                Query
+                Query Guide
               </button>
             </form>
           </section>
 
-          <div className="flex justify-center pb-12">
-            <button 
-              onClick={() => {
-                setAnalysis(null);
-                setChatHistory([]);
-              }}
-              className="text-slate-500 hover:text-amber-500/60 transition-all flex items-center gap-2 no-print text-xs uppercase font-bold tracking-widest"
-            >
-              <span>↺</span> Generate Different Chart
-            </button>
-          </div>
+          <button onClick={() => setAnalysis(null)} className="text-slate-600 hover:text-amber-500 mx-auto block no-print text-[10px] font-black uppercase tracking-[0.5em] transition-all py-8">
+            ↺ Reset and Cast New Chart
+          </button>
         </div>
       )}
     </div>
   );
 };
 
-const InputField: React.FC<{ label: string; placeholder?: string; type?: string; value: string; onChange: (v: string) => void }> = ({ label, placeholder, type = 'text', value, onChange }) => (
+const InputField = ({ label, value, onChange, type = 'text', placeholder }: any) => (
   <div className="space-y-3">
-    <label className="text-xs font-bold text-amber-500/60 uppercase tracking-widest ml-1">{label}</label>
-    <input
-      required
-      type={type}
+    <label className="text-[10px] font-black text-amber-500/70 uppercase tracking-[0.3em] ml-1">{label}</label>
+    <input 
+      required 
+      type={type} 
       placeholder={placeholder}
-      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:ring-1 focus:ring-amber-500 outline-none text-white transition-all hover:bg-white/10 placeholder-slate-600"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
+      className="w-full bg-white/5 border border-white/15 rounded-2xl px-6 py-4 text-white focus:ring-1 focus:ring-amber-500 outline-none hover:bg-white/10 transition-all placeholder-slate-800 font-medium" 
+      value={value} 
+      onChange={(e) => onChange(e.target.value)} 
     />
   </div>
 );
