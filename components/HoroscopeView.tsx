@@ -15,16 +15,19 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
   const [selectedSign, setSelectedSign] = useState(StorageService.getUserSign() || ZODIAC_SIGNS[0].name);
   const [timeframe, setTimeframe] = useState<Timeframe>('daily');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [prediction, setPrediction] = useState<PredictionResult | null>(null);
 
   const fetchHoroscope = async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await getHoroscope(selectedSign, timeframe, language);
       setPrediction(data);
-    } catch (error) {
-      console.error(error);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "The stars are currently clouded. Please verify your connection.");
     } finally {
       setLoading(false);
     }
@@ -36,7 +39,7 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
 
   const setAsPreferred = () => {
     StorageService.setUserSign(selectedSign);
-    alert(`${selectedSign} set as home sign for background updates!`);
+    alert(`${selectedSign} set as home sign!`);
   };
 
   const downloadPDF = async () => {
@@ -45,14 +48,10 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
 
     setExporting(true);
     try {
-      // Create high-quality canvas of the report area
       const canvas = await html2canvas(element, {
         scale: 2,
         backgroundColor: '#010204',
         useCORS: true,
-        logging: false,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -65,11 +64,9 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
       let heightLeft = imgHeight;
       let position = 0;
 
-      // First page
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      // Additional pages if content is long
       while (heightLeft > 0) {
         position -= pageHeight;
         pdf.addPage();
@@ -77,7 +74,7 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`${selectedSign}_${timeframe}_Report_2026.pdf`);
+      pdf.save(`${selectedSign}_Reading_2026.pdf`);
     } catch (err) {
       console.error("PDF Export failed", err);
     } finally {
@@ -100,7 +97,6 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
           >
             <span className="text-2xl md:text-3xl mb-1 drop-shadow-lg">{sign.symbol}</span>
             <span className="text-[9px] md:text-xs font-black uppercase tracking-widest text-slate-300">{sign.name}</span>
-            <span className="text-[8px] md:text-[10px] text-amber-500/50 italic">{sign.moonSign}</span>
           </button>
         ))}
       </div>
@@ -113,7 +109,7 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
               onClick={() => setTimeframe(tf)}
               className={`px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
                 timeframe === tf
-                  ? 'bg-amber-500 text-slate-900 shadow-lg shadow-amber-500/20'
+                  ? 'bg-amber-500 text-slate-900 shadow-lg'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -121,69 +117,67 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
             </button>
           ))}
         </div>
-        <button 
-          onClick={setAsPreferred}
-          className="text-[10px] uppercase font-black tracking-[0.2em] text-amber-500/60 hover:text-amber-400 transition-colors flex items-center gap-2"
-        >
-          Set {selectedSign} as Home 🏠
+        <button onClick={setAsPreferred} className="text-[10px] uppercase font-black tracking-widest text-amber-500/60 flex items-center gap-2">
+          Set Home 🏠
         </button>
       </div>
 
-      {loading ? (
+      {loading && (
         <div className="flex flex-col items-center justify-center py-24 space-y-6">
           <div className="w-12 h-12 border-4 border-amber-500/10 border-t-amber-500 rounded-full animate-spin"></div>
-          <p className="text-slate-400 font-cinzel tracking-widest animate-pulse uppercase text-sm">Consulting the Stars...</p>
+          <p className="text-slate-400 font-cinzel tracking-widest animate-pulse text-sm">Synchronizing with 2026 Transits...</p>
         </div>
-      ) : prediction ? (
-        <div id="horoscope-content" className="space-y-8 bg-[#010204] rounded-[40px] p-1">
+      )}
+
+      {error && !loading && (
+        <div className="mirror-card p-10 rounded-3xl border-red-500/30 text-center animate-in zoom-in-95">
+          <div className="text-4xl mb-4">🌑</div>
+          <h3 className="text-xl font-cinzel text-red-200 mb-2">Mirror Obscured</h3>
+          <p className="text-slate-400 text-sm mb-6">{error}</p>
+          <button onClick={fetchHoroscope} className="glossy-button px-8 py-3 rounded-xl text-white font-bold text-xs uppercase tracking-widest">
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {prediction && !loading && !error && (
+        <div id="horoscope-content" className="space-y-8 bg-[#010204] rounded-[40px] p-1 animate-in slide-in-from-bottom-8 duration-1000">
           <div className="flex justify-between items-center no-print px-4 py-2">
-            <h2 className="text-2xl md:text-4xl font-cinzel text-amber-100">{selectedSign} {timeframe} Reading</h2>
+            <h2 className="text-2xl md:text-3xl font-cinzel text-amber-100">{selectedSign} {timeframe} Reading</h2>
             <button 
               onClick={downloadPDF}
               disabled={exporting}
-              className="bg-white/5 hover:bg-white/10 text-white text-[10px] px-5 py-2.5 rounded-full flex items-center gap-2 transition-all border border-white/10 disabled:opacity-50"
+              className="bg-white/5 hover:bg-white/10 text-white text-[10px] px-5 py-2.5 rounded-full flex items-center gap-2 border border-white/10 disabled:opacity-50"
             >
-              {exporting ? 'Processing...' : '📥 Save Reading'}
+              {exporting ? 'Exporting...' : 'Save PDF'}
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 p-4">
-            <div className="col-span-1 md:col-span-2 mirror-card p-6 md:p-10 rounded-[32px] border-amber-500/10">
-              <h3 className="text-xl md:text-2xl font-cinzel text-amber-400 mb-6 flex items-center gap-3">
-                <span className="opacity-60">✨</span> Cosmic Overview (2026)
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
+            <div className="col-span-1 md:col-span-2 mirror-card p-8 rounded-[32px] border-amber-500/10 shadow-[0_0_50px_rgba(245,158,11,0.05)]">
+              <h3 className="text-lg font-cinzel text-amber-400 mb-4 flex items-center gap-3">
+                <span className="opacity-60">🔮</span> Cosmic Overview (2026)
               </h3>
-              <p className="text-slate-300 leading-relaxed text-lg md:text-xl font-light italic opacity-90">"{prediction.overview}"</p>
+              <p className="text-slate-200 leading-relaxed text-lg font-light italic">{prediction.overview}</p>
             </div>
-
-            <Card title="Career & Prosperity" content={prediction.career + " " + prediction.finance} icon="💎" />
-            <Card title="Vitality & Health" content={prediction.health} icon="🌱" />
-            <Card title="Soul & Relations" content={prediction.relationships} icon="🧿" />
-            <Card title="Spirit & Growth" content={prediction.spirituality} icon="🕉️" />
-
-            <div className="col-span-1 md:col-span-2 flex flex-wrap gap-6 justify-center mirror-card p-6 rounded-2xl border-amber-500/10">
-              <div className="flex items-center gap-3">
-                <span className="text-slate-500 text-[10px] uppercase font-black tracking-widest">Auspicious Color</span>
-                <span className="font-bold text-amber-400 text-lg">{prediction.luckyColor}</span>
-              </div>
-              <div className="hidden sm:block w-px h-8 bg-white/10"></div>
-              <div className="flex items-center gap-3">
-                <span className="text-slate-500 text-[10px] uppercase font-black tracking-widest">Divine Number</span>
-                <span className="font-bold text-amber-400 text-lg">{prediction.luckyNumber}</span>
-              </div>
-            </div>
+            <ResultCard title="Career" content={prediction.career} icon="💼" />
+            <ResultCard title="Finance" content={prediction.finance} icon="💰" />
+            <ResultCard title="Health" content={prediction.health} icon="🩺" />
+            <ResultCard title="Relationships" content={prediction.relationships} icon="💍" />
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 };
 
-const Card: React.FC<{ title: string; content: string; icon: string }> = ({ title, content, icon }) => (
-  <div className="mirror-card p-6 md:p-8 rounded-[32px] hover:border-amber-500/30">
-    <h3 className="text-lg md:text-xl font-cinzel text-slate-100 mb-4 flex items-center gap-3">
-      <span className="text-2xl">{icon}</span> {title}
-    </h3>
-    <p className="text-slate-400 leading-relaxed text-sm md:text-base opacity-80">{content}</p>
+const ResultCard = ({ title, content, icon }: { title: string; content: string; icon: string }) => (
+  <div className="mirror-card p-6 rounded-[28px] border-white/5 hover:border-amber-500/20 transition-all duration-500">
+    <div className="flex items-center gap-3 mb-3">
+      <span className="text-xl">{icon}</span>
+      <h4 className="text-sm font-black uppercase tracking-widest text-amber-200/80">{title}</h4>
+    </div>
+    <p className="text-slate-400 text-sm leading-relaxed opacity-90">{content}</p>
   </div>
 );
 

@@ -3,28 +3,33 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { BirthDetails, MatchmakingDetails, MoonSign, Timeframe, Language, ChatMessage } from "../types";
 import { StorageService } from "./storageService";
 
-// Helper to initialize GoogleGenAI client
-const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
-
-// Explicitly set the temporal context to 2026 as per user requirement
+// Explicitly set the temporal context to 2026
 const getCurrentDate = () => {
   const now = new Date();
-  // Overriding display logic if system year is behind
-  const year = now.getFullYear() < 2026 ? 2026 : now.getFullYear();
+  const year = 2026; // Strictly enforced for predictions
   return `${now.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}, ${year} ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
 };
 
-const getTargetYear = () => {
-  const now = new Date();
-  return now.getFullYear() < 2026 ? 2026 : now.getFullYear();
+const getTargetYear = () => 2026;
+
+// Helper to sanitize and parse JSON from AI responses (handles markdown blocks)
+const parseAIResponse = (text: string) => {
+  try {
+    const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanText);
+  } catch (e) {
+    console.error("Failed to parse AI response as JSON:", text);
+    throw new Error("The celestial alignment returned a malformed response. Please try again.");
+  }
 };
 
 // Retry helper with exponential backoff
-async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 1500): Promise<T> {
   try {
     return await fn();
   } catch (error: any) {
     if (retries > 0) {
+      console.warn(`Celestial connection dropped. Retrying... (${retries} left)`);
       await new Promise(resolve => setTimeout(resolve, delay));
       return withRetry(fn, retries - 1, delay * 2);
     }
@@ -38,10 +43,10 @@ export const getCoordinates = async (location: string) => {
   if (cached) return cached;
 
   const result = await withRetry(async () => {
-    const ai = getAI();
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Find the precise latitude and longitude for the city/location: "${location}". Return result in JSON format.`,
+      contents: `Find the precise latitude and longitude for: "${location}". Return result in pure JSON format with keys: lat (number), lng (number), formattedAddress (string).`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -55,7 +60,7 @@ export const getCoordinates = async (location: string) => {
         }
       }
     });
-    return JSON.parse(response.text || "{}");
+    return parseAIResponse(response.text || "{}");
   });
 
   StorageService.save(cacheKey, result, 720);
@@ -68,12 +73,12 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
   if (cached) return cached;
 
   const result = await withRetry(async () => {
-    const ai = getAI();
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const targetYear = getTargetYear();
-    const prompt = `As a professional Vedic Astrologer, the current time is ${getCurrentDate()} (Year: ${targetYear}). 
-    Provide an extremely detailed ${timeframe} prediction for the Moon Sign (Rashi) ${sign} in ${language}. 
-    CRITICAL: Analyze the planetary transits (Gochar) specifically for the year ${targetYear}. 
-    Include: Overview, Career, Health, Relationships, Finance, Spirituality, Lucky Color, Lucky Number. JSON format only.`;
+    const prompt = `As a world-renowned Vedic Astrologer, the real-time date is ${getCurrentDate()}. 
+    Provide an exhaustive ${timeframe} prediction for the Moon Sign ${sign} in ${language}. 
+    CRITICAL: Base your analysis solely on planetary transits for the year ${targetYear}. 
+    Output strictly in JSON with keys: overview, career, health, relationships, finance, spirituality, luckyColor, luckyNumber.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -96,7 +101,7 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
         }
       }
     });
-    return JSON.parse(response.text || "{}");
+    return parseAIResponse(response.text || "{}");
   });
 
   const ttl = timeframe === 'daily' ? 12 : (timeframe === 'weekly' ? 48 : 168);
@@ -106,24 +111,21 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
 
 export const getKundaliAnalysis = async (details: BirthDetails, language: Language) => {
   return await withRetry(async () => {
-    const ai = getAI();
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const targetYear = getTargetYear();
-    const prompt = `As a high-ranking Vedic Astrology expert (Jyotish Acharya), today is ${getCurrentDate()} (Year: ${targetYear}).
-    Generate a massive and highly detailed Janma Kundali report for:
+    const prompt = `As a High Priest of Vedic Astrology, today is ${getCurrentDate()}.
+    Generate a deep Janma Kundali report for:
     Name: ${details.name}
-    Birth Date: ${details.dob}
-    Time: ${details.tob}
-    Location: ${details.location} (Lat: ${details.latitude}, Lng: ${details.longitude})
+    Birth: ${details.dob} at ${details.tob} in ${details.location}
     
-    Please provide an exhaustive analysis:
-    1. **Planetary Snapshot**:Technical placements (Sign, Degree, House, Nakshatra) for all 9 planets.
-    2. **Lagna Analysis**: Rising sign lord and its impact.
-    3. **Bhava Analysis**: Interpretation of all 12 houses focusing on Career, Finance, and Marriage.
-    4. **Vimshottari Dasha**: Current Mahadasha and Antardasha sequence.
-    5. **Transits (Gochar) 2026**: How the transits of Rahu, Saturn, and Jupiter in the year ${targetYear} impact this native.
-    6. **Divine Remedies**: Customized Mantras and Upayas.
+    Analysis must cover:
+    1. Planetary Snapshots (Degrees & Nakshatras)
+    2. Lagna & Dasha effects for the year ${targetYear}
+    3. Detailed 12-house breakdown
+    4. Predictions for ${targetYear} Career/Wealth/Love
+    5. Specific Gemstone & Mantra remedies
     
-    Style: Professional, mystical, and authoritative. Language: ${language}. Use clean Markdown.`;
+    Language: ${language}. Markdown format.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
@@ -132,7 +134,8 @@ export const getKundaliAnalysis = async (details: BirthDetails, language: Langua
         thinkingConfig: { thinkingBudget: 15000 }
       }
     });
-    return response.text || "";
+    if (!response.text) throw new Error("The stars remained silent. Check your API configuration.");
+    return response.text;
   });
 };
 
@@ -143,17 +146,11 @@ export const askKundaliQuestion = async (
   language: Language
 ) => {
   return await withRetry(async () => {
-    const ai = getAI();
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const targetYear = getTargetYear();
-    const systemInstruction = `You are a world-class Vedic Astrologer. Today is ${getCurrentDate()} (Year: ${targetYear}).
-    You have generated a Kundali for a user. Here is the report context:
-    --- KUNDALI START ---
-    ${kundaliContext}
-    --- KUNDALI END ---
-    
-    Answer follow-up questions specifically based on their chart and the transits of the year ${targetYear}.
-    Refer back to specific planetary dashas and yogas mentioned in the context.
-    IMPORTANT: Answer in the ${language} language.`;
+    const systemInstruction = `You are a Vedic Astrologer. Context Year: ${targetYear}. 
+    Report context: ${kundaliContext}. 
+    Answer in ${language}. Be precise and base your answer on the provided chart and 2026 transits.`;
 
     const chatHistory = history.map(msg => ({
       role: msg.role === 'user' ? 'user' : 'model',
@@ -172,26 +169,21 @@ export const askKundaliQuestion = async (
       }
     });
 
-    return response.text || "The stars are veiled at the moment. Please try again.";
+    return response.text || "The cosmos is currently veiled.";
   });
 };
 
 export const getMatchmaking = async (details: MatchmakingDetails, language: Language) => {
   return await withRetry(async () => {
-    const ai = getAI();
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const targetYear = getTargetYear();
-    const prompt = `Perform an Ashtakoot Milan compatibility analysis for:
-    Boy: ${details.boy.name}, ${details.boy.dob}, ${details.boy.tob}, ${details.boy.location}
-    Girl: ${details.girl.name}, ${details.girl.dob}, ${details.girl.tob}, ${details.girl.location}
-    Current Year: ${targetYear}
+    const prompt = `Ashtakoot Milan compatibility for:
+    Boy: ${details.boy.name}, ${details.boy.dob}, ${details.boy.tob}
+    Girl: ${details.girl.name}, ${details.girl.dob}, ${details.girl.tob}
+    Context: Year ${targetYear}
     
-    Include:
-    1. Guna Milan score out of 36.
-    2. Detailed analysis of all 8 Kootas.
-    3. Manglik & Nadi Dosha analysis.
-    4. Future relationship prospects for ${targetYear} and beyond.
-    
-    Language: ${language}. Markdown format.`;
+    Analyze all 8 Kootas and Guna score (36). Predictions for 2026 relationship stability.
+    Language: ${language}. Markdown.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
@@ -204,11 +196,10 @@ export const getMatchmaking = async (details: MatchmakingDetails, language: Lang
 
 export const getNumerologyAnalysis = async (dob: string, mulank: number, bhagyank: number, loshu: (number | null)[][], language: Language) => {
   return await withRetry(async () => {
-    const ai = getAI();
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const targetYear = getTargetYear();
-    const prompt = `Analyze birth date: ${dob}. Current Date: ${getCurrentDate()} (Year: ${targetYear}).
-    Mulank: ${mulank}, Bhagyank: ${bhagyank}, Loshu Grid: ${JSON.stringify(loshu)}.
-    Provide predictions for the native in the year ${targetYear}. Language: ${language}. Markdown format.`;
+    const prompt = `Numerology for DOB ${dob}. Mulank ${mulank}, Bhagyank ${bhagyank}. Year context: ${targetYear}.
+    Analyze traits and 2026 predictions. Language: ${language}. Markdown.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -220,7 +211,7 @@ export const getNumerologyAnalysis = async (dob: string, mulank: number, bhagyan
 
 export const getPalmistryAnalysis = async (imageBase64: string, language: Language) => {
   return await withRetry(async () => {
-    const ai = getAI();
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const targetYear = getTargetYear();
     const base64Data = imageBase64.split(',')[1] || imageBase64;
     const mimeType = imageBase64.split(';')[0].split(':')[1] || 'image/jpeg';
@@ -230,7 +221,7 @@ export const getPalmistryAnalysis = async (imageBase64: string, language: Langua
       contents: {
         parts: [
           { inlineData: { data: base64Data, mimeType } },
-          { text: `As a professional Chiromancer, analyze this palm image in ${language}. Detail Life, Head, Heart lines, and mounts. Today is ${getCurrentDate()} (Year: ${targetYear}). Provide predictions relevant to the year ${targetYear}.` }
+          { text: `Analyze this palm in ${language}. Focus on 2026 predictions. Detail Life/Head/Heart lines.` }
         ]
       },
       config: { thinkingConfig: { thinkingBudget: 7000 } }
