@@ -17,6 +17,7 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
     girl: { ...initialBirthDetails }
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [coords, setCoords] = useState<{ boy?: any, girl?: any }>({});
@@ -24,6 +25,7 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     try {
       const [boyCoords, girlCoords] = await Promise.all([
         getCoordinates(details.boy.location),
@@ -38,8 +40,9 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
       setCoords({ boy: boyCoords, girl: girlCoords });
       const data = await getMatchmaking(enrichedDetails, language);
       setResult(data);
-    } catch (error) {
-      console.error(error);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Celestial comparison failed. Please verify the locations and try again.");
     } finally {
       setLoading(false);
     }
@@ -55,9 +58,6 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
         scale: 2,
         backgroundColor: '#010204',
         useCORS: true,
-        logging: false,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -70,11 +70,9 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
       let heightLeft = imgHeight;
       let position = 0;
 
-      // Add first page
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      // Loop for multi-page reports
       while (heightLeft > 0) {
         position -= pageHeight;
         pdf.addPage();
@@ -92,12 +90,18 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
 
   return (
     <div className="space-y-8 pb-12">
-      {!result && (
+      {!result && !loading && (
         <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="text-center space-y-2">
             <h2 className="text-3xl font-cinzel text-pink-400">Ashtakoot Milan (2026)</h2>
             <p className="text-slate-400">Traditional 36 Guna compatibility analysis for a blissful union.</p>
           </div>
+
+          {error && (
+            <div className="max-w-xl mx-auto p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-200 text-xs text-center animate-in zoom-in-95">
+              {error}
+            </div>
+          )}
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <ProfileForm 
@@ -119,19 +123,17 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
               disabled={loading}
               className="px-12 py-4 bg-gradient-to-r from-pink-600 to-rose-700 hover:from-pink-500 hover:to-rose-600 text-white font-bold rounded-2xl transition-all shadow-xl shadow-rose-900/30 disabled:opacity-50 flex items-center gap-3 active:scale-95"
             >
-              {loading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  Comparing Celestial Alignments...
-                </>
-              ) : (
-                <>
-                  <span className="text-xl">❤️</span> Check Match Compatibility
-                </>
-              )}
+              Check Match Compatibility
             </button>
           </div>
         </form>
+      )}
+
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-24 space-y-6">
+          <div className="w-12 h-12 border-4 border-pink-500/10 border-t-pink-500 rounded-full animate-spin"></div>
+          <p className="text-slate-400 font-cinzel tracking-widest animate-pulse text-sm">Synchronizing Life Paths...</p>
+        </div>
       )}
 
       {result && !loading && (
@@ -153,23 +155,10 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
                 <button 
                   onClick={downloadPDF}
                   disabled={exporting}
-                  className="bg-slate-700 hover:bg-slate-600 text-white text-xs px-4 py-2 rounded-lg flex items-center gap-2 transition-colors border border-slate-600 no-print disabled:opacity-50"
+                  className="bg-slate-700 hover:bg-slate-600 text-white text-xs px-4 py-2 rounded-lg flex items-center gap-2 transition-colors border border-slate-600 no-print"
                 >
-                  {exporting ? 'Generating...' : <><span>📥</span> Save Report</>}
+                  {exporting ? 'Exporting...' : 'Save Report'}
                 </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mb-8 not-prose border-y border-white/10 py-4">
-                <div>
-                  <p className="text-[10px] text-slate-500 uppercase font-bold">Boy's Birth Co-ordinates</p>
-                  <p className="text-blue-400 font-mono text-xs">{coords.boy?.formattedAddress}</p>
-                  <p className="text-slate-400 font-mono text-xs">Lat: {coords.boy?.lat.toFixed(4)}, Lng: {coords.boy?.lng.toFixed(4)}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-slate-500 uppercase font-bold text-right">Girl's Birth Co-ordinates</p>
-                  <p className="text-pink-400 font-mono text-xs text-right">{coords.girl?.formattedAddress}</p>
-                  <p className="text-slate-400 font-mono text-xs text-right">Lat: {coords.girl?.lat.toFixed(4)}, Lng: {coords.girl?.lng.toFixed(4)}</p>
-                </div>
               </div>
 
               <ReactMarkdown>{result}</ReactMarkdown>

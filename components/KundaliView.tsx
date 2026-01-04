@@ -18,6 +18,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
     location: '',
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [analysis, setAnalysis] = useState<string | null>(null);
   
@@ -38,6 +39,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     setChatHistory([]);
     try {
       const locationData = await getCoordinates(details.location);
@@ -48,8 +50,9 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
       };
       const result = await getKundaliAnalysis(enrichedDetails, language);
       setAnalysis(result);
-    } catch (error) {
-      console.error(error);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Celestial connection failed. Please check your inputs and try again.");
     } finally {
       setLoading(false);
     }
@@ -100,11 +103,9 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
       let heightLeft = imgHeight;
       let position = 0;
 
-      // Add first page
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      // Loop for multi-page reports
       while (heightLeft > 0) {
         position -= pageHeight;
         pdf.addPage();
@@ -122,7 +123,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-20 px-2 md:px-0">
-      {!analysis && (
+      {!analysis && !loading && (
         <section className="mirror-card p-6 md:p-12 rounded-3xl animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="mb-10 text-center">
             <h2 className="text-3xl md:text-5xl font-cinzel text-amber-100 mb-4 tracking-tight">Divine Chart Analysis</h2>
@@ -130,6 +131,11 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8 max-w-3xl mx-auto">
+            {error && (
+              <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-200 text-xs text-center animate-in zoom-in-95">
+                {error}
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
               <InputField 
                 label="Full Name" 
@@ -161,12 +167,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
               disabled={loading}
               className="w-full glossy-button text-white font-bold py-4 md:py-5 rounded-2xl transition-all disabled:opacity-50 text-base md:text-lg tracking-widest uppercase font-cinzel"
             >
-              {loading ? (
-                <div className="flex items-center justify-center gap-3">
-                  <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                  <span>Reading the Heavens...</span>
-                </div>
-              ) : 'Invoke Celestial Secrets'}
+              Invoke Celestial Secrets
             </button>
           </form>
         </section>
@@ -222,22 +223,6 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
             </div>
 
             <div className="max-h-[500px] overflow-y-auto space-y-6 pr-2 scroll-smooth no-scrollbar">
-              {chatHistory.length === 0 && (
-                <div className="text-center py-16 text-slate-500 space-y-6">
-                  <p className="italic text-sm">The cosmos awaits your specific inquiry...</p>
-                  <div className="flex flex-wrap justify-center gap-3">
-                    {['My career in 2026?', 'Best gemstones for me?', 'Marriage prospects?', 'Health precautions?'].map(q => (
-                      <button 
-                        key={q} 
-                        onClick={() => setUserQuery(q)}
-                        className="text-[11px] bg-white/5 hover:bg-white/10 px-5 py-2.5 rounded-full border border-white/10 transition-all active:scale-95"
-                      >
-                        {q}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
               {chatHistory.map((msg, idx) => (
                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in duration-500`}>
                   <div className={`max-w-[85%] p-5 rounded-3xl ${
