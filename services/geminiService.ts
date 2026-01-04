@@ -6,15 +6,18 @@ import { StorageService } from "./storageService";
 // Helper to initialize GoogleGenAI client
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// Get dynamic real-time date and year for the prompt
+// Explicitly set the temporal context to 2026 as per user requirement
 const getCurrentDate = () => {
   const now = new Date();
-  return now.toLocaleDateString('en-US', { 
-    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-  }) + ` (Current Year: ${now.getFullYear()})`;
+  // Overriding display logic if system year is behind
+  const year = now.getFullYear() < 2026 ? 2026 : now.getFullYear();
+  return `${now.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}, ${year} ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
 };
 
-const getPromptYear = () => new Date().getFullYear();
+const getTargetYear = () => {
+  const now = new Date();
+  return now.getFullYear() < 2026 ? 2026 : now.getFullYear();
+};
 
 // Retry helper with exponential backoff
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
@@ -38,7 +41,7 @@ export const getCoordinates = async (location: string) => {
     const ai = getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Find the precise latitude and longitude for: "${location}". Return JSON format.`,
+      contents: `Find the precise latitude and longitude for the city/location: "${location}". Return result in JSON format.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -66,10 +69,10 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
 
   const result = await withRetry(async () => {
     const ai = getAI();
-    const currentYear = getPromptYear();
-    const prompt = `As a professional Vedic Astrologer, today's real-time date is ${getCurrentDate()}. 
+    const targetYear = getTargetYear();
+    const prompt = `As a professional Vedic Astrologer, the current time is ${getCurrentDate()} (Year: ${targetYear}). 
     Provide an extremely detailed ${timeframe} prediction for the Moon Sign (Rashi) ${sign} in ${language}. 
-    Analyze the current planetary transits (Gochar) for ${currentYear} and the immediate upcoming year ${currentYear + 1}.
+    CRITICAL: Analyze the planetary transits (Gochar) specifically for the year ${targetYear}. 
     Include: Overview, Career, Health, Relationships, Finance, Spirituality, Lucky Color, Lucky Number. JSON format only.`;
 
     const response = await ai.models.generateContent({
@@ -104,30 +107,29 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
 export const getKundaliAnalysis = async (details: BirthDetails, language: Language) => {
   return await withRetry(async () => {
     const ai = getAI();
-    const currentYear = getPromptYear();
-    const prompt = `As a legendary Vedic Astrology expert (Jyotish Mahacharya), today is ${getCurrentDate()}.
-    Generate an exhaustive and highly detailed Janma Kundali report for:
+    const targetYear = getTargetYear();
+    const prompt = `As a high-ranking Vedic Astrology expert (Jyotish Acharya), today is ${getCurrentDate()} (Year: ${targetYear}).
+    Generate a massive and highly detailed Janma Kundali report for:
     Name: ${details.name}
     Birth Date: ${details.dob}
     Time: ${details.tob}
     Location: ${details.location} (Lat: ${details.latitude}, Lng: ${details.longitude})
     
-    Please provide a massive, deep report including:
-    1. **Celestial Snapshot**: Technical details of all 9 planets + Ascendant (Sign, Degree, House, Nakshatra, Pada).
-    2. **Lagna Analysis**: Exhaustive look at the rising sign and its lord's placement.
-    3. **Bhava Analysis (12 Houses)**: Detailed interpretation of EVERY house, focusing on Health, Career, Wealth, and Marriage.
-    4. **Dasha Analysis**: Current Vimshottari Mahadasha, Antardasha, and Pratyantardasha. Explain their effects in ${currentYear} and ${currentYear + 1}.
-    5. **Yoga & Dosha**: Identify Gajakesari, Panch Mahapurush, Kaal Sarp, Manglik, Sade Sati, etc.
-    6. **Current Transits (Gochar)**: How Rahu/Ketu, Saturn, and Jupiter transits in ${currentYear} affect this specific chart.
-    7. **Divine Remedies**: Customized Mantras, Gemstones, and Charities.
+    Please provide an exhaustive analysis:
+    1. **Planetary Snapshot**:Technical placements (Sign, Degree, House, Nakshatra) for all 9 planets.
+    2. **Lagna Analysis**: Rising sign lord and its impact.
+    3. **Bhava Analysis**: Interpretation of all 12 houses focusing on Career, Finance, and Marriage.
+    4. **Vimshottari Dasha**: Current Mahadasha and Antardasha sequence.
+    5. **Transits (Gochar) 2026**: How the transits of Rahu, Saturn, and Jupiter in the year ${targetYear} impact this native.
+    6. **Divine Remedies**: Customized Mantras and Upayas.
     
-    Style: Professional, mystical, and authoritative. Language: ${language}. Use clean Markdown with clear hierarchies.`;
+    Style: Professional, mystical, and authoritative. Language: ${language}. Use clean Markdown.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
-        thinkingConfig: { thinkingBudget: 12000 }
+        thinkingConfig: { thinkingBudget: 15000 }
       }
     });
     return response.text || "";
@@ -142,16 +144,15 @@ export const askKundaliQuestion = async (
 ) => {
   return await withRetry(async () => {
     const ai = getAI();
-    const currentYear = getPromptYear();
-    const systemInstruction = `You are a world-class Vedic Astrologer. Today is ${getCurrentDate()}.
-    You have generated a Kundali for a user. Here is the report content for context:
+    const targetYear = getTargetYear();
+    const systemInstruction = `You are a world-class Vedic Astrologer. Today is ${getCurrentDate()} (Year: ${targetYear}).
+    You have generated a Kundali for a user. Here is the report context:
     --- KUNDALI START ---
     ${kundaliContext}
     --- KUNDALI END ---
     
-    Answer the user's follow-up questions specifically based on their chart and the transits of ${currentYear}-${currentYear + 1}.
-    Always refer to the specific planetary positions and dashas mentioned in the context.
-    Be precise, empathetic, and professional. 
+    Answer follow-up questions specifically based on their chart and the transits of the year ${targetYear}.
+    Refer back to specific planetary dashas and yogas mentioned in the context.
     IMPORTANT: Answer in the ${language} language.`;
 
     const chatHistory = history.map(msg => ({
@@ -167,35 +168,35 @@ export const askKundaliQuestion = async (
       ],
       config: {
         systemInstruction,
-        thinkingConfig: { thinkingBudget: 6000 }
+        thinkingConfig: { thinkingBudget: 8000 }
       }
     });
 
-    return response.text || "I am unable to consult the stars at this moment.";
+    return response.text || "The stars are veiled at the moment. Please try again.";
   });
 };
 
 export const getMatchmaking = async (details: MatchmakingDetails, language: Language) => {
   return await withRetry(async () => {
     const ai = getAI();
-    const currentYear = getPromptYear();
-    const prompt = `Ashtakoot Milan compatibility analysis for:
+    const targetYear = getTargetYear();
+    const prompt = `Perform an Ashtakoot Milan compatibility analysis for:
     Boy: ${details.boy.name}, ${details.boy.dob}, ${details.boy.tob}, ${details.boy.location}
     Girl: ${details.girl.name}, ${details.girl.dob}, ${details.girl.tob}, ${details.girl.location}
-    Today's Real-time Date: ${getCurrentDate()}
+    Current Year: ${targetYear}
     
-    Provide:
-    1. Guna Milan score (out of 36).
-    2. Deep analysis of 8 Kootas (Varna, Vashya, Tara, Yoni, Maitri, Gana, Bhakut, Nadi).
-    3. Manglik & Nadi Dosha considerations.
-    4. Future prospects for the couple in ${currentYear} and ${currentYear + 1}.
+    Include:
+    1. Guna Milan score out of 36.
+    2. Detailed analysis of all 8 Kootas.
+    3. Manglik & Nadi Dosha analysis.
+    4. Future relationship prospects for ${targetYear} and beyond.
     
-    Language: ${language}. Format in Markdown.`;
+    Language: ${language}. Markdown format.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: prompt,
-      config: { thinkingConfig: { thinkingBudget: 4000 } }
+      config: { thinkingConfig: { thinkingBudget: 5000 } }
     });
     return response.text || "";
   });
@@ -204,10 +205,10 @@ export const getMatchmaking = async (details: MatchmakingDetails, language: Lang
 export const getNumerologyAnalysis = async (dob: string, mulank: number, bhagyank: number, loshu: (number | null)[][], language: Language) => {
   return await withRetry(async () => {
     const ai = getAI();
-    const currentYear = getPromptYear();
-    const prompt = `Analyze birth date: ${dob}. Today's Date: ${getCurrentDate()}.
+    const targetYear = getTargetYear();
+    const prompt = `Analyze birth date: ${dob}. Current Date: ${getCurrentDate()} (Year: ${targetYear}).
     Mulank: ${mulank}, Bhagyank: ${bhagyank}, Loshu Grid: ${JSON.stringify(loshu)}.
-    Provide deep character traits and exhaustive predictions for the year ${currentYear}. Language: ${language}. Markdown format.`;
+    Provide predictions for the native in the year ${targetYear}. Language: ${language}. Markdown format.`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -220,7 +221,7 @@ export const getNumerologyAnalysis = async (dob: string, mulank: number, bhagyan
 export const getPalmistryAnalysis = async (imageBase64: string, language: Language) => {
   return await withRetry(async () => {
     const ai = getAI();
-    const currentYear = getPromptYear();
+    const targetYear = getTargetYear();
     const base64Data = imageBase64.split(',')[1] || imageBase64;
     const mimeType = imageBase64.split(';')[0].split(':')[1] || 'image/jpeg';
 
@@ -229,10 +230,10 @@ export const getPalmistryAnalysis = async (imageBase64: string, language: Langua
       contents: {
         parts: [
           { inlineData: { data: base64Data, mimeType } },
-          { text: `As a professional Chiromancer, analyze this palm image in ${language}. Detail Life, Head, Heart lines, and mounts. Today is ${getCurrentDate()}. Provide predictions relevant to ${currentYear}.` }
+          { text: `As a professional Chiromancer, analyze this palm image in ${language}. Detail Life, Head, Heart lines, and mounts. Today is ${getCurrentDate()} (Year: ${targetYear}). Provide predictions relevant to the year ${targetYear}.` }
         ]
       },
-      config: { thinkingConfig: { thinkingBudget: 6000 } }
+      config: { thinkingConfig: { thinkingBudget: 7000 } }
     });
     return response.text || "";
   });
