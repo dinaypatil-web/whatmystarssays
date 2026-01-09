@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { getNumerologyAnalysis, askNumerologyQuestion } from '../services/geminiService';
 import { Language, ChatMessage } from '../types';
@@ -114,7 +113,7 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
   };
 
   const downloadPDF = async () => {
-    const elementId = 'numerology-content';
+    const elementId = 'numerology-report-area';
     const element = document.getElementById(elementId);
     if (!element || exporting) return;
 
@@ -129,7 +128,7 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
           if (clonedElement) {
             clonedElement.style.backgroundColor = 'white';
             clonedElement.style.color = 'black';
-            clonedElement.style.padding = '20px';
+            clonedElement.style.padding = '40px';
             clonedElement.style.borderRadius = '0px';
 
             const allElements = clonedElement.querySelectorAll('*');
@@ -168,7 +167,7 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`Numerology_Life_Report_${dob}.pdf`);
+      pdf.save(`Numerology_Full_Report_${dob}.pdf`);
     } catch (err) {
       console.error("PDF Export failed", err);
     } finally {
@@ -234,11 +233,11 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
 
       {analysis && !loading && (
         <div className="space-y-8 animate-in slide-in-from-bottom-10 duration-700">
-          <div id="numerology-content" className="bg-[#010204] rounded-3xl p-6 border border-white/5 space-y-12">
+          <div id="numerology-report-area" className="bg-[#010204] rounded-[40px] p-8 border border-white/5 space-y-12">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-3xl font-cinzel text-amber-400">Personal Numerology Report</h2>
               <button onClick={downloadPDF} disabled={exporting} className="bg-amber-500 hover:bg-amber-400 text-slate-900 text-[10px] px-6 py-2 rounded-full font-black uppercase no-print transition-all">
-                {exporting ? 'Exporting...' : 'Save Life Report'}
+                {exporting ? 'Processing...' : 'Save Full Report'}
               </button>
             </div>
 
@@ -277,7 +276,7 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
               </div>
             </div>
 
-            <div className="prose prose-invert prose-amber max-w-none prose-h3:font-cinzel prose-h3:text-amber-400 shadow-inner p-4 rounded-2xl bg-white/5 border border-white/5">
+            <div className="prose prose-invert prose-amber max-w-none prose-h3:font-cinzel prose-h3:text-amber-400 p-6 rounded-2xl bg-white/5 border border-white/5">
               <ReactMarkdown>{analysis}</ReactMarkdown>
               
               {chatHistory.length > 0 && (
@@ -285,9 +284,9 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
                   <h3 className="text-xl font-cinzel text-amber-200 mb-6">Numerical Queries & Insights</h3>
                   <div className="space-y-6">
                     {chatHistory.map((msg, idx) => (
-                      <div key={idx} className="space-y-2">
-                        <p className={`text-[10px] font-black uppercase tracking-widest ${msg.role === 'user' ? 'text-amber-500' : 'text-slate-500'}`}>
-                          {msg.role === 'user' ? 'Question' : 'Response'}
+                      <div key={idx} className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                        <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${msg.role === 'user' ? 'text-amber-500' : 'text-slate-400'}`}>
+                          {msg.role === 'user' ? 'Q:' : 'A:'}
                         </p>
                         <div className="text-slate-300 text-sm italic leading-relaxed">
                            <ReactMarkdown>{msg.text}</ReactMarkdown>
@@ -298,9 +297,10 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
                 </div>
               )}
 
-              <div className="mt-12 pt-8 border-t border-white/10 opacity-40 not-prose">
-                <p className="text-[10px] italic leading-relaxed text-center">
-                  Disclaimer regarding AI Generation: This application utilizes Artificial Intelligence to analyze birth data based on Vedic astrological principles. The resulting content is intended for informational, educational, and personal insight purposes only. Please be aware that AI-generated interpretations may lack the nuance of a human astrologer and may occasionally produce inconsistent results. The information provided herein should not be construed as professional advice (medical, legal, or financial) or factual prophecy. The creators assume no liability for choices made based on this algorithmic analysis.
+              <div className="mt-12 pt-8 border-t border-white/10 opacity-60 not-prose">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2">Disclaimer regarding AI Generation</p>
+                <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic">
+                  This application utilizes Artificial Intelligence to analyze birth data based on Vedic astrological principles. The resulting content is intended for informational, educational, and personal insight purposes only. Please be aware that AI-generated interpretations may lack the nuance of a human astrologer and may occasionally produce inconsistent results. The information provided herein should not be construed as professional advice (medical, legal, or financial) or factual prophecy. The creators assume no liability for choices made based on this algorithmic analysis.
                 </p>
               </div>
             </div>

@@ -40,7 +40,6 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 2000): Pr
 
 export const getCoordinates = async (location: string) => {
   const cacheKey = `coords_${location.toLowerCase().replace(/\s/g, '_')}`;
-  // Fix: changed 'cached' to 'cacheKey' to avoid using the variable before its declaration
   const cached = StorageService.get<any>(cacheKey) || null;
   if (cached) return cached;
 
@@ -147,9 +146,9 @@ export const askNumerologyQuestion = async (q: string, dob: string, mulank: numb
     const chatHistory = history.map(msg => ({ role: msg.role === 'user' ? 'user' : 'model', parts: [{ text: msg.text }] }));
     const context = `User DOB: ${dob}, Mulank: ${mulank}, Bhagyank: ${bhagyank}, Loshu Grid: ${JSON.stringify(loshu)}`;
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview',
       contents: [...chatHistory, { role: 'user', parts: [{ text: q }] }],
-      config: { systemInstruction: `You are a Numerology expert. Based on the user's numerological data: ${context}, provide insights and answers. Language: ${lang}. Current Date: ${getCurrentDate()}.` }
+      config: { systemInstruction: `You are a Master Numerologist. Answer questions based on the provided numbers (Mulank, Bhagyank) and the Loshu Grid context: ${context}. Language: ${lang}. Current Date: ${getCurrentDate()}. Provide deep insights into name correction, career, and life paths.` }
     });
     return response.text || "The numbers are currently unclear.";
   });

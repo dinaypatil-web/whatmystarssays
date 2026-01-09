@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ZODIAC_SIGNS } from '../constants';
 import { Timeframe, PredictionResult, Language } from '../types';
@@ -43,7 +42,7 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
   };
 
   const downloadPDF = async () => {
-    const elementId = 'horoscope-content';
+    const elementId = 'horoscope-report-area';
     const element = document.getElementById(elementId);
     if (!element || exporting) return;
 
@@ -58,6 +57,9 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
           if (clonedElement) {
             clonedElement.style.backgroundColor = 'white';
             clonedElement.style.color = 'black';
+            clonedElement.style.padding = '40px';
+            clonedElement.style.borderRadius = '0px';
+
             const allElements = clonedElement.querySelectorAll('*');
             allElements.forEach((el: any) => {
               el.style.backgroundColor = 'transparent';
@@ -91,7 +93,7 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`${selectedSign}_Reading_2026.pdf`);
+      pdf.save(`${selectedSign}_Horoscope_${timeframe}_2026.pdf`);
     } catch (err) {
       console.error("PDF Export failed", err);
     } finally {
@@ -158,19 +160,19 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
       )}
 
       {prediction && !loading && !error && (
-        <div id="horoscope-content" className="space-y-8 bg-[#010204] rounded-[40px] p-1 animate-in slide-in-from-bottom-8 duration-1000">
-          <div className="flex justify-between items-center no-print px-4 py-2">
+        <div id="horoscope-report-area" className="space-y-8 bg-[#010204] rounded-[40px] p-6 border border-white/5 animate-in slide-in-from-bottom-8 duration-1000">
+          <div className="flex justify-between items-center no-print">
             <h2 className="text-2xl md:text-3xl font-cinzel text-amber-100">{selectedSign} {timeframe} Reading</h2>
             <button 
               onClick={downloadPDF}
               disabled={exporting}
               className="bg-white/5 hover:bg-white/10 text-white text-[10px] px-5 py-2.5 rounded-full flex items-center gap-2 border border-white/10 disabled:opacity-50"
             >
-              {exporting ? 'Exporting...' : 'Save PDF'}
+              {exporting ? 'Exporting...' : 'Save Full Reading'}
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="col-span-1 md:col-span-2 mirror-card p-8 rounded-[32px] border-amber-500/10 shadow-[0_0_50px_rgba(245,158,11,0.05)]">
               <h3 className="text-lg font-cinzel text-amber-400 mb-4 flex items-center gap-3">
                 <span className="opacity-60">🔮</span> Cosmic Overview (2026)
@@ -183,9 +185,10 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
             <ResultCard title="Relationships" content={prediction.relationships} icon="💍" />
           </div>
 
-          <div className="p-8 opacity-40">
-            <p className="text-[10px] italic leading-relaxed text-center">
-              Disclaimer regarding AI Generation: This application utilizes Artificial Intelligence to analyze birth data based on Vedic astrological principles. The resulting content is intended for informational, educational, and personal insight purposes only. Please be aware that AI-generated interpretations may lack the nuance of a human astrologer and may occasionally produce inconsistent results.
+          <div className="mt-8 pt-8 border-t border-white/10 opacity-60">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2 text-center">Disclaimer regarding AI Generation</p>
+            <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic text-center max-w-2xl mx-auto">
+              This application utilizes Artificial Intelligence to analyze astrological data. The content is for informational, educational, and personal insight purposes only. AI interpretations may lack the nuance of a human astrologer. This should not be construed as professional medical, legal, or financial advice.
             </p>
           </div>
         </div>

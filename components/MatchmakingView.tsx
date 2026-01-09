@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { BirthDetails, MatchmakingDetails, Language } from '../types';
 import { getMatchmaking, getCoordinates } from '../services/geminiService';
@@ -20,7 +19,6 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  const [coords, setCoords] = useState<{ boy?: any, girl?: any }>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +35,6 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
         girl: { ...details.girl, latitude: girlCoords.lat, longitude: girlCoords.lng }
       };
 
-      setCoords({ boy: boyCoords, girl: girlCoords });
       const data = await getMatchmaking(enrichedDetails, language);
       setResult(data);
     } catch (err: any) {
@@ -49,7 +46,7 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
   };
 
   const downloadPDF = async () => {
-    const elementId = 'matchmaking-content';
+    const elementId = 'matchmaking-report-area';
     const element = document.getElementById(elementId);
     if (!element || exporting) return;
 
@@ -64,6 +61,9 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
           if (clonedElement) {
             clonedElement.style.backgroundColor = 'white';
             clonedElement.style.color = 'black';
+            clonedElement.style.padding = '40px';
+            clonedElement.style.borderRadius = '0px';
+
             const allElements = clonedElement.querySelectorAll('*');
             allElements.forEach((el: any) => {
               el.style.backgroundColor = 'transparent';
@@ -100,7 +100,7 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`Matchmaking_Report_2026_${details.boy.name}_${details.girl.name}.pdf`);
+      pdf.save(`Ashtakoot_Match_Report_${details.boy.name}_${details.girl.name}.pdf`);
     } catch (err) {
       console.error("PDF Export failed", err);
     } finally {
@@ -158,8 +158,8 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
 
       {result && !loading && (
         <div className="max-w-4xl mx-auto space-y-6 animate-in zoom-in-95 duration-500">
-          <div id="matchmaking-content" className="bg-[#010204] rounded-3xl p-1">
-            <div className="bg-slate-800/20 p-8 rounded-3xl border border-white/10 prose prose-invert prose-rose max-w-none shadow-2xl">
+          <div id="matchmaking-report-area" className="bg-[#010204] rounded-3xl p-8 border border-white/5 space-y-12">
+            <div className="bg-slate-800/20 p-8 rounded-3xl border border-white/10 prose prose-invert prose-rose max-w-none shadow-2xl relative">
               <div className="flex justify-between items-start mb-8 not-prose no-print">
                 <div className="flex items-center gap-6">
                   <div className="text-center">
@@ -177,15 +177,16 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
                   disabled={exporting}
                   className="bg-slate-700 hover:bg-slate-600 text-white text-xs px-4 py-2 rounded-lg flex items-center gap-2 transition-colors border border-slate-600 no-print"
                 >
-                  {exporting ? 'Exporting...' : 'Save Report'}
+                  {exporting ? 'Processing...' : 'Save Full Report'}
                 </button>
               </div>
 
               <ReactMarkdown>{result}</ReactMarkdown>
 
-              <div className="mt-12 pt-6 border-t border-white/10 opacity-40 not-prose">
-                <p className="text-[10px] italic leading-relaxed text-center">
-                  Disclaimer regarding AI Generation: This application utilizes Artificial Intelligence to analyze birth data based on Vedic astrological principles. The resulting content is intended for informational, educational, and personal insight purposes only.
+              <div className="mt-12 pt-8 border-t border-white/10 opacity-60 not-prose">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2 text-center">Disclaimer regarding AI Generation</p>
+                <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic text-center max-w-2xl mx-auto">
+                  This comparison is performed by Artificial Intelligence based on traditional Vedic Ashtakoot parameters. The results are for informational purposes only. AI analysis may lack human intuition and cultural depth. Consult a professional Vedic astrologer for critical life decisions.
                 </p>
               </div>
             </div>

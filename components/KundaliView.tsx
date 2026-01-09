@@ -79,7 +79,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
   };
 
   const downloadPDF = async () => {
-    const elementId = 'kundali-report';
+    const elementId = 'kundali-report-area';
     const element = document.getElementById(elementId);
     if (!element || exporting) return;
 
@@ -94,7 +94,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
           if (clonedElement) {
             clonedElement.style.backgroundColor = 'white';
             clonedElement.style.color = 'black';
-            clonedElement.style.padding = '20px';
+            clonedElement.style.padding = '40px';
             clonedElement.style.borderRadius = '0px';
             clonedElement.style.border = 'none';
 
@@ -148,7 +148,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`Life_Kundali_Report_${details.name}.pdf`);
+      pdf.save(`Kundali_Full_Report_${details.name}.pdf`);
     } catch (err) {
       console.error("PDF generation failed", err);
     } finally {
@@ -196,7 +196,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
 
       {analysis && !loading && (
         <div className="space-y-12 animate-in fade-in duration-1000">
-          <div id="kundali-report" className="bg-[#010204] rounded-[40px] border border-amber-500/10 overflow-hidden shadow-[0_0_100px_rgba(251,191,36,0.05)]">
+          <div id="kundali-report-area" className="bg-[#010204] rounded-[40px] border border-amber-500/10 overflow-hidden shadow-[0_0_100px_rgba(251,191,36,0.05)]">
             <div className="p-6 md:p-10 border-b border-white/10 flex flex-col md:flex-row justify-between items-center gap-6 bg-gradient-to-b from-white/5 to-transparent">
               <div>
                 <h2 className="text-3xl font-cinzel text-amber-400">The Mirror of Fate: {details.name}</h2>
@@ -207,7 +207,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                 </div>
               </div>
               <button onClick={downloadPDF} disabled={exporting} className="bg-white/10 hover:bg-white/20 text-white text-[10px] px-8 py-3 rounded-full border border-white/10 no-print transition-all font-black uppercase tracking-widest">
-                {exporting ? 'Processing...' : 'Save Life Report'}
+                {exporting ? 'Processing...' : 'Save Full Life Report'}
               </button>
             </div>
 
@@ -240,11 +240,11 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                     <h3 className="text-xl font-cinzel text-amber-200 mb-6">Celestial Queries & Insights</h3>
                     <div className="space-y-6">
                       {chatHistory.map((msg, idx) => (
-                        <div key={idx} className="space-y-2">
-                          <p className={`text-[10px] font-black uppercase tracking-widest ${msg.role === 'user' ? 'text-amber-500' : 'text-slate-500'}`}>
-                            {msg.role === 'user' ? 'Question' : 'Counsel'}
+                        <div key={idx} className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                          <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${msg.role === 'user' ? 'text-amber-500' : 'text-slate-400'}`}>
+                            {msg.role === 'user' ? 'Q:' : 'A:'}
                           </p>
-                          <div className="text-slate-300 text-sm italic">
+                          <div className="text-slate-300 text-sm leading-relaxed">
                              <ReactMarkdown>{msg.text}</ReactMarkdown>
                           </div>
                         </div>
@@ -253,9 +253,10 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                   </div>
                 )}
 
-                <div className="mt-16 pt-8 border-t border-white/10 opacity-40">
-                  <p className="text-[10px] italic leading-relaxed">
-                    Disclaimer regarding AI Generation: This application utilizes Artificial Intelligence to analyze birth data based on Vedic astrological principles. The resulting content is intended for informational, educational, and personal insight purposes only. Please be aware that AI-generated interpretations may lack the nuance of a human astrologer and may occasionally produce inconsistent results. The information provided herein should not be construed as professional advice (medical, legal, or financial) or factual prophecy. The creators assume no liability for choices made based on this algorithmic analysis.
+                <div className="mt-16 pt-8 border-t border-white/10 opacity-60">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2">Disclaimer regarding AI Generation</p>
+                  <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic">
+                    This application utilizes Artificial Intelligence to analyze birth data based on Vedic astrological principles. The resulting content is intended for informational, educational, and personal insight purposes only. Please be aware that AI-generated interpretations may lack the nuance of a human astrologer and may occasionally produce inconsistent results. The information provided herein should not be construed as professional advice (medical, legal, or financial) or factual prophecy. The creators assume no liability for choices made based on this algorithmic analysis.
                   </p>
                 </div>
               </div>
