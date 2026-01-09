@@ -98,24 +98,33 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
 export const getKundaliAnalysis = async (details: BirthDetails, language: Language): Promise<KundaliResponse> => {
   return await withRetry(async () => {
     const ai = new GoogleGenAI({ apiKey: getSafeApiKey() });
-    const prompt = `Generate a high-precision, technical Janma Kundali Analysis (D1 Chart) for: ${details.name}, DOB: ${details.dob}, TOB: ${details.tob}, Place: ${details.location}.
-    Language: ${language}.
+    const prompt = `Generate a high-precision, technical Janma Kundali "Life Map" for: ${details.name}, DOB: ${details.dob}, TOB: ${details.tob}, Place: ${details.location}.
+    Language: ${language}. Current Date: ${getCurrentDate()}.
     
-    CRITICAL: Emulate professional Astrology API output. Include:
-    1. **Planetary Positions Table**: For all 9 planets, include Rashi, Degrees, Minutes, and Nakshatra.
-    2. **Detailed Life Report**: 12 Houses analysis, Mahadasha timeline, and specific Vedic Remedies.
+    CRITICAL: This is a professional-grade Life Analysis. You MUST include:
+    1. **Vedic Profile**: Detailed Varna, Gana, Nakshatra, and Moon Sign.
+    2. **Planetary Positions Table**: Degrees, Minutes, Rashi, and Nakshatra for Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu.
+    3. **Complete Life Report (NOT limited to current year)**:
+       - **12 House Analysis**: Detailed impact of planets on each house for the entire life.
+       - **Vimshottari Mahadasha Timeline**: A structured list of major planetary periods (Dasha) and their durations throughout the user's life.
+       - **Comprehensive Shani Sade Sati Analysis**: A detailed timeline of all three phases of Sade Sati (past, current, and future cycles) based on birth Moon Sign and Saturn transits.
+       - **Remedies & Gemstones**: Specific rituals and stones for lifetime benefit.
     
     Return a JSON object:
-    - "report": (Markdown string)
+    - "report": (Professional Markdown string with bold headers and tables)
     - "chart": (object) {"1": ["Planets"], ...}
-    - "lagnaSign": (number 1-12)`;
+    - "lagnaSign": (number 1-12)
+    - "varna": (string)
+    - "gana": (string)
+    - "nakshatra": (string)
+    - "moonSign": (string)`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: prompt,
       config: { 
         responseMimeType: "application/json",
-        thinkingConfig: { thinkingBudget: 20000 }
+        thinkingConfig: { thinkingBudget: 25000 }
       }
     });
     return parseAIResponse(response.text || "{}");
@@ -129,7 +138,7 @@ export const askKundaliQuestion = async (q: string, context: string, history: Ch
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: [...chatHistory, { role: 'user', parts: [{ text: q }] }],
-      config: { systemInstruction: `You are the User's Personal Vedic Guide. Use the provided Kundali context: ${context}. Language: ${lang}. Current Date: ${getCurrentDate()}.` }
+      config: { systemInstruction: `You are the User's Personal Vedic Guide. Use the provided Kundali context: ${context}. Language: ${lang}. Current Date: ${getCurrentDate()}. Focus on providing life-long guidance.` }
     });
     return response.text || "The cosmos is currently silent.";
   });

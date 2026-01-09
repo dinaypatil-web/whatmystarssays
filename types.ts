@@ -47,5 +47,9 @@ export interface KundaliChartData {
 export interface KundaliResponse {
   report: string;
   chart: KundaliChartData;
-  lagnaSign: number; // 1-12 representing the zodiac sign in the 1st house
+  lagnaSign: number; 
+  varna: string;
+  gana: string;
+  nakshatra: string;
+  moonSign: string;
 }

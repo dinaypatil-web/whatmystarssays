@@ -89,7 +89,6 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
-        // Ensure desktop layout even on mobile
         windowWidth: 1024,
         onclone: (clonedDoc) => {
           const clonedElement = clonedDoc.getElementById(elementId);
@@ -151,7 +150,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`Full_Kundali_Report_${details.name}.pdf`);
+      pdf.save(`Full_Life_Report_${details.name}.pdf`);
     } catch (err) {
       console.error("PDF generation failed", err);
     } finally {
@@ -165,7 +164,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
         <section className="mirror-card p-6 md:p-12 rounded-3xl animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="mb-10 text-center">
             <h2 className="text-3xl md:text-5xl font-cinzel text-amber-100 mb-4 tracking-tight">Vedic Life Analysis</h2>
-            <p className="text-slate-400 max-w-xl mx-auto text-sm md:text-base">Decode your entire life journey, from personality traits to long-term planetary dashas.</p>
+            <p className="text-slate-400 max-w-xl mx-auto text-sm md:text-base">Decode your entire life journey, from personality traits to Vimshottari Mahadashas, lifetime Saadesati timelines, and house interpretations.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8 max-w-3xl mx-auto">
@@ -181,7 +180,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
               <InputField label="Birth Time" type="time" value={details.tob} onChange={(v) => setDetails({ ...details, tob: v })} />
             </div>
             <button disabled={loading} className="w-full glossy-button text-white font-bold py-4 rounded-2xl text-lg tracking-widest uppercase font-cinzel shadow-2xl">
-              Generate Life Kundali
+              Generate Life Map
             </button>
           </form>
         </section>
@@ -193,7 +192,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
             <div className="w-24 h-24 border-4 border-amber-500/10 border-t-amber-500 rounded-full animate-spin"></div>
             <div className="absolute inset-0 flex items-center justify-center text-2xl animate-pulse">☀️</div>
           </div>
-          <p className="text-2xl font-cinzel text-amber-200 tracking-widest">Consulting Celestial Akashic Records...</p>
+          <p className="text-2xl font-cinzel text-amber-200 tracking-widest text-center">Constructing your 120-year Life Map...</p>
         </div>
       )}
 
@@ -202,7 +201,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
           <div id="kundali-report-area" className="bg-[#010204] rounded-[40px] border border-amber-500/10 overflow-hidden shadow-[0_0_100px_rgba(251,191,36,0.05)]">
             <div className="p-6 md:p-10 border-b border-white/10 flex flex-col md:flex-row justify-between items-center gap-6 bg-gradient-to-b from-white/5 to-transparent">
               <div>
-                <h2 className="text-3xl font-cinzel text-amber-400">The Mirror of Fate: {details.name}</h2>
+                <h2 className="text-3xl font-cinzel text-amber-400">Life Map Report: {details.name}</h2>
                 <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">
                   <span className="flex items-center gap-1">📅 {details.dob}</span> 
                   <span className="flex items-center gap-1">⏰ {details.tob}</span> 
@@ -218,7 +217,14 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
               <div className="lg:col-span-5 space-y-8">
                 <KundaliChart data={analysis.chart} lagnaSign={analysis.lagnaSign} />
                 
-                <div className="p-8 bg-amber-500/5 border border-amber-500/10 rounded-[32px] no-print">
+                <div className="grid grid-cols-2 gap-4 p-6 bg-amber-500/5 border border-amber-500/10 rounded-[32px]">
+                   <VedicSummaryItem label="Varna" value={analysis.varna} icon="📿" />
+                   <VedicSummaryItem label="Gana" value={analysis.gana} icon="🛡️" />
+                   <VedicSummaryItem label="Nakshatra" value={analysis.nakshatra} icon="✨" />
+                   <VedicSummaryItem label="Moon Sign" value={analysis.moonSign} icon="🌙" />
+                </div>
+
+                <div className="p-8 bg-slate-900/40 border border-white/5 rounded-[32px] no-print">
                    <h4 className="text-xs font-black text-amber-500 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
                      <span className="text-lg">✨</span> Chart Legend
                    </h4>
@@ -271,14 +277,14 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                <div className="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center text-2xl">🔮</div>
                <div>
                  <h3 className="text-2xl font-cinzel text-amber-200">Celestial Consultation</h3>
-                 <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Ask detailed questions about your life path</p>
+                 <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Ask detailed questions about your lifetime Mahadashas or Saadesati</p>
                </div>
             </div>
             
             <div className="max-h-[500px] overflow-y-auto space-y-6 pr-4 no-scrollbar border-y border-white/5 py-6">
               {chatHistory.length === 0 && (
                 <div className="text-center py-10 text-slate-600 text-sm italic font-light">
-                  "How will my career progress in my 40s?" • "Which gemstone is best for my health?"
+                  "How will my career progress during my Jupiter Mahadasha?" • "When is my next Sade Sati cycle starting?"
                 </div>
               )}
               {chatHistory.map((msg, idx) => (
@@ -297,7 +303,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                   <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-bounce" />
                   <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-bounce delay-75" />
                   <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-bounce delay-150" />
-                  Meditating on the stars...
+                  Consulting the Akashic records...
                 </div>
               )}
               <div ref={chatEndRef} />
@@ -308,14 +314,14 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                 value={userQuery} 
                 onChange={(e) => setUserQuery(e.target.value)} 
                 type="text" 
-                placeholder="Seek deeper insights from your chart..." 
+                placeholder="Seek deeper lifetime insights..." 
                 className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-5 text-sm focus:ring-1 focus:ring-amber-500 outline-none text-white transition-all placeholder-slate-700 font-medium" 
               />
               <button 
                 disabled={chatLoading || !userQuery.trim()} 
                 className="bg-amber-500 hover:bg-amber-400 text-slate-900 font-black px-10 rounded-2xl text-xs uppercase transition-all shadow-xl active:scale-95 disabled:opacity-50"
               >
-                Query Guide
+                Query
               </button>
             </form>
           </section>
@@ -328,6 +334,14 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
     </div>
   );
 };
+
+const VedicSummaryItem = ({ label, value, icon }: { label: string; value: string; icon: string }) => (
+  <div className="flex flex-col items-center justify-center p-3 text-center">
+    <span className="text-lg mb-1">{icon}</span>
+    <p className="text-[9px] uppercase font-black text-amber-500/60 tracking-widest">{label}</p>
+    <p className="text-xs font-bold text-slate-200 mt-0.5">{value}</p>
+  </div>
+);
 
 const InputField = ({ label, value, onChange, type = 'text', placeholder }: any) => (
   <div className="space-y-3">
