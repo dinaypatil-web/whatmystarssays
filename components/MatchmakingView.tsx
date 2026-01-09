@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { BirthDetails, MatchmakingDetails, Language } from '../types';
 import { getMatchmaking, getCoordinates } from '../services/geminiService';
@@ -56,9 +57,12 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
+        // Force desktop layout during capture
+        windowWidth: 1024,
         onclone: (clonedDoc) => {
           const clonedElement = clonedDoc.getElementById(elementId);
           if (clonedElement) {
+            clonedElement.style.width = '1024px';
             clonedElement.style.backgroundColor = 'white';
             clonedElement.style.color = 'black';
             clonedElement.style.padding = '40px';
@@ -100,7 +104,7 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`Ashtakoot_Match_Report_${details.boy.name}_${details.girl.name}.pdf`);
+      pdf.save(`Matchmaking_Report_${details.boy.name}_${details.girl.name}.pdf`);
     } catch (err) {
       console.error("PDF Export failed", err);
     } finally {
@@ -109,7 +113,7 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
   };
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-8 pb-12 px-2 md:px-0">
       {!result && !loading && (
         <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="text-center space-y-2">
@@ -158,8 +162,8 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
 
       {result && !loading && (
         <div className="max-w-4xl mx-auto space-y-6 animate-in zoom-in-95 duration-500">
-          <div id="matchmaking-report-area" className="bg-[#010204] rounded-3xl p-8 border border-white/5 space-y-12">
-            <div className="bg-slate-800/20 p-8 rounded-3xl border border-white/10 prose prose-invert prose-rose max-w-none shadow-2xl relative">
+          <div id="matchmaking-report-area" className="bg-[#010204] rounded-3xl border border-white/5 space-y-12 overflow-hidden">
+            <div className="bg-slate-800/20 p-8 rounded-3xl prose prose-invert prose-rose max-w-none shadow-2xl relative">
               <div className="flex justify-between items-start mb-8 not-prose no-print">
                 <div className="flex items-center gap-6">
                   <div className="text-center">
@@ -186,7 +190,7 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
               <div className="mt-12 pt-8 border-t border-white/10 opacity-60 not-prose">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2 text-center">Disclaimer regarding AI Generation</p>
                 <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic text-center max-w-2xl mx-auto">
-                  This comparison is performed by Artificial Intelligence based on traditional Vedic Ashtakoot parameters. The results are for informational purposes only. AI analysis may lack human intuition and cultural depth. Consult a professional Vedic astrologer for critical life decisions.
+                  This comparison is performed by Artificial Intelligence based on traditional Vedic Ashtakoot parameters. The results are for informational purposes only. AI analysis may lack human intuition and cultural depth. Consult a professional Vedic astrologer for critical life decisions. The creators assume no liability for choices made based on this algorithmic analysis.
                 </p>
               </div>
             </div>
@@ -194,7 +198,7 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
           
           <button 
             onClick={() => setResult(null)}
-            className="text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-2 mx-auto no-print"
+            className="text-slate-500 hover:text-slate-300 transition-colors flex items-center gap-2 mx-auto no-print text-xs uppercase font-bold tracking-widest py-4"
           >
             <span>↺</span> Perform another match
           </button>
@@ -216,7 +220,7 @@ const ProfileForm: React.FC<{
     </h3>
     <div className="space-y-4">
       <div className="space-y-1">
-        <label className="text-[10px] text-slate-500 uppercase font-bold ml-1">Full Name</label>
+        <label className="text-[10px] text-slate-500 uppercase font-bold ml-1 tracking-widest">Full Name</label>
         <input
           required
           placeholder="e.g. Aryan Khan"
@@ -227,7 +231,7 @@ const ProfileForm: React.FC<{
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
-          <label className="text-[10px] text-slate-500 uppercase font-bold ml-1">Date</label>
+          <label className="text-[10px] text-slate-500 uppercase font-bold ml-1 tracking-widest">Date</label>
           <input
             required
             type="date"
@@ -237,7 +241,7 @@ const ProfileForm: React.FC<{
           />
         </div>
         <div className="space-y-1">
-          <label className="text-[10px] text-slate-500 uppercase font-bold ml-1">Time</label>
+          <label className="text-[10px] text-slate-500 uppercase font-bold ml-1 tracking-widest">Time</label>
           <input
             required
             type="time"
@@ -248,7 +252,7 @@ const ProfileForm: React.FC<{
         </div>
       </div>
       <div className="space-y-1">
-        <label className="text-[10px] text-slate-500 uppercase font-bold ml-1">Birth Location</label>
+        <label className="text-[10px] text-slate-500 uppercase font-bold ml-1 tracking-widest">Birth Location</label>
         <input
           required
           placeholder="City, State"

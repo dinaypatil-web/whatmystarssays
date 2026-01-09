@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ZODIAC_SIGNS } from '../constants';
 import { Timeframe, PredictionResult, Language } from '../types';
@@ -52,9 +53,12 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
+        // Force desktop layout during capture
+        windowWidth: 1024,
         onclone: (clonedDoc) => {
           const clonedElement = clonedDoc.getElementById(elementId);
           if (clonedElement) {
+            clonedElement.style.width = '1024px';
             clonedElement.style.backgroundColor = 'white';
             clonedElement.style.color = 'black';
             clonedElement.style.padding = '40px';
@@ -161,7 +165,7 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
 
       {prediction && !loading && !error && (
         <div id="horoscope-report-area" className="space-y-8 bg-[#010204] rounded-[40px] p-6 border border-white/5 animate-in slide-in-from-bottom-8 duration-1000">
-          <div className="flex justify-between items-center no-print">
+          <div className="flex justify-between items-center no-print px-4">
             <h2 className="text-2xl md:text-3xl font-cinzel text-amber-100">{selectedSign} {timeframe} Reading</h2>
             <button 
               onClick={downloadPDF}
@@ -172,7 +176,7 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
             <div className="col-span-1 md:col-span-2 mirror-card p-8 rounded-[32px] border-amber-500/10 shadow-[0_0_50px_rgba(245,158,11,0.05)]">
               <h3 className="text-lg font-cinzel text-amber-400 mb-4 flex items-center gap-3">
                 <span className="opacity-60">🔮</span> Cosmic Overview (2026)
@@ -187,8 +191,8 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
 
           <div className="mt-8 pt-8 border-t border-white/10 opacity-60">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2 text-center">Disclaimer regarding AI Generation</p>
-            <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic text-center max-w-2xl mx-auto">
-              This application utilizes Artificial Intelligence to analyze astrological data. The content is for informational, educational, and personal insight purposes only. AI interpretations may lack the nuance of a human astrologer. This should not be construed as professional medical, legal, or financial advice.
+            <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic text-center max-w-2xl mx-auto px-6">
+              This application utilizes Artificial Intelligence to analyze astrological data. The content is for informational, educational, and personal insight purposes only. AI interpretations may lack the nuance of a human astrologer. This should not be construed as professional medical, legal, or financial advice. The creators assume no liability for choices made based on this algorithmic analysis.
             </p>
           </div>
         </div>

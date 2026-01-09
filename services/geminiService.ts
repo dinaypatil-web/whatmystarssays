@@ -64,8 +64,8 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
 
   const result = await withRetry(async () => {
     const ai = new GoogleGenAI({ apiKey: getSafeApiKey() });
-    const prompt = `As a Vedic Astrologer, current date ${getCurrentDate()}. Provide a ${timeframe} horoscope for Moon Sign ${sign} in ${language}. 
-    Focus on planetary transits relevant to this timeframe.`;
+    const prompt = `As a Master Vedic Astrologer, current date ${getCurrentDate()}. Provide a ${timeframe} horoscope for Moon Sign ${sign} in ${language}. 
+    Analyze precise planetary transits and their impact on Career, Health, Relationships, and Finance.`;
     
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -75,14 +75,14 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            overview: { type: Type.STRING, description: "General summary of the period" },
-            career: { type: Type.STRING, description: "Job and professional outlook" },
-            health: { type: Type.STRING, description: "Physical and mental well-being" },
-            relationships: { type: Type.STRING, description: "Love, family, and social life" },
-            finance: { type: Type.STRING, description: "Money and investment guidance" },
-            spirituality: { type: Type.STRING, description: "Inner growth and peace" },
-            luckyColor: { type: Type.STRING, description: "The color for the period" },
-            luckyNumber: { type: Type.STRING, description: "The number for the period" }
+            overview: { type: Type.STRING },
+            career: { type: Type.STRING },
+            health: { type: Type.STRING },
+            relationships: { type: Type.STRING },
+            finance: { type: Type.STRING },
+            spirituality: { type: Type.STRING },
+            luckyColor: { type: Type.STRING },
+            luckyNumber: { type: Type.STRING }
           },
           required: ["overview", "career", "health", "relationships", "finance", "spirituality", "luckyColor", "luckyNumber"]
         }
@@ -98,22 +98,17 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
 export const getKundaliAnalysis = async (details: BirthDetails, language: Language): Promise<KundaliResponse> => {
   return await withRetry(async () => {
     const ai = new GoogleGenAI({ apiKey: getSafeApiKey() });
-    const prompt = `As a Master Vedic Astrologer, generate an extensive and detailed Life-Long Janma Kundali Analysis for: ${details.name}, DOB: ${details.dob}, TOB: ${details.tob}, Place: ${details.location}.
+    const prompt = `Generate a high-precision, technical Janma Kundali Analysis (D1 Chart) for: ${details.name}, DOB: ${details.dob}, TOB: ${details.tob}, Place: ${details.location}.
     Language: ${language}.
     
-    The report MUST include:
-    1. **Summary**: A high-level executive summary of the soul's destiny and dominant planetary influences.
-    2. **Core Traits**: Psychological profile based on Lagna (Ascendant) and Moon sign.
-    3. **Planetary Positions**: Degrees, Nakshatras, and their specific impacts.
-    4. **The 12 Houses**: Detailed life predictions (Wealth, Siblings, Comforts, Education, Marriage, Enemies, Longevity, Luck, Career, Gains, Losses).
-    5. **Mahadasha & Antardasha**: A timeline of the major planetary periods for the user's entire life.
-    6. **Major Life Areas**: Future predictions for Career milestones, Marriage/Relationships, and Health across decades.
-    7. **Vedic Remedies**: Gemstones, Rudraksha, Mantras, and Charity recommendations.
-
-    You MUST return a JSON object with:
-    1. "report": (string) The full analysis in professional Markdown format.
-    2. "chart": (object) Map of 1 house to planets array: {"1": ["Mo"], "2": [], ...}
-    3. "lagnaSign": (number) Sign index (1-12) in the 1st House.`;
+    CRITICAL: Emulate professional Astrology API output. Include:
+    1. **Planetary Positions Table**: For all 9 planets, include Rashi, Degrees, Minutes, and Nakshatra.
+    2. **Detailed Life Report**: 12 Houses analysis, Mahadasha timeline, and specific Vedic Remedies.
+    
+    Return a JSON object:
+    - "report": (Markdown string)
+    - "chart": (object) {"1": ["Planets"], ...}
+    - "lagnaSign": (number 1-12)`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
@@ -148,7 +143,7 @@ export const askNumerologyQuestion = async (q: string, dob: string, mulank: numb
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: [...chatHistory, { role: 'user', parts: [{ text: q }] }],
-      config: { systemInstruction: `You are a Master Numerologist. Answer questions based on the provided numbers (Mulank, Bhagyank) and the Loshu Grid context: ${context}. Language: ${lang}. Current Date: ${getCurrentDate()}. Provide deep insights into name correction, career, and life paths.` }
+      config: { systemInstruction: `You are a Master Numerologist. Answer questions based on Mulank, Bhagyank and Loshu Grid context: ${context}. Language: ${lang}.` }
     });
     return response.text || "The numbers are currently unclear.";
   });
@@ -157,7 +152,9 @@ export const askNumerologyQuestion = async (q: string, dob: string, mulank: numb
 export const getMatchmaking = async (details: MatchmakingDetails, language: Language) => {
   return await withRetry(async () => {
     const ai = new GoogleGenAI({ apiKey: getSafeApiKey() });
-    const prompt = `Ashtakoot Milan compatibility report for ${details.boy.name} & ${details.girl.name}. Provide Guna scores out of 36 and detailed relationship guidance. Language: ${language}. Return as Markdown.`;
+    const prompt = `Ashtakoot Milan compatibility report (36 Guna) for ${details.boy.name} & ${details.girl.name}. 
+    Provide technical Guna scores (Varna, Vashya, Tara, Yoni, Maitri, Gana, Bhakoot, Nadi) and detailed relationship compatibility. 
+    Language: ${language}. Return as professional Markdown.`;
     const response = await ai.models.generateContent({ model: 'gemini-3-pro-preview', contents: prompt });
     return response.text || "";
   });
@@ -166,7 +163,8 @@ export const getMatchmaking = async (details: MatchmakingDetails, language: Lang
 export const getNumerologyAnalysis = async (dob: string, m: number, b: number, loshu: any, lang: Language) => {
   return await withRetry(async () => {
     const ai = new GoogleGenAI({ apiKey: getSafeApiKey() });
-    const prompt = `Numerology analysis for DOB: ${dob}. Mulank: ${m}, Bhagyank: ${b}. Life path predictions and Loshu grid interpretations. Language: ${lang}. Return as Markdown.`;
+    const prompt = `Technical Numerology analysis for DOB: ${dob}. Mulank: ${m}, Bhagyank: ${b}. Interpret the Loshu grid: ${JSON.stringify(loshu)}. 
+    Language: ${lang}. Return as Markdown.`;
     const response = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt });
     return response.text || "";
   });
@@ -178,7 +176,7 @@ export const getPalmistryAnalysis = async (img: string, lang: Language) => {
     const base64Data = img.split(',')[1] || img;
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: { parts: [{ inlineData: { data: base64Data, mimeType: 'image/jpeg' } }, { text: `Read this palm for personality, longevity, wealth, and career. Provide specific life predictions in ${lang}.` }] }
+      contents: { parts: [{ inlineData: { data: base64Data, mimeType: 'image/jpeg' } }, { text: `Read this palm for personality, longevity, wealth, and career in ${lang}.` }] }
     });
     return response.text || "";
   });
