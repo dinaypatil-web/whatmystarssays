@@ -88,7 +88,7 @@ const PalmistryView: React.FC<PalmistryViewProps> = ({ language }) => {
   };
 
   const downloadPDF = async () => {
-    const elementId = 'palm-content';
+    const elementId = 'palm-report-area';
     const element = document.getElementById(elementId);
     if (!element || exporting) return;
 
@@ -98,11 +98,16 @@ const PalmistryView: React.FC<PalmistryViewProps> = ({ language }) => {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
+        windowWidth: 1024,
         onclone: (clonedDoc) => {
           const clonedElement = clonedDoc.getElementById(elementId);
           if (clonedElement) {
+            clonedElement.style.width = '1024px';
             clonedElement.style.backgroundColor = 'white';
             clonedElement.style.color = 'black';
+            clonedElement.style.padding = '40px';
+            clonedElement.style.borderRadius = '0px';
+
             const allElements = clonedElement.querySelectorAll('*');
             allElements.forEach((el: any) => {
               el.style.backgroundColor = 'transparent';
@@ -208,7 +213,7 @@ const PalmistryView: React.FC<PalmistryViewProps> = ({ language }) => {
       )}
 
       {analysis && !loading && (
-        <div id="palm-content" className="space-y-6 animate-in slide-in-from-bottom-10 duration-700 bg-[#010204] rounded-3xl p-1">
+        <div id="palm-report-area" className="space-y-6 animate-in slide-in-from-bottom-10 duration-700 bg-[#010204] rounded-3xl p-1">
            <div className="bg-slate-800/20 p-6 rounded-2xl border border-white/10 flex flex-col md:flex-row gap-8 items-start">
              <div className="w-full md:w-64 space-y-4 no-print">
                 <div className="rounded-2xl overflow-hidden border border-white/10 shadow-lg">
@@ -219,11 +224,18 @@ const PalmistryView: React.FC<PalmistryViewProps> = ({ language }) => {
                 <div className="flex justify-between items-center no-print">
                    <h2 className="text-2xl font-cinzel text-amber-400">Palmistry Revelation</h2>
                    <button onClick={downloadPDF} disabled={exporting} className="bg-slate-700 hover:bg-slate-600 text-white text-xs px-4 py-2 rounded-lg transition-colors border border-slate-600">
-                     {exporting ? 'Exporting...' : 'Save PDF'}
+                     {exporting ? 'Processing...' : 'Save Full Report'}
                    </button>
                 </div>
                 <div className="bg-slate-900/60 p-8 rounded-3xl border border-white/5 prose prose-invert prose-amber max-w-none shadow-inner leading-relaxed">
                    <ReactMarkdown>{analysis}</ReactMarkdown>
+                   
+                   <div className="mt-12 pt-8 border-t border-white/10 opacity-60 not-prose">
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2">Disclaimer regarding AI Generation</p>
+                      <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic">
+                        This application utilizes Artificial Intelligence to analyze biometric palm data based on Vedic principles. The resulting content is for informational purposes only. AI interpretations may lack the physical intuition of a human palmist. No life decisions should be based solely on these algorithmic findings.
+                      </p>
+                   </div>
                 </div>
              </div>
            </div>

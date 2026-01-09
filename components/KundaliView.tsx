@@ -89,9 +89,12 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
+        // Ensure desktop layout even on mobile
+        windowWidth: 1024,
         onclone: (clonedDoc) => {
           const clonedElement = clonedDoc.getElementById(elementId);
           if (clonedElement) {
+            clonedElement.style.width = '1024px';
             clonedElement.style.backgroundColor = 'white';
             clonedElement.style.color = 'black';
             clonedElement.style.padding = '40px';
@@ -148,7 +151,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`Kundali_Full_Report_${details.name}.pdf`);
+      pdf.save(`Full_Kundali_Report_${details.name}.pdf`);
     } catch (err) {
       console.error("PDF generation failed", err);
     } finally {
@@ -242,7 +245,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                       {chatHistory.map((msg, idx) => (
                         <div key={idx} className="bg-white/5 p-4 rounded-2xl border border-white/5">
                           <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${msg.role === 'user' ? 'text-amber-500' : 'text-slate-400'}`}>
-                            {msg.role === 'user' ? 'Q:' : 'A:'}
+                            {msg.role === 'user' ? 'Question' : 'Counsel'}
                           </p>
                           <div className="text-slate-300 text-sm leading-relaxed">
                              <ReactMarkdown>{msg.text}</ReactMarkdown>
@@ -254,10 +257,10 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                 )}
 
                 <div className="mt-16 pt-8 border-t border-white/10 opacity-60">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2">Disclaimer regarding AI Generation</p>
-                  <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic">
+                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2">Disclaimer regarding AI Generation</p>
+                   <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic">
                     This application utilizes Artificial Intelligence to analyze birth data based on Vedic astrological principles. The resulting content is intended for informational, educational, and personal insight purposes only. Please be aware that AI-generated interpretations may lack the nuance of a human astrologer and may occasionally produce inconsistent results. The information provided herein should not be construed as professional advice (medical, legal, or financial) or factual prophecy. The creators assume no liability for choices made based on this algorithmic analysis.
-                  </p>
+                   </p>
                 </div>
               </div>
             </div>

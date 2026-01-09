@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { getNumerologyAnalysis, askNumerologyQuestion } from '../services/geminiService';
 import { Language, ChatMessage } from '../types';
@@ -123,9 +124,11 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
+        windowWidth: 1024,
         onclone: (clonedDoc) => {
           const clonedElement = clonedDoc.getElementById(elementId);
           if (clonedElement) {
+            clonedElement.style.width = '1024px';
             clonedElement.style.backgroundColor = 'white';
             clonedElement.style.color = 'black';
             clonedElement.style.padding = '40px';
@@ -167,7 +170,7 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`Numerology_Full_Report_${dob}.pdf`);
+      pdf.save(`Full_Numerology_Report_${dob}.pdf`);
     } catch (err) {
       console.error("PDF Export failed", err);
     } finally {
@@ -286,7 +289,7 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
                     {chatHistory.map((msg, idx) => (
                       <div key={idx} className="bg-white/5 p-4 rounded-2xl border border-white/5">
                         <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${msg.role === 'user' ? 'text-amber-500' : 'text-slate-400'}`}>
-                          {msg.role === 'user' ? 'Q:' : 'A:'}
+                          {msg.role === 'user' ? 'Question' : 'Response'}
                         </p>
                         <div className="text-slate-300 text-sm italic leading-relaxed">
                            <ReactMarkdown>{msg.text}</ReactMarkdown>
