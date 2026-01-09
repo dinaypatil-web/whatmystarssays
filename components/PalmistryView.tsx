@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { getPalmistryAnalysis } from '../services/geminiService';
 import { Language } from '../types';
-import ReactMarkdown from 'https://esm.sh/react-markdown';
+import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 

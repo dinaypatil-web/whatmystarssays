@@ -15,16 +15,12 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('horoscope');
   const [language, setLanguage] = useState<Language>('English');
 
-  // Background Update Logic
+  // Background Update Logic for preferred sign
   useEffect(() => {
     const syncData = async () => {
-      console.log("JyotishAI: Background sync started...");
       const prefSign = StorageService.getUserSign() || ZODIAC_SIGNS[0].name;
-      
-      // Silently pre-fetch daily horoscope for the preferred sign
       try {
         await getHoroscope(prefSign, 'daily', language);
-        console.log(`JyotishAI: Local API updated for ${prefSign}`);
       } catch (e) {
         console.warn("Background sync failed", e);
       }

@@ -8,12 +8,6 @@ const getCurrentDate = () => {
   return `${now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
 };
 
-const getSafeApiKey = (): string => {
-  const key = process.env.API_KEY;
-  if (!key) throw new Error("API_KEY missing.");
-  return key;
-};
-
 const parseAIResponse = (text: string) => {
   if (!text) throw new Error("Empty response.");
   try {
@@ -44,7 +38,8 @@ export const getCoordinates = async (location: string) => {
   if (cached) return cached;
 
   const result = await withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: getSafeApiKey() });
+    // Initializing with direct access to process.env.API_KEY as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `Find lat/lng for: "${location}". Return JSON with keys: lat (number), lng (number), formattedAddress (string).`,
@@ -63,7 +58,8 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
   if (cached) return cached;
 
   const result = await withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: getSafeApiKey() });
+    // Initializing with direct access to process.env.API_KEY as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const prompt = `As a Master Vedic Astrologer, current date ${getCurrentDate()}. Provide a ${timeframe} horoscope for Moon Sign ${sign} in ${language}. 
     Analyze precise planetary transits and their impact on Career, Health, Relationships, and Finance.`;
     
@@ -97,7 +93,8 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
 
 export const getKundaliAnalysis = async (details: BirthDetails, language: Language): Promise<KundaliResponse> => {
   return await withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: getSafeApiKey() });
+    // Initializing with direct access to process.env.API_KEY as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const prompt = `Generate a high-precision, technical Janma Kundali "Life Map" for: ${details.name}, DOB: ${details.dob}, TOB: ${details.tob}, Place: ${details.location}.
     Language: ${language}. Current Date: ${getCurrentDate()}.
     
@@ -133,7 +130,8 @@ export const getKundaliAnalysis = async (details: BirthDetails, language: Langua
 
 export const askKundaliQuestion = async (q: string, context: string, history: ChatMessage[], lang: Language) => {
   return await withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: getSafeApiKey() });
+    // Initializing with direct access to process.env.API_KEY as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const chatHistory = history.map(msg => ({ role: msg.role === 'user' ? 'user' : 'model', parts: [{ text: msg.text }] }));
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
@@ -146,7 +144,8 @@ export const askKundaliQuestion = async (q: string, context: string, history: Ch
 
 export const askNumerologyQuestion = async (q: string, dob: string, mulank: number, bhagyank: number, loshu: any, history: ChatMessage[], lang: Language) => {
   return await withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: getSafeApiKey() });
+    // Initializing with direct access to process.env.API_KEY as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const chatHistory = history.map(msg => ({ role: msg.role === 'user' ? 'user' : 'model', parts: [{ text: msg.text }] }));
     const context = `User DOB: ${dob}, Mulank: ${mulank}, Bhagyank: ${bhagyank}, Loshu Grid: ${JSON.stringify(loshu)}`;
     const response = await ai.models.generateContent({
@@ -160,7 +159,8 @@ export const askNumerologyQuestion = async (q: string, dob: string, mulank: numb
 
 export const getMatchmaking = async (details: MatchmakingDetails, language: Language) => {
   return await withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: getSafeApiKey() });
+    // Initializing with direct access to process.env.API_KEY as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const prompt = `Ashtakoot Milan compatibility report (36 Guna) for ${details.boy.name} & ${details.girl.name}. 
     Provide technical Guna scores (Varna, Vashya, Tara, Yoni, Maitri, Gana, Bhakoot, Nadi) and detailed relationship compatibility. 
     Language: ${language}. Return as professional Markdown.`;
@@ -171,7 +171,8 @@ export const getMatchmaking = async (details: MatchmakingDetails, language: Lang
 
 export const getNumerologyAnalysis = async (dob: string, m: number, b: number, loshu: any, lang: Language) => {
   return await withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: getSafeApiKey() });
+    // Initializing with direct access to process.env.API_KEY as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const prompt = `Technical Numerology analysis for DOB: ${dob}. Mulank: ${m}, Bhagyank: ${b}. Interpret the Loshu grid: ${JSON.stringify(loshu)}. 
     Language: ${lang}. Return as Markdown.`;
     const response = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: prompt });
@@ -179,13 +180,19 @@ export const getNumerologyAnalysis = async (dob: string, m: number, b: number, l
   });
 };
 
-export const getPalmistryAnalysis = async (img: string, lang: Language) => {
+export const getPalmistryAnalysis = async (image: string, lang: Language) => {
   return await withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: getSafeApiKey() });
-    const base64Data = img.split(',')[1] || img;
+    // Initializing with direct access to process.env.API_KEY as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const base64Data = image.split(',')[1] || image;
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
-      contents: { parts: [{ inlineData: { data: base64Data, mimeType: 'image/jpeg' } }, { text: `Read this palm for personality, longevity, wealth, and career in ${lang}.` }] }
+      contents: { 
+        parts: [
+          { inlineData: { data: base64Data, mimeType: 'image/jpeg' } }, 
+          { text: `Read this palm for personality, longevity, wealth, and career in ${lang}.` }
+        ] 
+      }
     });
     return response.text || "";
   });

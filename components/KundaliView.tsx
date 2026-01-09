@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { BirthDetails, Language, ChatMessage, KundaliResponse } from '../types';
 import { getCoordinates, getKundaliAnalysis, askKundaliQuestion } from '../services/geminiService';
 import KundaliChart from './KundaliChart';
-import ReactMarkdown from 'https://esm.sh/react-markdown';
+import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -174,10 +174,10 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-              <InputField label="Full Name" value={details.name} onChange={(v) => setDetails({ ...details, name: v })} />
-              <InputField label="Birth Place" placeholder="City, State" value={details.location} onChange={(v) => setDetails({ ...details, location: v })} />
-              <InputField label="Birth Date" type="date" value={details.dob} onChange={(v) => setDetails({ ...details, dob: v })} />
-              <InputField label="Birth Time" type="time" value={details.tob} onChange={(v) => setDetails({ ...details, tob: v })} />
+              <InputField label="Full Name" value={details.name} onChange={(v: string) => setDetails({ ...details, name: v })} />
+              <InputField label="Birth Place" placeholder="City, State" value={details.location} onChange={(v: string) => setDetails({ ...details, location: v })} />
+              <InputField label="Birth Date" type="date" value={details.dob} onChange={(v: string) => setDetails({ ...details, dob: v })} />
+              <InputField label="Birth Time" type="time" value={details.tob} onChange={(v: string) => setDetails({ ...details, tob: v })} />
             </div>
             <button disabled={loading} className="w-full glossy-button text-white font-bold py-4 rounded-2xl text-lg tracking-widest uppercase font-cinzel shadow-2xl">
               Generate Life Map

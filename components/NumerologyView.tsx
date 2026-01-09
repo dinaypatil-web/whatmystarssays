@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getNumerologyAnalysis, askNumerologyQuestion } from '../services/geminiService';
 import { Language, ChatMessage } from '../types';
-import ReactMarkdown from 'https://esm.sh/react-markdown';
+import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 

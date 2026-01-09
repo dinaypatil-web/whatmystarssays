@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { BirthDetails, MatchmakingDetails, Language } from '../types';
 import { getMatchmaking, getCoordinates } from '../services/geminiService';
-import ReactMarkdown from 'https://esm.sh/react-markdown';
+import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 

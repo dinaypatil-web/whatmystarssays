@@ -29,9 +29,9 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, lang
           </div>
           <div className="flex items-center gap-4">
             <div className="h-px w-8 md:w-16 bg-gradient-to-r from-transparent to-amber-500/50" />
-            <p className="text-[10px] md:text-xs uppercase tracking-[0.5em] text-amber-500/80 font-black text-center">
+            <span className="text-[10px] md:text-xs uppercase tracking-[0.5em] text-amber-500/80 font-black text-center">
               Mirror of Celestial Truth
-            </p>
+            </span>
             <div className="h-px w-8 md:w-16 bg-gradient-to-l from-transparent to-amber-500/50" />
           </div>
         </div>
