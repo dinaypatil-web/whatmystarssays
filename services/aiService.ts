@@ -1,0 +1,232 @@
+import Groq from "groq-sdk";
+import { BirthDetails, MatchmakingDetails, MoonSign, Timeframe, Language, ChatMessage, KundaliResponse } from "../types";
+import { StorageService } from "./storageService";
+
+const getCurrentDate = () => {
+  const now = new Date();
+  return `${now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+};
+
+const parseAIResponse = (text: string) => {
+  if (!text) throw new Error("Empty response.");
+  try {
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("Parse failed", text);
+    throw new Error("Decoding failed.");
+  }
+};
+
+async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 2000): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: any) {
+    if (retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return withRetry(fn, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+}
+
+export const getCoordinates = async (location: string) => {
+  const cacheKey = `coords_${location.toLowerCase().replace(/\s/g, '_')}`;
+  const cached = StorageService.get<any>(cacheKey) || null;
+  if (cached) return cached;
+
+  const result = await withRetry(async () => {
+    // Replace Gemini with Nominatim Free Geocoding API
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`, {
+      headers: {
+        'User-Agent': 'WhatMyStarsSaysVedicApp/1.0'
+      }
+    });
+    
+    if (!response.ok) throw new Error('Geocoding request failed');
+    const data = await response.json();
+    
+    if (!data || data.length === 0) {
+      throw new Error(`Location not found: ${location}`);
+    }
+    
+    return {
+      lat: parseFloat(data[0].lat),
+      lng: parseFloat(data[0].lon),
+      formattedAddress: data[0].display_name
+    };
+  });
+
+  // Adding an aggressive timeout to not spam Nominatim
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  StorageService.save(cacheKey, result, 720);
+  return result;
+};
+
+export const getHoroscope = async (sign: string, timeframe: Timeframe, language: Language = 'English') => {
+  const cacheKey = StorageService.getKeys.horoscope(sign, timeframe, language);
+  const cached = StorageService.get<any>(cacheKey);
+  if (cached) return cached;
+
+  const result = await withRetry(async () => {
+    const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
+    const prompt = `As a Master Vedic Astrologer, current date ${getCurrentDate()}. Provide a ${timeframe} horoscope for Moon Sign ${sign} in ${language}. 
+    Analyze precise planetary transits and their impact on Career, Health, Relationships, and Finance.
+    You must return a valid JSON object matching this schema:
+    {
+      "overview": "string",
+      "career": "string",
+      "health": "string",
+      "relationships": "string",
+      "finance": "string",
+      "spirituality": "string",
+      "luckyColor": "string",
+      "luckyNumber": "string"
+    }`;
+    
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.1-8b-instant',
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: "json_object" }
+    });
+    return parseAIResponse(response.choices[0]?.message?.content || "{}");
+  });
+
+  StorageService.save(cacheKey, result, timeframe === 'daily' ? 12 : 168);
+  return result;
+};
+
+export const getKundaliAnalysis = async (details: BirthDetails, language: Language): Promise<KundaliResponse> => {
+  return await withRetry(async () => {
+    const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
+    const prompt = `Generate a high-precision, technical Janma Kundali "Life Map" for: ${details.name}, DOB: ${details.dob}, TOB: ${details.tob}, Place: ${details.location}.
+    Language: ${language}. Current Date: ${getCurrentDate()}.
+    
+    CRITICAL: This is a professional-grade Life Analysis. You MUST include:
+    1. **Vedic Profile**: Detailed Varna, Gana, Nakshatra, and Moon Sign.
+    2. **Planetary Positions Table**: Degrees, Minutes, Rashi, and Nakshatra for Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu.
+    3. **Complete Life Report (NOT limited to current year)**:
+       - **12 House Analysis**: Detailed impact of planets on each house for the entire life.
+       - **Vimshottari Mahadasha Timeline**: A structured list of major planetary periods (Dasha) and their durations throughout the user's life.
+       - **Comprehensive Shani Sade Sati Analysis**: A detailed timeline of all three phases of Sade Sati (past, current, and future cycles) based on birth Moon Sign and Saturn transits.
+       - **Remedies & Gemstones**: Specific rituals and stones for lifetime benefit.
+    
+    You must return a valid JSON object matching this exact structure:
+    {
+      "report": "Professional Markdown string with bold headers and tables",
+      "chart": { "1": ["Sun", "Moon"], "2": [], ... },
+      "lagnaSign": 1, 
+      "varna": "string",
+      "gana": "string",
+      "nakshatra": "string",
+      "moonSign": "string"
+    }
+    The 'chart' object must have 12 keys ("1" through "12"), each containing an array of planet strings. lagnaSign is 1-12.`;
+
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: "json_object" }
+    });
+    return parseAIResponse(response.choices[0]?.message?.content || "{}");
+  });
+};
+
+export const askKundaliQuestion = async (q: string, context: string, history: ChatMessage[], lang: Language) => {
+  return await withRetry(async () => {
+    const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
+    const messages: any[] = [
+      { role: 'system', content: `You are the User's Personal Vedic Guide. Use the provided Kundali context: ${context}. Language: ${lang}. Current Date: ${getCurrentDate()}. Focus on providing life-long guidance.` }
+    ];
+    
+    history.forEach(msg => {
+      messages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.text });
+    });
+    
+    messages.push({ role: 'user', content: q });
+
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: messages
+    });
+    return response.choices[0]?.message?.content || "The cosmos is currently silent.";
+  });
+};
+
+export const askNumerologyQuestion = async (q: string, dob: string, mulank: number, bhagyank: number, loshu: any, history: ChatMessage[], lang: Language) => {
+  return await withRetry(async () => {
+    const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
+    const context = `User DOB: ${dob}, Mulank: ${mulank}, Bhagyank: ${bhagyank}, Loshu Grid: ${JSON.stringify(loshu)}`;
+    const messages: any[] = [
+      { role: 'system', content: `You are a Master Numerologist. Answer questions based on Mulank, Bhagyank and Loshu Grid context: ${context}. Language: ${lang}.` }
+    ];
+    
+    history.forEach(msg => {
+      messages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.text });
+    });
+    
+    messages.push({ role: 'user', content: q });
+
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: messages
+    });
+    return response.choices[0]?.message?.content || "The numbers are currently unclear.";
+  });
+};
+
+export const getMatchmaking = async (details: MatchmakingDetails, language: Language) => {
+  return await withRetry(async () => {
+    const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
+    const prompt = `Ashtakoot Milan compatibility report (36 Guna) for ${details.boy.name} & ${details.girl.name}. 
+    Provide technical Guna scores (Varna, Vashya, Tara, Yoni, Maitri, Gana, Bhakoot, Nadi) and detailed relationship compatibility. 
+    Language: ${language}. Return as professional Markdown.`;
+    
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }]
+    });
+    return response.choices[0]?.message?.content || "";
+  });
+};
+
+export const getNumerologyAnalysis = async (dob: string, m: number, b: number, loshu: any, lang: Language) => {
+  return await withRetry(async () => {
+    const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
+    const prompt = `Technical Numerology analysis for DOB: ${dob}. Mulank: ${m}, Bhagyank: ${b}. Interpret the Loshu grid: ${JSON.stringify(loshu)}. 
+    Language: ${lang}. Return as Markdown.`;
+    
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.1-8b-instant',
+      messages: [{ role: 'user', content: prompt }]
+    });
+    return response.choices[0]?.message?.content || "";
+  });
+};
+
+export const getPalmistryAnalysis = async (image: string, lang: Language) => {
+  return await withRetry(async () => {
+    const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
+    
+    // Convert base64 data URL to standard base64 string
+    // "data:image/jpeg;base64,/9j/4AAQ..." -> "/9j/4AAQ..."
+    const base64Data = image.split(',')[1] || image;
+    const mediaType = image.split(';')[0]?.replace('data:', '') || 'image/jpeg';
+    
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.2-11b-vision-preview', // Llama 3.2 vision model
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: `Read this palm for personality, longevity, wealth, and career in ${lang}.` },
+            { type: "image_url", image_url: { url: `data:${mediaType};base64,${base64Data}` } }
+          ]
+        }
+      ]
+    });
+    
+    return response.choices[0]?.message?.content || "";
+  });
+};
