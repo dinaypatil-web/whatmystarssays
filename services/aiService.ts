@@ -71,9 +71,11 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
 
   const result = await withRetry(async () => {
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
-    const prompt = `As a Master Vedic Astrologer, current date ${getCurrentDate()}. Provide a ${timeframe} horoscope for Moon Sign ${sign} in ${language}. 
+    const prompt = `As a Master Vedic Astrologer, current date ${getCurrentDate()}. Provide a ${timeframe} horoscope for Moon Sign ${sign}.
+    CRITICAL: The HOROSCOPE CONTENT MUST BE ENTIRELY IN ${language.toUpperCase()}.
     Analyze precise planetary transits and their impact on Career, Health, Relationships, and Finance.
-    You must return a valid JSON object matching this schema:
+    You must return a valid JSON object. ALL string values inside the JSON MUST be translated into ${language}.
+    Schema to match (keys must remain exactly as shown, but values must be in ${language}):
     {
       "overview": "string",
       "career": "string",
@@ -101,7 +103,9 @@ export const getKundaliAnalysis = async (details: BirthDetails, language: Langua
   return await withRetry(async () => {
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
     const prompt = `Generate a high-precision, technical Janma Kundali "Life Map" for: ${details.name}, DOB: ${details.dob}, TOB: ${details.tob}, Place: ${details.location}.
-    Language: ${language}. Current Date: ${getCurrentDate()}.
+    Current Date: ${getCurrentDate()}.
+    
+    CRITICAL LANGUAGE INSTRUCTION: The entire "report" and all textual string values MUST be written exclusively in ${language.toUpperCase()}. Do not use English for the report content.
     
     CRITICAL: This is a professional-grade Life Analysis. You MUST include:
     1. **Vedic Profile**: Detailed Varna, Gana, Nakshatra, and Moon Sign.
@@ -137,7 +141,7 @@ export const askKundaliQuestion = async (q: string, context: string, history: Ch
   return await withRetry(async () => {
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
     const messages: any[] = [
-      { role: 'system', content: `You are the User's Personal Vedic Guide. Use the provided Kundali context: ${context}. Language: ${lang}. Current Date: ${getCurrentDate()}. Focus on providing life-long guidance.` }
+      { role: 'system', content: `You are the User's Personal Vedic Guide. Use the provided Kundali context: ${context}. Current Date: ${getCurrentDate()}. Focus on providing life-long guidance. CRITICAL: You MUST reply entirely in ${lang.toUpperCase()}.` }
     ];
     
     history.forEach(msg => {
@@ -159,7 +163,7 @@ export const askNumerologyQuestion = async (q: string, dob: string, mulank: numb
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
     const context = `User DOB: ${dob}, Mulank: ${mulank}, Bhagyank: ${bhagyank}, Loshu Grid: ${JSON.stringify(loshu)}`;
     const messages: any[] = [
-      { role: 'system', content: `You are a Master Numerologist. Answer questions based on Mulank, Bhagyank and Loshu Grid context: ${context}. Language: ${lang}.` }
+      { role: 'system', content: `You are a Master Numerologist. Answer questions based on Mulank, Bhagyank and Loshu Grid context: ${context}. CRITICAL: You MUST reply exclusively in ${lang.toUpperCase()}.` }
     ];
     
     history.forEach(msg => {
@@ -181,7 +185,7 @@ export const getMatchmaking = async (details: MatchmakingDetails, language: Lang
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
     const prompt = `Ashtakoot Milan compatibility report (36 Guna) for ${details.boy.name} & ${details.girl.name}. 
     Provide technical Guna scores (Varna, Vashya, Tara, Yoni, Maitri, Gana, Bhakoot, Nadi) and detailed relationship compatibility. 
-    Language: ${language}. Return as professional Markdown.`;
+    CRITICAL: You MUST write the entire report exclusively in ${language.toUpperCase()}. Return as professional Markdown.`;
     
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
@@ -195,7 +199,7 @@ export const getNumerologyAnalysis = async (dob: string, m: number, b: number, l
   return await withRetry(async () => {
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
     const prompt = `Technical Numerology analysis for DOB: ${dob}. Mulank: ${m}, Bhagyank: ${b}. Interpret the Loshu grid: ${JSON.stringify(loshu)}. 
-    Language: ${lang}. Return as Markdown.`;
+    CRITICAL: You MUST write the entire analysis exclusively in ${lang.toUpperCase()}. Return as Markdown.`;
     
     const response = await groq.chat.completions.create({
       model: 'llama-3.1-8b-instant',
@@ -220,7 +224,7 @@ export const getPalmistryAnalysis = async (image: string, lang: Language) => {
         {
           role: "user",
           content: [
-            { type: "text", text: `Read this palm for personality, longevity, wealth, and career in ${lang}.` },
+            { type: "text", text: `Read this palm for personality, longevity, wealth, and career. CRITICAL: You MUST write the entire response exclusively in ${lang.toUpperCase()}.` },
             { type: "image_url", image_url: { url: `data:${mediaType};base64,${base64Data}` } }
           ]
         }
