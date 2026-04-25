@@ -137,7 +137,7 @@ const KundaliChart: React.FC<KundaliChartProps> = ({ data, lagnaSign }) => {
 
       <div className="flex flex-col items-center mb-6">
         <h3 className="text-amber-400 font-cinzel text-2xl tracking-[0.2em] uppercase font-bold drop-shadow-lg mb-1">
-          Janma Kundali <span className="text-amber-500/40 text-sm">Vedic</span>
+          Janma Kundali <span className="text-amber-500/40 text-sm">Authentic Vedic</span>
         </h3>
         <p className="text-[10px] text-amber-500/60 font-black uppercase tracking-[0.4em]">Celestial Blueprint</p>
       </div>

@@ -40,7 +40,7 @@ export const getCoordinates = async (location: string) => {
     // Replace Gemini with Nominatim Free Geocoding API
     const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`, {
       headers: {
-        'User-Agent': 'WhatMyStarsSaysVedicApp/1.0'
+        'User-Agent': 'WhatMyStarsSaysKPSystemApp/1.0'
       }
     });
     
@@ -71,7 +71,7 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
 
   const result = await withRetry(async () => {
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
-    const prompt = `As a Master Vedic Astrologer, current date ${getCurrentDate()}. Provide a ${timeframe} horoscope for Moon Sign ${sign}.
+    const prompt = `As a Master K. P. System Astrologer, current date ${getCurrentDate()}. Provide a ${timeframe} horoscope for Moon Sign ${sign}.
     CRITICAL: The HOROSCOPE CONTENT MUST BE ENTIRELY IN ${language.toUpperCase()}.
     Analyze precise planetary transits and their impact on Career, Health, Relationships, and Finance.
     You must return a valid JSON object. ALL string values inside the JSON MUST be translated into ${language}.
@@ -102,18 +102,18 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
 export const getKundaliAnalysis = async (details: BirthDetails, language: Language): Promise<KundaliResponse> => {
   return await withRetry(async () => {
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
-    const prompt = `Generate a high-precision, technical Janma Kundali "Life Map" for: ${details.name}, DOB: ${details.dob}, TOB: ${details.tob}, Place: ${details.location}.
+    const prompt = `Generate a high-precision Authentic Vedic Janma Kundali chart and K. P. System "Life Map" for: ${details.name}, DOB: ${details.dob}, TOB: ${details.tob}, Place: ${details.location}.
     Current Date: ${getCurrentDate()}.
     
     CRITICAL LANGUAGE INSTRUCTION: The entire "report" and all textual string values MUST be written exclusively in ${language.toUpperCase()}. Do not use English for the report content.
     
     CRITICAL: This is a professional-grade Life Analysis. You MUST include:
-    1. **Vedic Profile**: Detailed Varna, Gana, Nakshatra, and Moon Sign.
-    2. **Planetary Positions Table**: Degrees, Minutes, Rashi, and Nakshatra for Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu.
+    1. **K. P. System Profile**: Detailed Star Lord, Sub Lord, Nakshatra, and Moon Sign.
+    2. **Planetary Positions Table**: Degrees, Minutes, Rashi, Nakshatra, Star Lord, and Sub Lord for Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu.
     3. **Complete Life Report (NOT limited to current year)**:
-       - **12 House Analysis**: Detailed impact of planets on each house for the entire life.
-       - **Vimshottari Mahadasha Timeline**: A structured list of major planetary periods (Dasha) and their durations throughout the user's life.
-       - **Comprehensive Shani Sade Sati Analysis**: A detailed timeline of all three phases of Sade Sati (past, current, and future cycles) based on birth Moon Sign and Saturn transits.
+       - **12 Bhava (House) Cusp Analysis**: Detailed impact of planets and their Sub Lords on each house for the entire life based on K. P. System.
+       - **Vimshottari Dasa/Bhukti/Antara (DBA) Timeline**: A structured list of major planetary periods throughout the user's life, interpreted via K. P. rules.
+       - **Ruling Planets & Significators Analysis**: A detailed report on the ruling planets at time of birth and key event significators.
        - **Remedies & Gemstones**: Specific rituals and stones for lifetime benefit.
     
     You must return a valid JSON object matching this exact structure:
@@ -121,12 +121,12 @@ export const getKundaliAnalysis = async (details: BirthDetails, language: Langua
       "report": "Professional Markdown string with bold headers and tables",
       "chart": { "1": ["Sun", "Moon"], "2": [], ... },
       "lagnaSign": 1, 
-      "varna": "string",
-      "gana": "string",
+      "starLord": "string",
+      "subLord": "string",
       "nakshatra": "string",
       "moonSign": "string"
     }
-    The 'chart' object must have 12 keys ("1" through "12"), each containing an array of planet strings. lagnaSign is 1-12.`;
+    The 'chart' object must have 12 keys ("1" through "12"), each containing an array of planet strings based on Authentic Vedic Kundali calculation (Lahiri Ayanamsha/Sidereal). lagnaSign is 1-12.`;
 
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
@@ -141,7 +141,7 @@ export const askKundaliQuestion = async (q: string, context: string, history: Ch
   return await withRetry(async () => {
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
     const messages: any[] = [
-      { role: 'system', content: `You are the User's Personal Vedic Guide. Use the provided Kundali context: ${context}. Current Date: ${getCurrentDate()}. Focus on providing life-long guidance. CRITICAL: You MUST reply entirely in ${lang.toUpperCase()}.` }
+      { role: 'system', content: `You are the User's Personal K. P. System Guide. Use the provided Kundali context: ${context}. Current Date: ${getCurrentDate()}. Focus on providing life-long guidance. CRITICAL: You MUST reply entirely in ${lang.toUpperCase()}.` }
     ];
     
     history.forEach(msg => {
@@ -183,8 +183,8 @@ export const askNumerologyQuestion = async (q: string, dob: string, mulank: numb
 export const getMatchmaking = async (details: MatchmakingDetails, language: Language) => {
   return await withRetry(async () => {
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
-    const prompt = `Ashtakoot Milan compatibility report (36 Guna) for ${details.boy.name} & ${details.girl.name}. 
-    Provide technical Guna scores (Varna, Vashya, Tara, Yoni, Maitri, Gana, Bhakoot, Nadi) and detailed relationship compatibility. 
+    const prompt = `K. P. System Matchmaking compatibility report for ${details.boy.name} & ${details.girl.name}. 
+    Provide technical K. P. System scores & analysis looking at the 11th cusp sublord, 7th cusp sublord, ruling planets, DBA periods, and overall significators for marriage and relationship compatibility. 
     CRITICAL: You MUST write the entire report exclusively in ${language.toUpperCase()}. Return as professional Markdown.`;
     
     const response = await groq.chat.completions.create({
