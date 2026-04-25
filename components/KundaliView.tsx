@@ -163,7 +163,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
       {!analysis && !loading && (
         <section className="mirror-card p-6 md:p-12 rounded-3xl animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="mb-10 text-center">
-            <h2 className="text-3xl md:text-5xl font-cinzel text-amber-100 mb-4 tracking-tight">K. P. System Life Analysis</h2>
+            <h2 className="text-3xl md:text-5xl font-cinzel text-amber-100 mb-4 tracking-tight">Parashari System Life Analysis</h2>
             <p className="text-slate-400 max-w-xl mx-auto text-sm md:text-base">Decode your entire life journey, from personality traits to Vimshottari Mahadashas, lifetime timelines, and house interpretations.</p>
           </div>
 
@@ -218,10 +218,10 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                 <KundaliChart data={analysis.chart} lagnaSign={analysis.lagnaSign} />
                 
                 <div className="grid grid-cols-2 gap-4 p-6 bg-amber-500/5 border border-amber-500/10 rounded-[32px]">
-                   <KPSummaryItem label="Star Lord" value={analysis.starLord} icon="⭐" />
-                   <KPSummaryItem label="Sub Lord" value={analysis.subLord} icon="🔮" />
-                   <KPSummaryItem label="Nakshatra" value={analysis.nakshatra} icon="✨" />
-                   <KPSummaryItem label="Moon Sign" value={analysis.moonSign} icon="🌙" />
+                   <SystemSummaryItem label="Varna" value={analysis.varna} icon="⭐" />
+                   <SystemSummaryItem label="Gana" value={analysis.gana} icon="🔮" />
+                   <SystemSummaryItem label="Nakshatra" value={analysis.nakshatra} icon="✨" />
+                   <SystemSummaryItem label="Moon Sign" value={analysis.moonSign} icon="🌙" />
                 </div>
 
                 <div className="p-8 bg-slate-900/40 border border-white/5 rounded-[32px] no-print">
@@ -265,7 +265,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                 <div className="mt-16 pt-8 border-t border-white/10 opacity-60">
                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2">Disclaimer regarding AI Generation</p>
                    <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic">
-                    This application utilizes Artificial Intelligence to analyze birth data based on K. P. System astrological principles. The resulting content is intended for informational, educational, and personal insight purposes only. Please be aware that AI-generated interpretations may lack the nuance of a human astrologer and may occasionally produce inconsistent results. The information provided herein should not be construed as professional advice (medical, legal, or financial) or factual prophecy. The creators assume no liability for choices made based on this algorithmic analysis.
+                    This application utilizes Artificial Intelligence to analyze birth data based on Parashari System astrological principles. The resulting content is intended for informational, educational, and personal insight purposes only. Please be aware that AI-generated interpretations may lack the nuance of a human astrologer and may occasionally produce inconsistent results. The information provided herein should not be construed as professional advice (medical, legal, or financial) or factual prophecy. The creators assume no liability for choices made based on this algorithmic analysis.
                    </p>
                 </div>
               </div>
@@ -335,7 +335,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
   );
 };
 
-const KPSummaryItem = ({ label, value, icon }: { label: string; value: string; icon: string }) => (
+const SystemSummaryItem = ({ label, value, icon }: { label: string; value: string; icon: string }) => (
   <div className="flex flex-col items-center justify-center p-3 text-center">
     <span className="text-lg mb-1">{icon}</span>
     <p className="text-[9px] uppercase font-black text-amber-500/60 tracking-widest">{label}</p>

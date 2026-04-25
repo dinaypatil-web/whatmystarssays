@@ -34,21 +34,27 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 2000): Pr
 
 const translateText = async (text: string, targetLanguage: Language): Promise<string> => {
   if (targetLanguage === 'English' || !text) return text;
-  const langCode = GOOGLE_TRANSLATE_LANG_MAP[targetLanguage] || 'en';
-  if (langCode === 'en') return text;
   
   try {
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${langCode}&dt=t`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `q=${encodeURIComponent(text)}`
+    const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
+    const response = await groq.chat.completions.create({
+      model: 'llama-3.1-8b-instant',
+      messages: [
+        { 
+          role: 'system', 
+          content: `You are a professional API translation engine. Translate the following text into ${targetLanguage}. 
+          CRITICAL INSTRUCTIONS:
+          1. Return ONLY the translated text. No introductions, no explanations, no conversational filler.
+          2. Preserve ALL markdown formatting exactly as it is (e.g. **, ###, -, etc).
+          3. Preserve any underlying JSON keys if parsing JSON string, but translate the values.`
+        },
+        { role: 'user', content: text }
+      ],
+      temperature: 0.1
     });
     
-    if (!response.ok) return text;
-    
-    const data = await response.json();
-    return data[0].map((item: any) => item[0]).join('');
+    const translated = response.choices[0]?.message?.content?.trim();
+    return translated || text;
   } catch (err) {
     console.error("Translation logic failed", err);
     return text; // Fallback to English on error
@@ -95,7 +101,7 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
 
   const result = await withRetry(async () => {
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
-    const prompt = `As a Master K. P. System Astrologer, current date ${getCurrentDate()}. Provide a ${timeframe} horoscope for Moon Sign ${sign}.
+    const prompt = `As a Master Parashari System Astrologer, current date ${getCurrentDate()}. Provide a ${timeframe} horoscope for Moon Sign ${sign}.
     Analyze precise planetary transits and their impact on Career, Health, Relationships, and Finance.
     You must return a valid JSON object in English.
     Schema to match:
@@ -133,16 +139,16 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
 export const getKundaliAnalysis = async (details: BirthDetails, language: Language): Promise<KundaliResponse> => {
   return await withRetry(async () => {
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
-    const prompt = `Generate a high-precision Authentic Vedic Janma Kundali chart and K. P. System "Life Map" for: ${details.name}, DOB: ${details.dob}, TOB: ${details.tob}, Place: ${details.location}.
+    const prompt = `Generate a high-precision Authentic Vedic Janma Kundali chart and Parashari System "Life Map" for: ${details.name}, DOB: ${details.dob}, TOB: ${details.tob}, Place: ${details.location}.
     Current Date: ${getCurrentDate()}.
     
     CRITICAL: This is a professional-grade Life Analysis in English. You MUST include:
-    1. **K. P. System Profile**: Detailed Star Lord, Sub Lord, Nakshatra, and Moon Sign.
-    2. **Planetary Positions Table**: Degrees, Minutes, Rashi, Nakshatra, Star Lord, and Sub Lord for Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu.
+    1. **Parashari System Profile**: Detailed Varna, Gana, Nakshatra, and Moon Sign.
+    2. **Planetary Positions Table**: Degrees, Minutes, Rashi, Nakshatra for Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu.
     3. **Complete Life Report (NOT limited to current year)**:
-       - **12 Bhava (House) Cusp Analysis**: Detailed impact of planets and their Sub Lords on each house for the entire life based on K. P. System.
-       - **Vimshottari Dasa/Bhukti/Antara (DBA) Timeline**: A structured list of major planetary periods throughout the user's life, interpreted via K. P. rules.
-       - **Ruling Planets & Significators Analysis**: A detailed report on the ruling planets at time of birth and key event significators.
+       - **12 Bhava (House) Analysis**: Detailed impact of planets on each house for the entire life based on Parashari System.
+       - **Vimshottari Dasha Timeline**: A structured list of major planetary periods throughout the user's life.
+       - **Yoga & Ascendant Analysis**: A detailed report on key astrological Yogas present.
        - **Remedies & Gemstones**: Specific rituals and stones for lifetime benefit.
     
     You must return a valid JSON object matching this exact structure:
@@ -150,8 +156,8 @@ export const getKundaliAnalysis = async (details: BirthDetails, language: Langua
       "report": "Professional Markdown string with bold headers and tables",
       "chart": { "1": ["Sun", "Moon"], "2": [], ... },
       "lagnaSign": 1, 
-      "starLord": "string",
-      "subLord": "string",
+      "varna": "string",
+      "gana": "string",
       "nakshatra": "string",
       "moonSign": "string"
     }
@@ -165,8 +171,8 @@ export const getKundaliAnalysis = async (details: BirthDetails, language: Langua
     const parsed = parseAIResponse(response.choices[0]?.message?.content || "{}");
     if (language !== 'English') {
       if (parsed.report) parsed.report = await translateText(parsed.report, language);
-      if (parsed.starLord) parsed.starLord = await translateText(parsed.starLord, language);
-      if (parsed.subLord) parsed.subLord = await translateText(parsed.subLord, language);
+      if (parsed.varna) parsed.varna = await translateText(parsed.varna, language);
+      if (parsed.gana) parsed.gana = await translateText(parsed.gana, language);
       if (parsed.nakshatra) parsed.nakshatra = await translateText(parsed.nakshatra, language);
       if (parsed.moonSign) parsed.moonSign = await translateText(parsed.moonSign, language);
       
@@ -186,7 +192,7 @@ export const askKundaliQuestion = async (q: string, context: string, history: Ch
   return await withRetry(async () => {
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
     const messages: any[] = [
-      { role: 'system', content: `You are the User's Personal K. P. System Guide. Use the provided Kundali context: ${context}. Current Date: ${getCurrentDate()}. Focus on providing life-long guidance. Please provide your response entirely in English.` }
+      { role: 'system', content: `You are the User's Personal Parashari System Guide. Use the provided Kundali context: ${context}. Current Date: ${getCurrentDate()}. Focus on providing life-long guidance. Please provide your response entirely in English.` }
     ];
     
     history.forEach(msg => {
@@ -230,8 +236,8 @@ export const askNumerologyQuestion = async (q: string, dob: string, mulank: numb
 export const getMatchmaking = async (details: MatchmakingDetails, language: Language) => {
   return await withRetry(async () => {
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
-    const prompt = `K. P. System Matchmaking compatibility report for ${details.boy.name} & ${details.girl.name}. 
-    Provide technical K. P. System scores & analysis looking at the 11th cusp sublord, 7th cusp sublord, ruling planets, DBA periods, and overall significators for marriage and relationship compatibility. 
+    const prompt = `Traditional Parashari System Matchmaking compatibility report for ${details.boy.name} & ${details.girl.name}. 
+    Provide technical Parashari scores & analysis looking at Ashtakoot (36 Guna) Milan, Mangal Dosha, Dasha combinations, and overall significators for marriage and relationship compatibility. 
     Please write the entire report exclusively in English. Return as professional Markdown.`;
     
     const response = await groq.chat.completions.create({

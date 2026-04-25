@@ -48,8 +48,8 @@ export interface KundaliResponse {
   report: string;
   chart: KundaliChartData;
   lagnaSign: number; 
-  starLord: string;
-  subLord: string;
+  varna: string;
+  gana: string;
   nakshatra: string;
   moonSign: string;
 }
