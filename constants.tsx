@@ -38,3 +38,17 @@ export const LANGUAGES: { value: Language; label: string }[] = [
   { value: 'Punjabi', label: 'ਪੰਜਾਬੀ' },
   { value: 'Odia', label: 'ଓଡ଼ିଆ' },
 ];
+
+export const GOOGLE_TRANSLATE_LANG_MAP: Record<Language, string> = {
+  English: 'en',
+  Hindi: 'hi',
+  Marathi: 'mr',
+  Bengali: 'bn',
+  Telugu: 'te',
+  Tamil: 'ta',
+  Gujarati: 'gu',
+  Kannada: 'kn',
+  Malayalam: 'ml',
+  Punjabi: 'pa',
+  Odia: 'or',
+};

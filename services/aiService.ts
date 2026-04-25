@@ -1,5 +1,6 @@
 import Groq from "groq-sdk";
 import { BirthDetails, MatchmakingDetails, MoonSign, Timeframe, Language, ChatMessage, KundaliResponse } from "../types";
+import { GOOGLE_TRANSLATE_LANG_MAP } from "../constants";
 import { StorageService } from "./storageService";
 
 const getCurrentDate = () => {
@@ -30,6 +31,29 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 2000): Pr
     throw error;
   }
 }
+
+const translateText = async (text: string, targetLanguage: Language): Promise<string> => {
+  if (targetLanguage === 'English' || !text) return text;
+  const langCode = GOOGLE_TRANSLATE_LANG_MAP[targetLanguage] || 'en';
+  if (langCode === 'en') return text;
+  
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${langCode}&dt=t`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `q=${encodeURIComponent(text)}`
+    });
+    
+    if (!response.ok) return text;
+    
+    const data = await response.json();
+    return data[0].map((item: any) => item[0]).join('');
+  } catch (err) {
+    console.error("Translation logic failed", err);
+    return text; // Fallback to English on error
+  }
+};
 
 export const getCoordinates = async (location: string) => {
   const cacheKey = `coords_${location.toLowerCase().replace(/\s/g, '_')}`;
@@ -72,10 +96,9 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
   const result = await withRetry(async () => {
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
     const prompt = `As a Master K. P. System Astrologer, current date ${getCurrentDate()}. Provide a ${timeframe} horoscope for Moon Sign ${sign}.
-    CRITICAL: The HOROSCOPE CONTENT MUST BE ENTIRELY IN ${language.toUpperCase()}.
     Analyze precise planetary transits and their impact on Career, Health, Relationships, and Finance.
-    You must return a valid JSON object. ALL string values inside the JSON MUST be translated into ${language}.
-    Schema to match (keys must remain exactly as shown, but values must be in ${language}):
+    You must return a valid JSON object in English.
+    Schema to match:
     {
       "overview": "string",
       "career": "string",
@@ -92,7 +115,15 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: "json_object" }
     });
-    return parseAIResponse(response.choices[0]?.message?.content || "{}");
+    const parsed = parseAIResponse(response.choices[0]?.message?.content || "{}");
+    if (language !== 'English') {
+      for (const key of Object.keys(parsed)) {
+        if (typeof parsed[key] === 'string') {
+          parsed[key] = await translateText(parsed[key], language);
+        }
+      }
+    }
+    return parsed;
   });
 
   StorageService.save(cacheKey, result, timeframe === 'daily' ? 12 : 168);
@@ -105,9 +136,7 @@ export const getKundaliAnalysis = async (details: BirthDetails, language: Langua
     const prompt = `Generate a high-precision Authentic Vedic Janma Kundali chart and K. P. System "Life Map" for: ${details.name}, DOB: ${details.dob}, TOB: ${details.tob}, Place: ${details.location}.
     Current Date: ${getCurrentDate()}.
     
-    CRITICAL LANGUAGE INSTRUCTION: The entire "report" and all textual string values MUST be written exclusively in ${language.toUpperCase()}. Do not use English for the report content.
-    
-    CRITICAL: This is a professional-grade Life Analysis. You MUST include:
+    CRITICAL: This is a professional-grade Life Analysis in English. You MUST include:
     1. **K. P. System Profile**: Detailed Star Lord, Sub Lord, Nakshatra, and Moon Sign.
     2. **Planetary Positions Table**: Degrees, Minutes, Rashi, Nakshatra, Star Lord, and Sub Lord for Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu.
     3. **Complete Life Report (NOT limited to current year)**:
@@ -133,7 +162,23 @@ export const getKundaliAnalysis = async (details: BirthDetails, language: Langua
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: "json_object" }
     });
-    return parseAIResponse(response.choices[0]?.message?.content || "{}");
+    const parsed = parseAIResponse(response.choices[0]?.message?.content || "{}");
+    if (language !== 'English') {
+      if (parsed.report) parsed.report = await translateText(parsed.report, language);
+      if (parsed.starLord) parsed.starLord = await translateText(parsed.starLord, language);
+      if (parsed.subLord) parsed.subLord = await translateText(parsed.subLord, language);
+      if (parsed.nakshatra) parsed.nakshatra = await translateText(parsed.nakshatra, language);
+      if (parsed.moonSign) parsed.moonSign = await translateText(parsed.moonSign, language);
+      
+      if (parsed.chart) {
+        for (const house of Object.keys(parsed.chart)) {
+           if (Array.isArray(parsed.chart[house])) {
+             parsed.chart[house] = await Promise.all(parsed.chart[house].map((p: string) => translateText(p, language)));
+           }
+        }
+      }
+    }
+    return parsed;
   });
 };
 
@@ -141,7 +186,7 @@ export const askKundaliQuestion = async (q: string, context: string, history: Ch
   return await withRetry(async () => {
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
     const messages: any[] = [
-      { role: 'system', content: `You are the User's Personal K. P. System Guide. Use the provided Kundali context: ${context}. Current Date: ${getCurrentDate()}. Focus on providing life-long guidance. CRITICAL: You MUST reply entirely in ${lang.toUpperCase()}.` }
+      { role: 'system', content: `You are the User's Personal K. P. System Guide. Use the provided Kundali context: ${context}. Current Date: ${getCurrentDate()}. Focus on providing life-long guidance. Please provide your response entirely in English.` }
     ];
     
     history.forEach(msg => {
@@ -154,7 +199,8 @@ export const askKundaliQuestion = async (q: string, context: string, history: Ch
       model: 'llama-3.3-70b-versatile',
       messages: messages
     });
-    return response.choices[0]?.message?.content || "The cosmos is currently silent.";
+    const result = response.choices[0]?.message?.content || "The cosmos is currently silent.";
+    return await translateText(result, lang);
   });
 };
 
@@ -163,7 +209,7 @@ export const askNumerologyQuestion = async (q: string, dob: string, mulank: numb
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
     const context = `User DOB: ${dob}, Mulank: ${mulank}, Bhagyank: ${bhagyank}, Loshu Grid: ${JSON.stringify(loshu)}`;
     const messages: any[] = [
-      { role: 'system', content: `You are a Master Numerologist. Answer questions based on Mulank, Bhagyank and Loshu Grid context: ${context}. CRITICAL: You MUST reply exclusively in ${lang.toUpperCase()}.` }
+      { role: 'system', content: `You are a Master Numerologist. Answer questions based on Mulank, Bhagyank and Loshu Grid context: ${context}. Please provide your response entirely in English.` }
     ];
     
     history.forEach(msg => {
@@ -176,7 +222,8 @@ export const askNumerologyQuestion = async (q: string, dob: string, mulank: numb
       model: 'llama-3.3-70b-versatile',
       messages: messages
     });
-    return response.choices[0]?.message?.content || "The numbers are currently unclear.";
+    const result = response.choices[0]?.message?.content || "The numbers are currently unclear.";
+    return await translateText(result, lang);
   });
 };
 
@@ -185,13 +232,14 @@ export const getMatchmaking = async (details: MatchmakingDetails, language: Lang
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
     const prompt = `K. P. System Matchmaking compatibility report for ${details.boy.name} & ${details.girl.name}. 
     Provide technical K. P. System scores & analysis looking at the 11th cusp sublord, 7th cusp sublord, ruling planets, DBA periods, and overall significators for marriage and relationship compatibility. 
-    CRITICAL: You MUST write the entire report exclusively in ${language.toUpperCase()}. Return as professional Markdown.`;
+    Please write the entire report exclusively in English. Return as professional Markdown.`;
     
     const response = await groq.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
       messages: [{ role: 'user', content: prompt }]
     });
-    return response.choices[0]?.message?.content || "";
+    const result = response.choices[0]?.message?.content || "";
+    return await translateText(result, language);
   });
 };
 
@@ -199,13 +247,14 @@ export const getNumerologyAnalysis = async (dob: string, m: number, b: number, l
   return await withRetry(async () => {
     const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
     const prompt = `Technical Numerology analysis for DOB: ${dob}. Mulank: ${m}, Bhagyank: ${b}. Interpret the Loshu grid: ${JSON.stringify(loshu)}. 
-    CRITICAL: You MUST write the entire analysis exclusively in ${lang.toUpperCase()}. Return as Markdown.`;
+    Please write the entire analysis exclusively in English. Return as Markdown.`;
     
     const response = await groq.chat.completions.create({
       model: 'llama-3.1-8b-instant',
       messages: [{ role: 'user', content: prompt }]
     });
-    return response.choices[0]?.message?.content || "";
+    const result = response.choices[0]?.message?.content || "";
+    return await translateText(result, lang);
   });
 };
 
@@ -224,13 +273,14 @@ export const getPalmistryAnalysis = async (image: string, lang: Language) => {
         {
           role: "user",
           content: [
-            { type: "text", text: `Read this palm for personality, longevity, wealth, and career. CRITICAL: You MUST write the entire response exclusively in ${lang.toUpperCase()}.` },
+            { type: "text", text: `Read this palm for personality, longevity, wealth, and career. Please write the entire response exclusively in English.` },
             { type: "image_url", image_url: { url: `data:${mediaType};base64,${base64Data}` } }
           ]
         }
       ]
     });
     
-    return response.choices[0]?.message?.content || "";
+    const result = response.choices[0]?.message?.content || "";
+    return await translateText(result, lang);
   });
 };
