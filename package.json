@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "groq-sdk": "^1.1.2",
+    "@google/genai": "^1.50.1",
     "html2canvas": "1.4.1",
     "jspdf": "2.5.1",
     "react": "^19.2.3",

@@ -1,4 +1,4 @@
-import Groq from "groq-sdk";
+import { GoogleGenAI } from "@google/genai";
 import { BirthDetails, MatchmakingDetails, MoonSign, Timeframe, Language, ChatMessage, KundaliResponse } from "../types";
 import { GOOGLE_TRANSLATE_LANG_MAP } from "../constants";
 import { StorageService } from "./storageService";
@@ -36,24 +36,21 @@ const translateText = async (text: string, targetLanguage: Language): Promise<st
   if (targetLanguage === 'English' || !text) return text;
   
   try {
-    const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
-    const response = await groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
-      messages: [
-        { 
-          role: 'system', 
-          content: `You are a professional API translation engine. Translate the following text into ${targetLanguage}. 
-          CRITICAL INSTRUCTIONS:
-          1. Return ONLY the translated text. No introductions, no explanations, no conversational filler.
-          2. Preserve ALL markdown formatting exactly as it is (e.g. **, ###, -, etc).
-          3. Preserve any underlying JSON keys if parsing JSON string, but translate the values.`
-        },
-        { role: 'user', content: text }
-      ],
-      temperature: 0.1
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: text,
+      config: {
+        systemInstruction: `You are a professional API translation engine. Translate the following text into ${targetLanguage}. 
+        CRITICAL INSTRUCTIONS:
+        1. Return ONLY the translated text. No introductions, no explanations, no conversational filler.
+        2. Preserve ALL markdown formatting exactly as it is (e.g. **, ###, -, etc).
+        3. Preserve any underlying JSON keys if parsing JSON string, but translate the values.`,
+        temperature: 0.1
+      }
     });
     
-    const translated = response.choices[0]?.message?.content?.trim();
+    const translated = response.text?.trim();
     return translated || text;
   } catch (err) {
     console.error("Translation logic failed", err);
@@ -100,7 +97,7 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
   if (cached) return cached;
 
   const result = await withRetry(async () => {
-    const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
     const prompt = `As a Master Parashari System Astrologer, current date ${getCurrentDate()}. Provide a ${timeframe} horoscope for Moon Sign ${sign}.
     Analyze precise planetary transits and their impact on Career, Health, Relationships, and Finance.
     You must return a valid JSON object in English.
@@ -116,12 +113,15 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
       "luckyNumber": "string"
     }`;
     
-    const response = await groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: "json_object" }
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
     });
-    const parsed = parseAIResponse(response.choices[0]?.message?.content || "{}");
+    
+    const parsed = parseAIResponse(response.text || "{}");
     if (language !== 'English') {
       for (const key of Object.keys(parsed)) {
         if (typeof parsed[key] === 'string') {
@@ -138,7 +138,7 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
 
 export const getKundaliAnalysis = async (details: BirthDetails, language: Language): Promise<KundaliResponse> => {
   return await withRetry(async () => {
-    const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
     const prompt = `Generate a high-precision Authentic Vedic Janma Kundali chart and Parashari System "Life Map" for: ${details.name}, DOB: ${details.dob}, TOB: ${details.tob}, Place: ${details.location}.
     Current Date: ${getCurrentDate()}.
     
@@ -163,12 +163,15 @@ export const getKundaliAnalysis = async (details: BirthDetails, language: Langua
     }
     The 'chart' object must have 12 keys ("1" through "12"), each containing an array of planet strings based on Authentic Vedic Kundali calculation (Lahiri Ayanamsha/Sidereal). lagnaSign is 1-12.`;
 
-    const response = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: "json_object" }
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json"
+      }
     });
-    const parsed = parseAIResponse(response.choices[0]?.message?.content || "{}");
+    
+    const parsed = parseAIResponse(response.text || "{}");
     if (language !== 'English') {
       if (parsed.report) parsed.report = await translateText(parsed.report, language);
       if (parsed.varna) parsed.varna = await translateText(parsed.varna, language);
@@ -190,103 +193,105 @@ export const getKundaliAnalysis = async (details: BirthDetails, language: Langua
 
 export const askKundaliQuestion = async (q: string, context: string, history: ChatMessage[], lang: Language) => {
   return await withRetry(async () => {
-    const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
-    const messages: any[] = [
-      { role: 'system', content: `You are the User's Personal Parashari System Guide. Use the provided Kundali context: ${context}. Current Date: ${getCurrentDate()}. Focus on providing life-long guidance. Please provide your response entirely in English.` }
-    ];
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
     
-    history.forEach(msg => {
-      messages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.text });
-    });
-    
-    messages.push({ role: 'user', content: q });
+    const contents: any[] = history.map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.text }]
+    }));
+    contents.push({ role: 'user', parts: [{ text: q }] });
 
-    const response = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: messages
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents,
+      config: {
+        systemInstruction: `You are the User's Personal Parashari System Guide. Use the provided Kundali context: ${context}. Current Date: ${getCurrentDate()}. Focus on providing life-long guidance. Please provide your response entirely in English.`
+      }
     });
-    const result = response.choices[0]?.message?.content || "The cosmos is currently silent.";
+    
+    const result = response.text || "The cosmos is currently silent.";
     return await translateText(result, lang);
   });
 };
 
 export const askNumerologyQuestion = async (q: string, dob: string, mulank: number, bhagyank: number, loshu: any, history: ChatMessage[], lang: Language) => {
   return await withRetry(async () => {
-    const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
     const context = `User DOB: ${dob}, Mulank: ${mulank}, Bhagyank: ${bhagyank}, Loshu Grid: ${JSON.stringify(loshu)}`;
-    const messages: any[] = [
-      { role: 'system', content: `You are a Master Numerologist. Answer questions based on Mulank, Bhagyank and Loshu Grid context: ${context}. Please provide your response entirely in English.` }
-    ];
     
-    history.forEach(msg => {
-      messages.push({ role: msg.role === 'user' ? 'user' : 'assistant', content: msg.text });
-    });
-    
-    messages.push({ role: 'user', content: q });
+    const contents: any[] = history.map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.text }]
+    }));
+    contents.push({ role: 'user', parts: [{ text: q }] });
 
-    const response = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: messages
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents,
+      config: {
+        systemInstruction: `You are a Master Numerologist. Answer questions based on Mulank, Bhagyank and Loshu Grid context: ${context}. Please provide your response entirely in English.`
+      }
     });
-    const result = response.choices[0]?.message?.content || "The numbers are currently unclear.";
+    const result = response.text || "The numbers are currently unclear.";
     return await translateText(result, lang);
   });
 };
 
 export const getMatchmaking = async (details: MatchmakingDetails, language: Language) => {
   return await withRetry(async () => {
-    const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
     const prompt = `Traditional Parashari System Matchmaking compatibility report for ${details.boy.name} & ${details.girl.name}. 
     Provide technical Parashari scores & analysis looking at Ashtakoot (36 Guna) Milan, Mangal Dosha, Dasha combinations, and overall significators for marriage and relationship compatibility. 
     Please write the entire report exclusively in English. Return as professional Markdown.`;
     
-    const response = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: [{ role: 'user', content: prompt }]
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt
     });
-    const result = response.choices[0]?.message?.content || "";
+    
+    const result = response.text || "";
     return await translateText(result, language);
   });
 };
 
 export const getNumerologyAnalysis = async (dob: string, m: number, b: number, loshu: any, lang: Language) => {
   return await withRetry(async () => {
-    const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
     const prompt = `Technical Numerology analysis for DOB: ${dob}. Mulank: ${m}, Bhagyank: ${b}. Interpret the Loshu grid: ${JSON.stringify(loshu)}. 
     Please write the entire analysis exclusively in English. Return as Markdown.`;
     
-    const response = await groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
-      messages: [{ role: 'user', content: prompt }]
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt
     });
-    const result = response.choices[0]?.message?.content || "";
+    
+    const result = response.text || "";
     return await translateText(result, lang);
   });
 };
 
 export const getPalmistryAnalysis = async (image: string, lang: Language) => {
   return await withRetry(async () => {
-    const groq = new Groq({ apiKey: process.env.API_KEY, dangerouslyAllowBrowser: true });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
     
     // Convert base64 data URL to standard base64 string
-    // "data:image/jpeg;base64,/9j/4AAQ..." -> "/9j/4AAQ..."
     const base64Data = image.split(',')[1] || image;
     const mediaType = image.split(';')[0]?.replace('data:', '') || 'image/jpeg';
     
-    const response = await groq.chat.completions.create({
-      model: 'llama-3.2-11b-vision-preview', // Llama 3.2 vision model
-      messages: [
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [
         {
-          role: "user",
-          content: [
-            { type: "text", text: `Read this palm for personality, longevity, wealth, and career. Please write the entire response exclusively in English.` },
-            { type: "image_url", image_url: { url: `data:${mediaType};base64,${base64Data}` } }
+          role: 'user',
+          parts: [
+            { text: `Read this palm for personality, longevity, wealth, and career. Please write the entire response exclusively in English.` },
+            { inlineData: { mimeType: mediaType, data: base64Data } }
           ]
         }
       ]
     });
     
-    const result = response.choices[0]?.message?.content || "";
+    const result = response.text || "";
     return await translateText(result, lang);
   });
 };
