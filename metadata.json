@@ -1,6 +1,6 @@
 {
-  "name": "JyotishAI - Parashari System Kundali & Horoscope",
-  "description": "A comprehensive Parashari System Astrology app for personalized Kundali, accurate horoscope predictions (Daily, Weekly, Monthly), and Matchmaking powered by AI.",
+  "name": "JyotishAI - K. P. System Kundali & Horoscope",
+  "description": "A comprehensive K. P. System Astrology app for personalized Kundali, accurate horoscope predictions (Daily, Weekly, Monthly), and Matchmaking powered by AI.",
   "requestFramePermissions": [
     "geolocation",
     "camera"

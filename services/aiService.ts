@@ -98,8 +98,8 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
 
   const result = await withRetry(async () => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-    const prompt = `As a Master Parashari System Astrologer, current date ${getCurrentDate()}. Provide a ${timeframe} horoscope for Moon Sign ${sign}.
-    Analyze precise planetary transits and their impact on Career, Health, Relationships, and Finance.
+    const prompt = `As a Master K. P. System Astrologer, current date ${getCurrentDate()}. Provide a ${timeframe} horoscope for Moon Sign ${sign}.
+    Analyze precise planetary transits and their impact on Career, Health, Relationships, and Finance. You are strictly forbidden from using toxic positivity. You MUST provide harsh truths, warnings, and authentic bad predictions if the planetary math dictates it. You are an unvarnished predictor of truth.
     You must return a valid JSON object in English.
     Schema to match:
     {
@@ -139,25 +139,25 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
 export const getKundaliAnalysis = async (details: BirthDetails, language: Language): Promise<KundaliResponse> => {
   return await withRetry(async () => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-    const prompt = `Generate a high-precision Authentic Vedic Janma Kundali chart and Parashari System "Life Map" for: ${details.name}, DOB: ${details.dob}, TOB: ${details.tob}, Place: ${details.location}.
+    const prompt = `Generate a high-precision Authentic Vedic Janma Kundali chart and K. P. System "Life Map" for: ${details.name}, DOB: ${details.dob}, TOB: ${details.tob}, Place: ${details.location}.
     Current Date: ${getCurrentDate()}.
     
-    CRITICAL: This is a professional-grade Life Analysis in English. You MUST include:
-    1. **Parashari System Profile**: Detailed Varna, Gana, Nakshatra, and Moon Sign.
-    2. **Planetary Positions Table**: Degrees, Minutes, Rashi, Nakshatra for Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu.
+    CRITICAL: This is a professional-grade Life Analysis. DO NOT USE TOXIC POSITIVITY. You must provide truthful bad predictions, harsh realities, and exact warnings. You MUST include:
+    1. **K. P. System Profile**: Detailed Star Lord, Sub Lord, Nakshatra, and Moon Sign.
+    2. **Planetary Positions Table**: Degrees, Minutes, Rashi, Nakshatra, Star Lord, and Sub Lord for Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu.
     3. **Complete Life Report (NOT limited to current year)**:
-       - **12 Bhava (House) Analysis**: Detailed impact of planets on each house for the entire life based on Parashari System.
-       - **Vimshottari Dasha Timeline**: A structured list of major planetary periods throughout the user's life.
-       - **Yoga & Ascendant Analysis**: A detailed report on key astrological Yogas present.
+       - **12 Bhava (House) Cusp Analysis**: Detailed impact of planets and their Sub Lords on each house for the entire life based on K. P. System.
+       - **Vimshottari Dasa/Bhukti/Antara (DBA) Timeline**: A structured list of major planetary periods.
+       - **Shani Saadesati Analysis**: A dedicated section precisely calculating the 7.5 year transit of Saturn over the natal moon, dictating its strict timeline and harsh upcoming periods.
        - **Remedies & Gemstones**: Specific rituals and stones for lifetime benefit.
     
     You must return a valid JSON object matching this exact structure:
     {
-      "report": "Professional Markdown string with bold headers and tables",
+      "report": "Professional Markdown string with bold headers and tables. Include harsh truths and Saadesati.",
       "chart": { "1": ["Sun", "Moon"], "2": [], ... },
       "lagnaSign": 1, 
-      "varna": "string",
-      "gana": "string",
+      "starLord": "string",
+      "subLord": "string",
       "nakshatra": "string",
       "moonSign": "string"
     }
@@ -174,8 +174,8 @@ export const getKundaliAnalysis = async (details: BirthDetails, language: Langua
     const parsed = parseAIResponse(response.text || "{}");
     if (language !== 'English') {
       if (parsed.report) parsed.report = await translateText(parsed.report, language);
-      if (parsed.varna) parsed.varna = await translateText(parsed.varna, language);
-      if (parsed.gana) parsed.gana = await translateText(parsed.gana, language);
+      if (parsed.starLord) parsed.starLord = await translateText(parsed.starLord, language);
+      if (parsed.subLord) parsed.subLord = await translateText(parsed.subLord, language);
       if (parsed.nakshatra) parsed.nakshatra = await translateText(parsed.nakshatra, language);
       if (parsed.moonSign) parsed.moonSign = await translateText(parsed.moonSign, language);
       
@@ -205,7 +205,7 @@ export const askKundaliQuestion = async (q: string, context: string, history: Ch
       model: 'gemini-2.5-flash',
       contents,
       config: {
-        systemInstruction: `You are the User's Personal Parashari System Guide. Use the provided Kundali context: ${context}. Current Date: ${getCurrentDate()}. Focus on providing life-long guidance. Please provide your response entirely in English.`
+        systemInstruction: `You are the User's Personal K. P. System Guide. Use the provided Kundali context: ${context}. Current Date: ${getCurrentDate()}. Focus on providing life-long guidance. DO NOT use toxic positivity, provide harsh truths and authentic bad predictions if necessary. Please provide your response entirely in English.`
       }
     });
     
@@ -240,8 +240,9 @@ export const askNumerologyQuestion = async (q: string, dob: string, mulank: numb
 export const getMatchmaking = async (details: MatchmakingDetails, language: Language) => {
   return await withRetry(async () => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-    const prompt = `Traditional Parashari System Matchmaking compatibility report for ${details.boy.name} & ${details.girl.name}. 
-    Provide technical Parashari scores & analysis looking at Ashtakoot (36 Guna) Milan, Mangal Dosha, Dasha combinations, and overall significators for marriage and relationship compatibility. 
+    const prompt = `K. P. System Matchmaking compatibility report for ${details.boy.name} & ${details.girl.name}. 
+    Provide technical K. P. System scores & analysis looking at the 11th cusp sublord, 7th cusp sublord, ruling planets, DBA periods, and overall significators for marriage and relationship compatibility. 
+    DO NOT use toxic positivity. You MUST provide strict warnings, bad predictions, and genuine friction points if they exist.
     Please write the entire report exclusively in English. Return as professional Markdown.`;
     
     const response = await ai.models.generateContent({

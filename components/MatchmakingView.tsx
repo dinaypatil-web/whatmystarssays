@@ -117,8 +117,8 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
       {!result && !loading && (
         <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="text-center space-y-2">
-            <h2 className="text-3xl font-cinzel text-pink-400">Parashari System Matchmaking (2026)</h2>
-            <p className="text-slate-400">Advanced Parashari System compatibility analysis for a blissful union.</p>
+            <h2 className="text-3xl font-cinzel text-pink-400">K. P. System Matchmaking (2026)</h2>
+            <p className="text-slate-400">Advanced K. P. System compatibility analysis for a blissful union.</p>
           </div>
 
           {error && (
@@ -190,7 +190,7 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
               <div className="mt-12 pt-8 border-t border-white/10 opacity-60 not-prose">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2 text-center">Disclaimer regarding AI Generation</p>
                 <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic text-center max-w-2xl mx-auto">
-                  This comparison is performed by Artificial Intelligence based on Parashari System astrological parameters. The results are for informational purposes only. AI analysis may lack human intuition and cultural depth. Consult a professional Parashari System astrologer for critical life decisions. The creators assume no liability for choices made based on this algorithmic analysis.
+                  This comparison is performed by Artificial Intelligence based on K. P. System astrological parameters. The results are for informational purposes only. AI analysis may lack human intuition and cultural depth. Consult a professional K. P. System astrologer for critical life decisions. The creators assume no liability for choices made based on this algorithmic analysis.
                 </p>
               </div>
             </div>
