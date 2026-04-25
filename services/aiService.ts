@@ -137,7 +137,11 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
 };
 
 export const getKundaliAnalysis = async (details: BirthDetails, language: Language): Promise<KundaliResponse> => {
-  return await withRetry(async () => {
+  const cacheKey = StorageService.getKeys.kundali(details.name, details.dob, language);
+  const cached = StorageService.get<KundaliResponse>(cacheKey);
+  if (cached) return cached;
+
+  const result = await withRetry(async () => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
     const prompt = `Generate a high-precision Authentic Vedic Janma Kundali chart and K. P. System "Life Map" for: ${details.name}, DOB: ${details.dob}, TOB: ${details.tob}, Place: ${details.location}.
     Current Date: ${getCurrentDate()}.
@@ -189,6 +193,9 @@ export const getKundaliAnalysis = async (details: BirthDetails, language: Langua
     }
     return parsed;
   });
+
+  StorageService.save(cacheKey, result, -1);
+  return result;
 };
 
 export const askKundaliQuestion = async (q: string, context: string, history: ChatMessage[], lang: Language) => {
@@ -238,7 +245,11 @@ export const askNumerologyQuestion = async (q: string, dob: string, mulank: numb
 };
 
 export const getMatchmaking = async (details: MatchmakingDetails, language: Language) => {
-  return await withRetry(async () => {
+  const cacheKey = StorageService.getKeys.match(details.boy.name, details.girl.name, language);
+  const cached = StorageService.get<string>(cacheKey);
+  if (cached) return cached;
+
+  const result = await withRetry(async () => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
     const prompt = `K. P. System Matchmaking compatibility report for ${details.boy.name} & ${details.girl.name}. 
     Provide technical K. P. System scores & analysis looking at the 11th cusp sublord, 7th cusp sublord, ruling planets, DBA periods, and overall significators for marriage and relationship compatibility. 
@@ -250,13 +261,20 @@ export const getMatchmaking = async (details: MatchmakingDetails, language: Lang
       contents: prompt
     });
     
-    const result = response.text || "";
-    return await translateText(result, language);
+    const resultText = response.text || "";
+    return await translateText(resultText, language);
   });
+
+  StorageService.save(cacheKey, result, -1);
+  return result;
 };
 
 export const getNumerologyAnalysis = async (dob: string, m: number, b: number, loshu: any, lang: Language) => {
-  return await withRetry(async () => {
+  const cacheKey = StorageService.getKeys.numerology(dob, lang);
+  const cached = StorageService.get<string>(cacheKey);
+  if (cached) return cached;
+
+  const result = await withRetry(async () => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
     const prompt = `Technical Numerology analysis for DOB: ${dob}. Mulank: ${m}, Bhagyank: ${b}. Interpret the Loshu grid: ${JSON.stringify(loshu)}. 
     Please write the entire analysis exclusively in English. Return as Markdown.`;
@@ -266,9 +284,12 @@ export const getNumerologyAnalysis = async (dob: string, m: number, b: number, l
       contents: prompt
     });
     
-    const result = response.text || "";
-    return await translateText(result, lang);
+    const resultText = response.text || "";
+    return await translateText(resultText, lang);
   });
+
+  StorageService.save(cacheKey, result, -1);
+  return result;
 };
 
 export const getPalmistryAnalysis = async (image: string, lang: Language) => {

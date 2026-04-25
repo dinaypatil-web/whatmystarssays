@@ -5,6 +5,8 @@ import { Language, ChatMessage } from '../types';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { StorageService } from '../services/storageService';
+import { BirthDetails } from '../types';
 
 interface NumerologyViewProps {
   language: Language;
@@ -26,6 +28,14 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
   const [userQuery, setUserQuery] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [profiles, setProfiles] = useState<BirthDetails[]>(StorageService.getProfiles());
+
+  const handleProfileSelect = (name: string) => {
+    const profile = profiles.find(p => p.name === name);
+    if (profile) {
+      setDob(profile.dob);
+    }
+  };
 
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -77,6 +87,10 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
     try {
       const result = await getNumerologyAnalysis(dob, numerologyData.mulank, numerologyData.bhagyank, numerologyData.loshu, language);
       setAnalysis(result);
+      // Try to find if this DOB belongs to a profile, or save a generic one if name unknown?
+      // Actually Numerology just needs DOB. We can't really save a profile without a name here.
+      // But we can save the current DOB context if it's new? 
+      // User requested "save data feed".
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Celestial numerology failed. Please try again.");
@@ -185,6 +199,21 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
           <div className="mb-8 text-center">
             <h2 className="text-3xl font-cinzel text-amber-400 mb-2">Numerology & Loshu Grid</h2>
             <p className="text-slate-400">Discover your Mulank (Psychic) and Bhagyank (Destiny) numbers.</p>
+          </div>
+
+          <div className="max-w-md mx-auto mb-8">
+             <div className="flex items-center justify-between mb-4 px-1">
+                <span className="text-[10px] font-black text-amber-500/70 uppercase tracking-[0.3em]">Quick Load DOB 📂</span>
+             </div>
+             <select 
+               onChange={(e) => handleProfileSelect(e.target.value)}
+               className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white outline-none hover:bg-slate-800 transition-all text-sm"
+             >
+               <option value="">Select a saved profile...</option>
+               {profiles.map(p => (
+                 <option key={p.name} value={p.name}>{p.name} ({p.dob})</option>
+               ))}
+             </select>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8 max-w-md mx-auto">

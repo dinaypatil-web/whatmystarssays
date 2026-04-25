@@ -22,6 +22,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [analysis, setAnalysis] = useState<KundaliResponse | null>(null);
+  const [profiles, setProfiles] = useState<BirthDetails[]>(StorageService.getProfiles());
   
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [userQuery, setUserQuery] = useState('');
@@ -35,6 +36,13 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
   useEffect(() => {
     scrollToBottom();
   }, [chatHistory, chatLoading]);
+
+  const handleProfileSelect = (name: string) => {
+    const profile = profiles.find(p => p.name === name);
+    if (profile) {
+      setDetails(profile);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +58,8 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
       };
       const result = await getKundaliAnalysis(enrichedDetails, language);
       setAnalysis(result);
+      StorageService.saveProfile(details);
+      setProfiles(StorageService.getProfiles());
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Celestial connection failed. Please check your inputs.");
@@ -165,6 +175,22 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
           <div className="mb-10 text-center">
             <h2 className="text-3xl md:text-5xl font-cinzel text-amber-100 mb-4 tracking-tight">K. P. System Life Analysis</h2>
             <p className="text-slate-400 max-w-xl mx-auto text-sm md:text-base">Decode your entire life journey, from personality traits to Vimshottari Mahadashas, lifetime timelines, and house interpretations.</p>
+          </div>
+
+          <div className="max-w-3xl mx-auto mb-8">
+             <div className="flex items-center justify-between mb-4 px-1">
+                <span className="text-[10px] font-black text-amber-500/70 uppercase tracking-[0.3em]">Load Saved Profile 📂</span>
+             </div>
+             <select 
+               onChange={(e) => handleProfileSelect(e.target.value)}
+               className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none hover:bg-white/10 transition-all font-medium text-sm"
+               value={details.name}
+             >
+               <option value="" className="bg-slate-900">Select a saved profile...</option>
+               {profiles.map(p => (
+                 <option key={p.name} value={p.name} className="bg-slate-900">{p.name}</option>
+               ))}
+             </select>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8 max-w-3xl mx-auto">

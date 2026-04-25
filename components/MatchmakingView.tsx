@@ -5,6 +5,7 @@ import { getMatchmaking, getCoordinates } from '../services/aiService';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { StorageService } from '../services/storageService';
 
 interface MatchmakingViewProps {
   language: Language;
@@ -20,6 +21,17 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+  const [profiles, setProfiles] = useState<BirthDetails[]>(StorageService.getProfiles());
+
+  const handleProfileSelect = (side: 'boy' | 'girl', name: string) => {
+    const profile = profiles.find(p => p.name === name);
+    if (profile) {
+      setDetails(prev => ({
+        ...prev,
+        [side]: { ...profile }
+      }));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +50,11 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
 
       const data = await getMatchmaking(enrichedDetails, language);
       setResult(data);
+      
+      // Save both profiles
+      StorageService.saveProfile(details.boy);
+      StorageService.saveProfile(details.girl);
+      setProfiles(StorageService.getProfiles());
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Celestial comparison failed. Please verify the locations and try again.");
@@ -128,18 +145,24 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
           )}
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <ProfileForm 
-              title="Groom (Boy)" 
-              details={details.boy} 
-              onChange={(d) => setDetails({ ...details, boy: d })} 
-              accentColor="blue"
-            />
-            <ProfileForm 
-              title="Bride (Girl)" 
-              details={details.girl} 
-              onChange={(d) => setDetails({ ...details, girl: d })} 
-              accentColor="pink"
-            />
+            <div className="space-y-4">
+              <ProfileSelector profiles={profiles} onSelect={(name) => handleProfileSelect('boy', name)} side="boy" />
+              <ProfileForm 
+                title="Groom (Boy)" 
+                details={details.boy} 
+                onChange={(d) => setDetails({ ...details, boy: d })} 
+                accentColor="blue"
+              />
+            </div>
+            <div className="space-y-4">
+              <ProfileSelector profiles={profiles} onSelect={(name) => handleProfileSelect('girl', name)} side="girl" />
+              <ProfileForm 
+                title="Bride (Girl)" 
+                details={details.girl} 
+                onChange={(d) => setDetails({ ...details, girl: d })} 
+                accentColor="pink"
+              />
+            </div>
           </div>
 
           <div className="flex justify-center">
@@ -262,6 +285,23 @@ const ProfileForm: React.FC<{
         />
       </div>
     </div>
+  </div>
+);
+
+const ProfileSelector = ({ profiles, onSelect, side }: { profiles: BirthDetails[], onSelect: (name: string) => void, side: string }) => (
+  <div className="bg-slate-800/40 p-4 rounded-2xl border border-white/5">
+    <div className="flex items-center justify-between mb-2 px-1">
+      <span className="text-[9px] font-black text-amber-500/70 uppercase tracking-[0.3em]">Load {side === 'boy' ? 'Boy' : 'Girl'} Profile 📂</span>
+    </div>
+    <select 
+      onChange={(e) => onSelect(e.target.value)}
+      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white outline-none hover:bg-slate-800 transition-all text-xs"
+    >
+      <option value="">Select a saved profile...</option>
+      {profiles.map(p => (
+        <option key={p.name} value={p.name}>{p.name}</option>
+      ))}
+    </select>
   </div>
 );
 
