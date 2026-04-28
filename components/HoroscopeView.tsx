@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { ZODIAC_SIGNS } from '../constants';
 import { Timeframe, PredictionResult, Language } from '../types';
-import { getHoroscope } from '../services/aiService';
+import { getHoroscope } from '../services/geminiService';
 import { StorageService } from '../services/storageService';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -201,20 +201,14 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
   );
 };
 
-const ResultCard = ({ title, content, icon }: { title: string; content: any; icon: string }) => {
-  const safeContent = typeof content === 'string' 
-    ? content 
-    : (content ? JSON.stringify(content) : 'Data unavailable.');
-
-  return (
-    <div className="mirror-card p-6 rounded-[28px] border-white/5 hover:border-amber-500/20 transition-all duration-500">
-      <div className="flex items-center gap-3 mb-3">
-        <span className="text-xl">{icon}</span>
-        <h4 className="text-sm font-black uppercase tracking-widest text-amber-200/80">{title}</h4>
-      </div>
-      <p className="text-slate-400 text-sm leading-relaxed opacity-90">{safeContent}</p>
+const ResultCard = ({ title, content, icon }: { title: string; content: string; icon: string }) => (
+  <div className="mirror-card p-6 rounded-[28px] border-white/5 hover:border-amber-500/20 transition-all duration-500">
+    <div className="flex items-center gap-3 mb-3">
+      <span className="text-xl">{icon}</span>
+      <h4 className="text-sm font-black uppercase tracking-widest text-amber-200/80">{title}</h4>
     </div>
-  );
-};
+    <p className="text-slate-400 text-sm leading-relaxed opacity-90">{content}</p>
+  </div>
+);
 
 export default HoroscopeView;

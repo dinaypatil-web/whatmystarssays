@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { getPalmistryAnalysis } from '../services/aiService';
+import { getPalmistryAnalysis } from '../services/geminiService';
 import { Language } from '../types';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
@@ -233,7 +233,7 @@ const PalmistryView: React.FC<PalmistryViewProps> = ({ language }) => {
                    <div className="mt-12 pt-8 border-t border-white/10 opacity-60 not-prose">
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2">Disclaimer regarding AI Generation</p>
                       <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic">
-                        This application utilizes Artificial Intelligence to analyze biometric palm data based on K. P. System principles. The resulting content is for informational purposes only. AI interpretations may lack the physical intuition of a human palmist. No life decisions should be based solely on these algorithmic findings.
+                        This application utilizes Artificial Intelligence to analyze biometric palm data based on Vedic principles. The resulting content is for informational purposes only. AI interpretations may lack the physical intuition of a human palmist. No life decisions should be based solely on these algorithmic findings.
                       </p>
                    </div>
                 </div>

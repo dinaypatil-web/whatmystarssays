@@ -1,11 +1,10 @@
 
 import React, { useState } from 'react';
 import { BirthDetails, MatchmakingDetails, Language } from '../types';
-import { getMatchmaking, getCoordinates } from '../services/aiService';
+import { getMatchmaking, getCoordinates } from '../services/geminiService';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { StorageService } from '../services/storageService';
 
 interface MatchmakingViewProps {
   language: Language;
@@ -21,17 +20,6 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
-  const [profiles, setProfiles] = useState<BirthDetails[]>(StorageService.getProfiles());
-
-  const handleProfileSelect = (side: 'boy' | 'girl', name: string) => {
-    const profile = profiles.find(p => p.name === name);
-    if (profile) {
-      setDetails(prev => ({
-        ...prev,
-        [side]: { ...profile }
-      }));
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,11 +38,6 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
 
       const data = await getMatchmaking(enrichedDetails, language);
       setResult(data);
-      
-      // Save both profiles
-      StorageService.saveProfile(details.boy);
-      StorageService.saveProfile(details.girl);
-      setProfiles(StorageService.getProfiles());
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Celestial comparison failed. Please verify the locations and try again.");
@@ -134,8 +117,8 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
       {!result && !loading && (
         <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="text-center space-y-2">
-            <h2 className="text-3xl font-cinzel text-pink-400">K. P. System Matchmaking (2026)</h2>
-            <p className="text-slate-400">Advanced K. P. System compatibility analysis for a blissful union.</p>
+            <h2 className="text-3xl font-cinzel text-pink-400">Ashtakoot Milan (2026)</h2>
+            <p className="text-slate-400">Traditional 36 Guna compatibility analysis for a blissful union.</p>
           </div>
 
           {error && (
@@ -145,24 +128,18 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
           )}
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <ProfileSelector profiles={profiles} onSelect={(name) => handleProfileSelect('boy', name)} side="boy" />
-              <ProfileForm 
-                title="Groom (Boy)" 
-                details={details.boy} 
-                onChange={(d) => setDetails({ ...details, boy: d })} 
-                accentColor="blue"
-              />
-            </div>
-            <div className="space-y-4">
-              <ProfileSelector profiles={profiles} onSelect={(name) => handleProfileSelect('girl', name)} side="girl" />
-              <ProfileForm 
-                title="Bride (Girl)" 
-                details={details.girl} 
-                onChange={(d) => setDetails({ ...details, girl: d })} 
-                accentColor="pink"
-              />
-            </div>
+            <ProfileForm 
+              title="Groom (Boy)" 
+              details={details.boy} 
+              onChange={(d) => setDetails({ ...details, boy: d })} 
+              accentColor="blue"
+            />
+            <ProfileForm 
+              title="Bride (Girl)" 
+              details={details.girl} 
+              onChange={(d) => setDetails({ ...details, girl: d })} 
+              accentColor="pink"
+            />
           </div>
 
           <div className="flex justify-center">
@@ -213,7 +190,7 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
               <div className="mt-12 pt-8 border-t border-white/10 opacity-60 not-prose">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2 text-center">Disclaimer regarding AI Generation</p>
                 <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic text-center max-w-2xl mx-auto">
-                  This comparison is performed by Artificial Intelligence based on K. P. System astrological parameters. The results are for informational purposes only. AI analysis may lack human intuition and cultural depth. Consult a professional K. P. System astrologer for critical life decisions. The creators assume no liability for choices made based on this algorithmic analysis.
+                  This comparison is performed by Artificial Intelligence based on traditional Vedic Ashtakoot parameters. The results are for informational purposes only. AI analysis may lack human intuition and cultural depth. Consult a professional Vedic astrologer for critical life decisions. The creators assume no liability for choices made based on this algorithmic analysis.
                 </p>
               </div>
             </div>
@@ -285,23 +262,6 @@ const ProfileForm: React.FC<{
         />
       </div>
     </div>
-  </div>
-);
-
-const ProfileSelector = ({ profiles, onSelect, side }: { profiles: BirthDetails[], onSelect: (name: string) => void, side: string }) => (
-  <div className="bg-slate-800/40 p-4 rounded-2xl border border-white/5">
-    <div className="flex items-center justify-between mb-2 px-1">
-      <span className="text-[9px] font-black text-amber-500/70 uppercase tracking-[0.3em]">Load {side === 'boy' ? 'Boy' : 'Girl'} Profile 📂</span>
-    </div>
-    <select 
-      onChange={(e) => onSelect(e.target.value)}
-      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white outline-none hover:bg-slate-800 transition-all text-xs"
-    >
-      <option value="">Select a saved profile...</option>
-      {profiles.map(p => (
-        <option key={p.name} value={p.name}>{p.name}</option>
-      ))}
-    </select>
   </div>
 );
 

@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { BirthDetails, Language, ChatMessage, KundaliResponse } from '../types';
-import { getCoordinates, getKundaliAnalysis, askKundaliQuestion } from '../services/aiService';
+import { getCoordinates, getKundaliAnalysis, askKundaliQuestion } from '../services/geminiService';
 import KundaliChart from './KundaliChart';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
@@ -22,7 +22,6 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [analysis, setAnalysis] = useState<KundaliResponse | null>(null);
-  const [profiles, setProfiles] = useState<BirthDetails[]>(StorageService.getProfiles());
   
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [userQuery, setUserQuery] = useState('');
@@ -36,13 +35,6 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
   useEffect(() => {
     scrollToBottom();
   }, [chatHistory, chatLoading]);
-
-  const handleProfileSelect = (name: string) => {
-    const profile = profiles.find(p => p.name === name);
-    if (profile) {
-      setDetails(profile);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,8 +50,6 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
       };
       const result = await getKundaliAnalysis(enrichedDetails, language);
       setAnalysis(result);
-      StorageService.saveProfile(details);
-      setProfiles(StorageService.getProfiles());
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Celestial connection failed. Please check your inputs.");
@@ -173,24 +163,8 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
       {!analysis && !loading && (
         <section className="mirror-card p-6 md:p-12 rounded-3xl animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="mb-10 text-center">
-            <h2 className="text-3xl md:text-5xl font-cinzel text-amber-100 mb-4 tracking-tight">K. P. System Life Analysis</h2>
-            <p className="text-slate-400 max-w-xl mx-auto text-sm md:text-base">Decode your entire life journey, from personality traits to Vimshottari Mahadashas, lifetime timelines, and house interpretations.</p>
-          </div>
-
-          <div className="max-w-3xl mx-auto mb-8">
-             <div className="flex items-center justify-between mb-4 px-1">
-                <span className="text-[10px] font-black text-amber-500/70 uppercase tracking-[0.3em]">Load Saved Profile 📂</span>
-             </div>
-             <select 
-               onChange={(e) => handleProfileSelect(e.target.value)}
-               className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none hover:bg-white/10 transition-all font-medium text-sm"
-               value={details.name}
-             >
-               <option value="" className="bg-slate-900">Select a saved profile...</option>
-               {profiles.map(p => (
-                 <option key={p.name} value={p.name} className="bg-slate-900">{p.name}</option>
-               ))}
-             </select>
+            <h2 className="text-3xl md:text-5xl font-cinzel text-amber-100 mb-4 tracking-tight">Vedic Life Analysis</h2>
+            <p className="text-slate-400 max-w-xl mx-auto text-sm md:text-base">Decode your entire life journey, from personality traits to Vimshottari Mahadashas, lifetime Saadesati timelines, and house interpretations.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8 max-w-3xl mx-auto">
@@ -244,10 +218,10 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                 <KundaliChart data={analysis.chart} lagnaSign={analysis.lagnaSign} />
                 
                 <div className="grid grid-cols-2 gap-4 p-6 bg-amber-500/5 border border-amber-500/10 rounded-[32px]">
-                   <KPSummaryItem label="Star Lord" value={analysis.starLord} icon="⭐" />
-                   <KPSummaryItem label="Sub Lord" value={analysis.subLord} icon="🔮" />
-                   <KPSummaryItem label="Nakshatra" value={analysis.nakshatra} icon="✨" />
-                   <KPSummaryItem label="Moon Sign" value={analysis.moonSign} icon="🌙" />
+                   <VedicSummaryItem label="Varna" value={analysis.varna} icon="📿" />
+                   <VedicSummaryItem label="Gana" value={analysis.gana} icon="🛡️" />
+                   <VedicSummaryItem label="Nakshatra" value={analysis.nakshatra} icon="✨" />
+                   <VedicSummaryItem label="Moon Sign" value={analysis.moonSign} icon="🌙" />
                 </div>
 
                 <div className="p-8 bg-slate-900/40 border border-white/5 rounded-[32px] no-print">
@@ -268,7 +242,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                 </div>
               </div>
               <div className="lg:col-span-7 prose prose-invert prose-amber max-w-none prose-h1:font-cinzel prose-h2:font-cinzel prose-h2:text-amber-400 prose-h3:text-amber-200 prose-p:text-slate-300 leading-relaxed text-sm md:text-base">
-                <ReactMarkdown>{typeof analysis.report === 'string' ? analysis.report : JSON.stringify(analysis.report)}</ReactMarkdown>
+                <ReactMarkdown>{analysis.report}</ReactMarkdown>
                 
                 {chatHistory.length > 0 && (
                   <div className="mt-16 pt-8 border-t border-white/10">
@@ -291,7 +265,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                 <div className="mt-16 pt-8 border-t border-white/10 opacity-60">
                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2">Disclaimer regarding AI Generation</p>
                    <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic">
-                      This application translates celestial planetary transits via advanced mathematical models based strictly on K. P. System mechanics. The Artificial Intelligence is instructed to deliver harsh life truths without filtering. No liability is assumed for choices, emotional impact, or distress caused by the generated algorithmic forecasts. They serve as personal insights, not verified life warranties.
+                    This application utilizes Artificial Intelligence to analyze birth data based on Vedic astrological principles. The resulting content is intended for informational, educational, and personal insight purposes only. Please be aware that AI-generated interpretations may lack the nuance of a human astrologer and may occasionally produce inconsistent results. The information provided herein should not be construed as professional advice (medical, legal, or financial) or factual prophecy. The creators assume no liability for choices made based on this algorithmic analysis.
                    </p>
                 </div>
               </div>
@@ -361,7 +335,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
   );
 };
 
-const KPSummaryItem = ({ label, value, icon }: { label: string; value: string; icon: string }) => (
+const VedicSummaryItem = ({ label, value, icon }: { label: string; value: string; icon: string }) => (
   <div className="flex flex-col items-center justify-center p-3 text-center">
     <span className="text-lg mb-1">{icon}</span>
     <p className="text-[9px] uppercase font-black text-amber-500/60 tracking-widest">{label}</p>

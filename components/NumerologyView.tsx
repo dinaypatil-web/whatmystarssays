@@ -1,18 +1,28 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { getNumerologyAnalysis, askNumerologyQuestion } from '../services/aiService';
+import { getNumerologyAnalysis, askNumerologyQuestion } from '../services/geminiService';
 import { Language, ChatMessage } from '../types';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { StorageService } from '../services/storageService';
-import { BirthDetails } from '../types';
 
 interface NumerologyViewProps {
   language: Language;
 }
 
+const CHALDEAN_MAP: { [key: string]: number } = {
+  a: 1, i: 1, j: 1, q: 1, y: 1,
+  b: 2, k: 2, r: 2,
+  c: 3, g: 3, l: 3, s: 3,
+  d: 4, m: 4, t: 4,
+  e: 5, h: 5, n: 5, x: 5,
+  u: 6, v: 6, w: 6,
+  o: 7, z: 7,
+  f: 8, p: 8
+};
+
 const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
+  const [name, setName] = useState('');
   const [dob, setDob] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +31,7 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
   const [numerologyData, setNumerologyData] = useState<{
     mulank: number;
     bhagyank: number;
+    nameNumber: number;
     loshu: (number | null)[][];
   } | null>(null);
 
@@ -28,14 +39,6 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
   const [userQuery, setUserQuery] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const [profiles, setProfiles] = useState<BirthDetails[]>(StorageService.getProfiles());
-
-  const handleProfileSelect = (name: string) => {
-    const profile = profiles.find(p => p.name === name);
-    if (profile) {
-      setDob(profile.dob);
-    }
-  };
 
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -45,19 +48,32 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
     scrollToBottom();
   }, [chatHistory, chatLoading]);
 
-  const calculateNumerology = (dateStr: string) => {
+  const sumDigits = (num: number): number => {
+    if (num === 0) return 0;
+    let sum = num.toString().split('').reduce((acc, digit) => acc + (parseInt(digit) || 0), 0);
+    return sum > 9 ? sumDigits(sum) : sum;
+  };
+
+  const calculateNameNumber = (fullName: string): number => {
+    if (!fullName) return 0;
+    const normalized = fullName.toLowerCase().replace(/[^a-z]/g, '');
+    let total = 0;
+    for (const char of normalized) {
+      total += CHALDEAN_MAP[char] || 0;
+    }
+    return sumDigits(total);
+  };
+
+  const calculateNumerology = (dateStr: string, fullName: string) => {
     if (!dateStr) return null;
     const parts = dateStr.split('-');
     const day = parts[2];
 
-    const sumDigits = (num: number): number => {
-      let sum = num.toString().split('').reduce((acc, digit) => acc + parseInt(digit), 0);
-      return sum > 9 ? sumDigits(sum) : sum;
-    };
-
     const mulank = sumDigits(parseInt(day));
     const fullSum = dateStr.replace(/-/g, '').split('').reduce((acc, digit) => acc + parseInt(digit), 0);
     const bhagyank = sumDigits(fullSum);
+
+    const nameNumber = calculateNameNumber(fullName);
 
     const digits = dateStr.replace(/-/g, '').split('').map(Number);
     const gridLayout = [
@@ -70,13 +86,13 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
       row.map(num => digits.includes(num) ? num : null)
     );
 
-    return { mulank, bhagyank, loshu };
+    return { mulank, bhagyank, nameNumber, loshu };
   };
 
   useEffect(() => {
-    const data = calculateNumerology(dob);
+    const data = calculateNumerology(dob, name);
     setNumerologyData(data);
-  }, [dob]);
+  }, [dob, name]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,12 +101,16 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
     setError(null);
     setChatHistory([]);
     try {
-      const result = await getNumerologyAnalysis(dob, numerologyData.mulank, numerologyData.bhagyank, numerologyData.loshu, language);
+      const result = await getNumerologyAnalysis(
+        dob, 
+        numerologyData.mulank, 
+        numerologyData.bhagyank, 
+        numerologyData.nameNumber,
+        name,
+        numerologyData.loshu, 
+        language
+      );
       setAnalysis(result);
-      // Try to find if this DOB belongs to a profile, or save a generic one if name unknown?
-      // Actually Numerology just needs DOB. We can't really save a profile without a name here.
-      // But we can save the current DOB context if it's new? 
-      // User requested "save data feed".
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Celestial numerology failed. Please try again.");
@@ -195,62 +215,64 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
   return (
     <div className="space-y-8 max-w-4xl mx-auto pb-12">
       {!analysis && !loading && (
-        <section className="bg-slate-800/40 p-8 rounded-3xl border border-slate-700 shadow-2xl no-print">
+        <section className="bg-slate-800/40 p-8 rounded-3xl border border-slate-700 shadow-2xl no-print animate-in fade-in duration-700">
           <div className="mb-8 text-center">
-            <h2 className="text-3xl font-cinzel text-amber-400 mb-2">Numerology & Loshu Grid</h2>
-            <p className="text-slate-400">Discover your Mulank (Psychic) and Bhagyank (Destiny) numbers.</p>
+            <h2 className="text-3xl font-cinzel text-amber-400 mb-2">Numerology & Name Harmony</h2>
+            <p className="text-slate-400">Mulank, Bhagyank, Loshu Grid & Name Spelling Analysis.</p>
           </div>
 
-          <div className="max-w-md mx-auto mb-8">
-             <div className="flex items-center justify-between mb-4 px-1">
-                <span className="text-[10px] font-black text-amber-500/70 uppercase tracking-[0.3em]">Quick Load DOB 📂</span>
-             </div>
-             <select 
-               onChange={(e) => handleProfileSelect(e.target.value)}
-               className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white outline-none hover:bg-slate-800 transition-all text-sm"
-             >
-               <option value="">Select a saved profile...</option>
-               {profiles.map(p => (
-                 <option key={p.name} value={p.name}>{p.name} ({p.dob})</option>
-               ))}
-             </select>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-8 max-w-md mx-auto">
+          <form onSubmit={handleSubmit} className="space-y-8 max-w-lg mx-auto">
             {error && (
               <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-200 text-xs text-center">
                 {error}
               </div>
             )}
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-400">Select Date of Birth</label>
+                <label className="text-[10px] uppercase font-black text-amber-500 tracking-widest ml-1">Full Name</label>
+                <input
+                  required
+                  type="text"
+                  placeholder="Enter full name for vibration analysis"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-4 focus:ring-2 focus:ring-amber-500 outline-none text-white transition-all"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase font-black text-amber-500 tracking-widest ml-1">Date of Birth</label>
                 <input
                   required
                   type="date"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:ring-2 focus:ring-amber-500 outline-none text-white text-lg"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-4 focus:ring-2 focus:ring-amber-500 outline-none text-white transition-all"
                   value={dob}
                   onChange={(e) => setDob(e.target.value)}
                 />
               </div>
+
               {numerologyData && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl text-center">
-                    <span className="text-[10px] uppercase font-bold text-amber-500 block mb-1">Mulank</span>
-                    <span className="text-4xl font-bold text-white">{numerologyData.mulank}</span>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-2xl text-center">
+                    <span className="text-[8px] uppercase font-bold text-amber-500 block mb-1">Mulank</span>
+                    <span className="text-2xl font-bold text-white">{numerologyData.mulank}</span>
                   </div>
-                  <div className="bg-orange-500/10 border border-orange-500/30 p-4 rounded-2xl text-center">
-                    <span className="text-[10px] uppercase font-bold text-orange-500 block mb-1">Bhagyank</span>
-                    <span className="text-4xl font-bold text-white">{numerologyData.bhagyank}</span>
+                  <div className="bg-orange-500/10 border border-orange-500/30 p-3 rounded-2xl text-center">
+                    <span className="text-[8px] uppercase font-bold text-orange-500 block mb-1">Bhagyank</span>
+                    <span className="text-2xl font-bold text-white">{numerologyData.bhagyank}</span>
+                  </div>
+                  <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-2xl text-center">
+                    <span className="text-[8px] uppercase font-bold text-blue-500 block mb-1">Name No.</span>
+                    <span className="text-2xl font-bold text-white">{numerologyData.nameNumber || '?'}</span>
                   </div>
                 </div>
               )}
             </div>
             <button
-              disabled={loading || !dob}
-              className="w-full bg-gradient-to-r from-amber-600 to-orange-700 hover:from-amber-500 hover:to-orange-600 text-white font-bold py-4 rounded-xl transition-all shadow-lg disabled:opacity-50"
+              disabled={loading || !dob || !name}
+              className="w-full bg-gradient-to-r from-amber-600 to-orange-700 hover:from-amber-500 hover:to-orange-600 text-white font-bold py-5 rounded-xl transition-all shadow-xl disabled:opacity-50 uppercase tracking-widest"
             >
-              Get Full Prediction
+              Analyze Vibration
             </button>
           </form>
         </section>
@@ -259,7 +281,7 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
       {loading && (
         <div className="flex flex-col items-center justify-center py-24 space-y-6">
           <div className="w-12 h-12 border-4 border-amber-500/10 border-t-amber-500 rounded-full animate-spin"></div>
-          <p className="text-slate-400 font-cinzel tracking-widest animate-pulse text-sm">Decoding the Numbers...</p>
+          <p className="text-slate-400 font-cinzel tracking-widest animate-pulse text-sm text-center">Comparing Name Vibrations with Destiny Numbers...</p>
         </div>
       )}
 
@@ -267,7 +289,10 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
         <div className="space-y-8 animate-in slide-in-from-bottom-10 duration-700">
           <div id="numerology-report-area" className="bg-[#010204] rounded-[40px] p-8 border border-white/5 space-y-12">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-3xl font-cinzel text-amber-400">Personal Numerology Report</h2>
+              <div>
+                <h2 className="text-3xl font-cinzel text-amber-400">Numerology & Name Insight</h2>
+                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">Generated for: {name}</p>
+              </div>
               <button onClick={downloadPDF} disabled={exporting} className="bg-amber-500 hover:bg-amber-400 text-slate-900 text-[10px] px-6 py-2 rounded-full font-black uppercase no-print transition-all">
                 {exporting ? 'Processing...' : 'Save Full Report'}
               </button>
@@ -294,21 +319,29 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
                 </div>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-cinzel text-amber-400 mb-4 text-center md:text-left">Numerical Breakdown</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl text-center">
                     <p className="text-[10px] uppercase font-black text-amber-500 mb-1">Mulank (Psychic)</p>
                     <p className="text-4xl font-black text-white">{numerologyData?.mulank}</p>
+                    <p className="text-[9px] text-slate-500 mt-2 uppercase font-bold">Inner Character</p>
                   </div>
                   <div className="p-4 bg-orange-500/5 border border-orange-500/20 rounded-2xl text-center">
                     <p className="text-[10px] uppercase font-black text-orange-500 mb-1">Bhagyank (Destiny)</p>
                     <p className="text-4xl font-black text-white">{numerologyData?.bhagyank}</p>
+                    <p className="text-[9px] text-slate-500 mt-2 uppercase font-bold">Life Path</p>
+                  </div>
+                  <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-2xl text-center col-span-2">
+                    <p className="text-[10px] uppercase font-black text-blue-500 mb-1">Name Number (Chaldean)</p>
+                    <p className="text-4xl font-black text-white">{numerologyData?.nameNumber}</p>
+                    <p className="text-[9px] text-slate-500 mt-2 uppercase font-bold">Current Outer Vibration</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="prose prose-invert prose-amber max-w-none prose-h3:font-cinzel prose-h3:text-amber-400 p-6 rounded-2xl bg-white/5 border border-white/5">
+            <div className="prose prose-invert prose-amber max-w-none prose-h3:font-cinzel prose-h3:text-amber-400 p-6 rounded-3xl bg-white/5 border border-white/5">
               <ReactMarkdown>{analysis}</ReactMarkdown>
               
               {chatHistory.length > 0 && (
@@ -332,7 +365,7 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
               <div className="mt-12 pt-8 border-t border-white/10 opacity-60 not-prose">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2">Disclaimer regarding AI Generation</p>
                 <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic">
-                  This application utilizes Artificial Intelligence to analyze birth data based on K. P. System astrological principles. The resulting content is intended for informational, educational, and personal insight purposes only. Please be aware that AI-generated interpretations may lack the nuance of a human astrologer and may occasionally produce inconsistent results. The information provided herein should not be construed as professional advice (medical, legal, or financial) or factual prophecy. The creators assume no liability for choices made based on this algorithmic analysis.
+                  This application utilizes Artificial Intelligence to analyze birth and name data based on traditional Numerological principles. The resulting content is intended for informational, educational, and personal insight purposes only. AI interpretations may lack the nuance of a human professional and should not be construed as life-altering prophecy. The creators assume no liability for choices made based on this algorithmic analysis.
                 </p>
               </div>
             </div>
@@ -343,7 +376,7 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
                <div className="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center text-2xl">🔢</div>
                <div>
                  <h3 className="text-2xl font-cinzel text-amber-200">Numerical Consultation</h3>
-                 <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Deep dive into your numbers</p>
+                 <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Ask about name spelling adjustments or grid planes</p>
                </div>
             </div>
             

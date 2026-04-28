@@ -48,50 +48,12 @@ export const StorageService = {
    */
   getKeys: {
     horoscope: (sign: string, timeframe: string, lang: Language) => `horo_${sign}_${timeframe}_${lang}`,
-    kundali: (name: string, dob: string, lang: Language) => `kundali_${name.trim().toLowerCase()}_${dob}_${lang}`,
-    match: (bName: string, gName: string, lang: Language) => `match_${bName.trim().toLowerCase()}_${gName.trim().toLowerCase()}_${lang}`,
+    kundali: (name: string, dob: string, lang: Language) => `kundali_${name}_${dob}_${lang}`,
+    match: (bName: string, gName: string, lang: Language) => `match_${bName}_${gName}_${lang}`,
     numerology: (dob: string, lang: Language) => `num_${dob}_${lang}`,
-    userSign: () => 'user_preferred_moonsign',
-    profiles: () => 'user_saved_profiles'
+    userSign: () => 'user_preferred_moonsign'
   },
 
   setUserSign: (sign: string) => localStorage.setItem(CACHE_PREFIX + 'pref_sign', sign),
-  getUserSign: () => localStorage.getItem(CACHE_PREFIX + 'pref_sign'),
-
-  /**
-   * Saves a user profile for quick re-entry
-   */
-  saveProfile: (profile: { name: string; dob: string; tob: string; location: string }) => {
-    if (!profile.name || !profile.dob) return;
-    const profiles = StorageService.getProfiles();
-    const existingIndex = profiles.findIndex(p => p.name.toLowerCase() === profile.name.toLowerCase());
-    
-    if (existingIndex >= 0) {
-      profiles[existingIndex] = profile;
-    } else {
-      profiles.push(profile);
-    }
-    
-    localStorage.setItem(CACHE_PREFIX + 'user_profiles', JSON.stringify(profiles));
-  },
-
-  /**
-   * Retrieves all saved profiles
-   */
-  getProfiles: (): { name: string; dob: string; tob: string; location: string }[] => {
-    const raw = localStorage.getItem(CACHE_PREFIX + 'user_profiles');
-    try {
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  },
-
-  /**
-   * Deletes a specific profile
-   */
-  deleteProfile: (name: string) => {
-    const profiles = StorageService.getProfiles().filter(p => p.name.toLowerCase() !== name.toLowerCase());
-    localStorage.setItem(CACHE_PREFIX + 'user_profiles', JSON.stringify(profiles));
-  }
+  getUserSign: () => localStorage.getItem(CACHE_PREFIX + 'pref_sign')
 };

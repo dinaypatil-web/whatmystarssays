@@ -8,7 +8,7 @@ import NumerologyView from './components/NumerologyView';
 import PalmistryView from './components/PalmistryView';
 import { Language } from './types';
 import { StorageService } from './services/storageService';
-import { getHoroscope } from './services/aiService';
+import { getHoroscope } from './services/geminiService';
 import { ZODIAC_SIGNS } from './constants';
 
 const App: React.FC = () => {

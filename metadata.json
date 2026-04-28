@@ -1,8 +1,9 @@
 {
-  "name": "JyotishAI - K. P. System Kundali & Horoscope",
-  "description": "A comprehensive K. P. System Astrology app for personalized Kundali, accurate horoscope predictions (Daily, Weekly, Monthly), and Matchmaking powered by AI.",
+  "name": "JyotishAI - Vedic Kundali & Horoscope",
+  "description": "A comprehensive Vedic Astrology app for personalized Kundali, accurate horoscope predictions (Daily, Weekly, Monthly), and Ashtakoot Matchmaking powered by Gemini AI.",
   "requestFramePermissions": [
     "geolocation",
     "camera"
-  ]
+  ],
+  "majorCapabilities": []
 }
