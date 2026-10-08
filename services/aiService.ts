@@ -3,13 +3,15 @@ import { BirthDetails, MatchmakingDetails, Timeframe, Language, ChatMessage, Kun
 import { StorageService } from "./storageService";
 
 // ---------------------------------------------------------------------------
-// CONFIG — Gemini 1.5 Flash (Google AI, 1,500 requests/day FREE per key)
+// CONFIG — Active Gemini Models & Multi-Key Rotation
 // ---------------------------------------------------------------------------
-const GEMINI_MODEL = "gemini-1.5-flash";
+// Models ordered by priority:
+// 1. gemini-3.5-flash-lite (high throughput, free-tier friendly)
+// 2. gemini-3.8-flash (official GA model recommended by Google)
+const GEMINI_MODELS = ["gemini-3.5-flash-lite", "gemini-3.8-flash"];
 
 // Multi-key rotation — add up to 3 free Gemini keys on Vercel:
 //   VITE_API_KEY, VITE_API_KEY_2, VITE_API_KEY_3
-// Each key has 1,500 req/day free → 3 keys = 4,500 req/day total.
 const GEMINI_KEYS = [
   process.env.API_KEY,
   process.env.API_KEY_2,
@@ -23,10 +25,16 @@ const getCurrentKey = () => {
   return GEMINI_KEYS[_keyIndex % GEMINI_KEYS.length];
 };
 const rotateKey = () => { _keyIndex = (_keyIndex + 1) % Math.max(GEMINI_KEYS.length, 1); };
+
 const isQuotaError = (err: any) =>
   String(err).includes("429") ||
   String(err).includes("RESOURCE_EXHAUSTED") ||
   String(err).includes("quota");
+
+const isNotFoundError = (err: any) =>
+  String(err).includes("404") ||
+  String(err).includes("NOT_FOUND") ||
+  String(err).includes("not found");
 
 // Cap chat history to 10 messages to prevent runaway token usage
 const MAX_HISTORY_MESSAGES = 10;
@@ -46,32 +54,37 @@ interface GeminiMessage {
 
 const buildGeminiClient = () => new GoogleGenAI({ apiKey: getCurrentKey() });
 
-/** Text-only request — retries with next key on quota error */
-const callAI = async (systemPrompt: string, userPrompt: string, jsonMode = false): Promise<string> => {
+/**
+ * Executes a Gemini action with automatic model failover and API key rotation.
+ * 1. Tries the primary model (gemini-3.5-flash-lite).
+ * 2. If 404/NOT_FOUND, falls back to gemini-3.8-flash immediately.
+ * 3. If 429/quota exceeded, rotates through available API keys.
+ */
+const executeWithGemini = async <T>(
+  action: (ai: GoogleGenAI, model: string) => Promise<T>
+): Promise<T> => {
   let lastErr: any;
-  for (let attempt = 0; attempt < Math.max(GEMINI_KEYS.length, 1); attempt++) {
-    try {
-      const ai = buildGeminiClient();
-      const messages: GeminiMessage[] = [];
-      if (systemPrompt) {
-        messages.push({ role: "user",  parts: [{ text: systemPrompt }] });
-        messages.push({ role: "model", parts: [{ text: "Understood. I will follow these instructions precisely." }] });
-      }
-      messages.push({ role: "user", parts: [{ text: userPrompt }] });
-
-      const chat = ai.chats.create({ model: GEMINI_MODEL, history: messages.slice(0, -1) } as any);
-      const response = await chat.sendMessage({ message: messages[messages.length - 1].parts as any });
-
-      let text = response.text ?? "";
-      if (!text) throw new Error("Empty response from Gemini.");
-      if (jsonMode) text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-      return text;
-    } catch (err: any) {
-      lastErr = err;
-      if (isQuotaError(err) && GEMINI_KEYS.length > 1) {
-        console.warn(`Gemini key [${_keyIndex}] quota hit, rotating to next key.`);
-        rotateKey();
-      } else {
+  for (const model of GEMINI_MODELS) {
+    const keyAttempts = Math.max(GEMINI_KEYS.length, 1);
+    for (let attempt = 0; attempt < keyAttempts; attempt++) {
+      try {
+        const ai = buildGeminiClient();
+        return await action(ai, model);
+      } catch (err: any) {
+        lastErr = err;
+        if (isNotFoundError(err)) {
+          console.warn(`Model ${model} not available, switching to next candidate model...`);
+          break; // Move immediately to next model
+        }
+        if (isQuotaError(err) && GEMINI_KEYS.length > 1) {
+          console.warn(`Gemini key [${_keyIndex}] quota hit on ${model}, rotating to next key...`);
+          rotateKey();
+          continue;
+        }
+        if (isQuotaError(err)) {
+          // Single key quota exhausted on this model, attempt next model before giving up
+          break;
+        }
         throw err;
       }
     }
@@ -79,71 +92,65 @@ const callAI = async (systemPrompt: string, userPrompt: string, jsonMode = false
   throw lastErr;
 };
 
-/** Multi-turn chat — history trimmed to MAX_HISTORY_MESSAGES, retries with next key on quota */
+/** Text-only request with model failover and key rotation */
+const callAI = async (systemPrompt: string, userPrompt: string, jsonMode = false): Promise<string> => {
+  return executeWithGemini(async (ai, model) => {
+    const messages: GeminiMessage[] = [];
+    if (systemPrompt) {
+      messages.push({ role: "user", parts: [{ text: systemPrompt }] });
+      messages.push({ role: "model", parts: [{ text: "Understood. I will follow these instructions precisely." }] });
+    }
+    messages.push({ role: "user", parts: [{ text: userPrompt }] });
+
+    const chat = ai.chats.create({ model, history: messages.slice(0, -1) } as any);
+    const response = await chat.sendMessage({ message: messages[messages.length - 1].parts as any });
+
+    let text = response.text ?? "";
+    if (!text) throw new Error("Empty response from Gemini.");
+    if (jsonMode) text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    return text;
+  });
+};
+
+/** Multi-turn chat with model failover and key rotation */
 const callAIChat = async (systemPrompt: string, history: ChatMessage[], userQuestion: string): Promise<string> => {
   const trimmedHistory = history.slice(-MAX_HISTORY_MESSAGES);
-  let lastErr: any;
-  for (let attempt = 0; attempt < Math.max(GEMINI_KEYS.length, 1); attempt++) {
-    try {
-      const ai = buildGeminiClient();
-      const messages: GeminiMessage[] = [];
-      if (systemPrompt) {
-        messages.push({ role: "user",  parts: [{ text: systemPrompt }] });
-        messages.push({ role: "model", parts: [{ text: "Understood. Ready to assist." }] });
-      }
-      for (const msg of trimmedHistory) {
-        messages.push({ role: msg.role === "user" ? "user" : "model", parts: [{ text: msg.text }] });
-      }
-      messages.push({ role: "user", parts: [{ text: userQuestion }] });
-
-      const chat = ai.chats.create({ model: GEMINI_MODEL, history: messages.slice(0, -1) } as any);
-      const response = await chat.sendMessage({ message: messages[messages.length - 1].parts as any });
-
-      const text = response.text ?? "";
-      if (!text) throw new Error("Empty response from Gemini.");
-      return text;
-    } catch (err: any) {
-      lastErr = err;
-      if (isQuotaError(err) && GEMINI_KEYS.length > 1) {
-        console.warn(`Gemini key [${_keyIndex}] quota hit, rotating to next key.`);
-        rotateKey();
-      } else {
-        throw err;
-      }
+  return executeWithGemini(async (ai, model) => {
+    const messages: GeminiMessage[] = [];
+    if (systemPrompt) {
+      messages.push({ role: "user", parts: [{ text: systemPrompt }] });
+      messages.push({ role: "model", parts: [{ text: "Understood. Ready to assist." }] });
     }
-  }
-  throw lastErr;
+    for (const msg of trimmedHistory) {
+      messages.push({ role: msg.role === "user" ? "user" : "model", parts: [{ text: msg.text }] });
+    }
+    messages.push({ role: "user", parts: [{ text: userQuestion }] });
+
+    const chat = ai.chats.create({ model, history: messages.slice(0, -1) } as any);
+    const response = await chat.sendMessage({ message: messages[messages.length - 1].parts as any });
+
+    const text = response.text ?? "";
+    if (!text) throw new Error("Empty response from Gemini.");
+    return text;
+  });
 };
 
-/** Vision request — for Palmistry image analysis, retries with next key on quota */
+/** Vision request with model failover and key rotation */
 const callAIVision = async (textPrompt: string, imageDataUrl: string): Promise<string> => {
   const mimeType = imageDataUrl.split(";")[0].replace("data:", "") || "image/jpeg";
   const base64Data = imageDataUrl.split(",")[1] || imageDataUrl;
-  let lastErr: any;
-  for (let attempt = 0; attempt < Math.max(GEMINI_KEYS.length, 1); attempt++) {
-    try {
-      const ai = buildGeminiClient();
-      const chat = ai.chats.create({ model: GEMINI_MODEL, history: [] } as any);
-      const response = await chat.sendMessage({
-        message: [
-          { text: textPrompt },
-          { inlineData: { mimeType, data: base64Data } },
-        ] as any,
-      });
-      const text = response.text ?? "";
-      if (!text) throw new Error("Empty response from Gemini.");
-      return text;
-    } catch (err: any) {
-      lastErr = err;
-      if (isQuotaError(err) && GEMINI_KEYS.length > 1) {
-        console.warn(`Gemini key [${_keyIndex}] quota hit, rotating to next key.`);
-        rotateKey();
-      } else {
-        throw err;
-      }
-    }
-  }
-  throw lastErr;
+  return executeWithGemini(async (ai, model) => {
+    const chat = ai.chats.create({ model, history: [] } as any);
+    const response = await chat.sendMessage({
+      message: [
+        { text: textPrompt },
+        { inlineData: { mimeType, data: base64Data } },
+      ] as any,
+    });
+    const text = response.text ?? "";
+    if (!text) throw new Error("Empty response from Gemini.");
+    return text;
+  });
 };
 
 // ---------------------------------------------------------------------------
