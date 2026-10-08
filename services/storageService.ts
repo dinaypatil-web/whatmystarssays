@@ -1,5 +1,5 @@
 
-import { Language } from "../types";
+import { Language, KundaliSystem } from "../types";
 
 const LEGACY_CACHE_PREFIX = 'jyotish_cache_';
 const CACHE_PREFIX = 'jyotish_v4_';
@@ -50,7 +50,7 @@ export const StorageService = {
   getKeys: {
     // Prediction cache keys — language-aware
     horoscope: (sign: string, timeframe: string, lang: Language) => `horo_${sign}_${timeframe}_${lang}`,
-    kundali: (name: string, dob: string, lang: Language) => `kundali_${name.trim().toLowerCase()}_${dob}_${lang}`,
+    kundali: (name: string, dob: string, lang: Language, system: KundaliSystem = 'kp') => `kundali_${name.trim().toLowerCase()}_${dob}_${lang}_${system}`,
     match: (bName: string, gName: string, lang: Language) => `match_${bName.trim().toLowerCase()}_${gName.trim().toLowerCase()}_${lang}`,
     numerology: (dob: string, lang: Language) => `num_${dob}_${lang}`,
     userSign: () => 'user_preferred_moonsign',

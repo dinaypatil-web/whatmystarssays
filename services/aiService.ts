@@ -1,9 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
-import { BirthDetails, MatchmakingDetails, Timeframe, Language, ChatMessage, KundaliResponse } from "../types";
+import { BirthDetails, MatchmakingDetails, Timeframe, Language, ChatMessage, KundaliResponse, KundaliSystem } from "../types";
 import { StorageService } from "./storageService";
 
 // ---------------------------------------------------------------------------
-// CONFIG — Active Gemini Models & Multi-Key Rotation
+// ACTIVE GEMINI MODELS & MULTI-KEY ROTATION
 // ---------------------------------------------------------------------------
 // Models ordered by priority:
 // 1. gemini-3.5-flash-lite (high throughput, free-tier friendly)
@@ -42,6 +42,99 @@ const MAX_HISTORY_MESSAGES = 10;
 const getCurrentDate = () => {
   const now = new Date();
   return `${now.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} ${now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`;
+};
+
+// ---------------------------------------------------------------------------
+// KUNDALI SYSTEM CONFIGURATIONS
+// ---------------------------------------------------------------------------
+export const KUNDALI_SYSTEM_PROMPTS: Record<KundaliSystem, {
+  name: string;
+  role: string;
+  specifics: string;
+}> = {
+  kp: {
+    name: "K. P. System (Krishnamurti Paddhati)",
+    role: "You are a master K. P. System Astrologer (Krishnamurti Paddhati, Placidus house division, KP Ayanamsha).",
+    specifics: `Apply authentic K. P. Astrology principles:
+1. **K. P. Profile**: Lagna, Moon Sign, Nakshatra, Pada, Star Lord, Sub Lord, and 4 Ruling Planets (Lagna Lord, Moon Star Lord, Moon Rashi Lord, Day Lord).
+2. **K. P. Planetary Table**: Sidereal planetary positions with Star Lord and Sub Lord for Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu.
+3. **12 Cuspal Sub-Lords Table**: Degrees, Sign, Star Lord, and Cuspal Sub-Lord for Cusps 1 through 12 (Placidus system).
+4. **House Significations & Event Analysis**:
+   - 1st Cusp Sub-Lord (Health, Longevity, General Nature)
+   - 2nd & 11th Cusp Sub-Lords (Wealth, Financial Gains)
+   - 7th Cusp Sub-Lord (Marriage & Partnerships)
+   - 10th Cusp Sub-Lord (Career & Profession)
+5. **Current Dasha-Bhukti (Vimshottari)** and sub-lord event timing.
+6. **K. P. Remedies & Gemstones** based on beneficial cuspal significators.`
+  },
+  parashari: {
+    name: "Classical Vedic Parashari",
+    role: "You are a venerable Vedic Astrologer grounded in classical Brihat Parashara Hora Shastra (Lahiri Ayanamsha).",
+    specifics: `Apply classical Parashari principles:
+1. **Panchanga & Birth Profile**: Lagna, Moon Sign (Rashi), Nakshatra, Pada, Nakshatra Lord, Tithi, Yoga, Karana.
+2. **Planetary Positions Table**: Sidereal degrees, Rashi, Nakshatra, Lord, Exaltation/Debilitation/Own Sign, Retrograde status, Combust status.
+3. **12 Bhava (House) In-Depth Analysis**: Detailed assessment of Kendras (1, 4, 7, 10), Trikonas (1, 5, 9), and Dusthanas (6, 8, 12).
+4. **Planetary Yogas**: Identify major Raja Yogas, Dhana Yogas, Pancha Mahapurusha Yogas, Gajakesari Yoga, Viparita Yogas, and Doshas (Mangal/Kalsarp).
+5. **Vimshottari Mahadasha Timeline**: Current Mahadasha & Antardasha with precise predictive forecast.
+6. **Shani Saadesati & Kantaka Shani Analysis**.
+7. **Classical Vedic Remedies**: Mantras, gemstones, fasts, and daan (charity).`
+  },
+  jaimini: {
+    name: "Jaimini Astrology System",
+    role: "You are an authority on Jaimini Upadesha Sutras and Maharishi Jaimini astrology.",
+    specifics: `Apply authentic Jaimini principles:
+1. **7 Chara Karakas Table**:
+   - Atmakaraka (AK - Soul Planet)
+   - Amatyakaraka (AmK - Career & Intellect)
+   - Bhratrikaraka (BK - Siblings & Gurus)
+   - Matrikaraka (MK - Mother & Property)
+   - Putrakaraka (PK - Children & Creativity)
+   - Gnatikaraka (GK - Obstacles & Enemies)
+   - Darakaraka (DK - Spouse & Partnerships)
+2. **Special Lagnas**: Lagna, Arudha Lagna (AL), Upapada Lagna (UL), Darapada (A7), and Karakamsa Lagna.
+3. **Jaimini Rashi Drishti**: Aspects between cardinal, fixed, and mutable signs.
+4. **Chara Dasha Analysis**: Current Chara Dasha sign period and predictive life implications.
+5. **Soul Mission & Marriage Analysis** based on AK and UL.
+6. **Jaimini Remedies & Spiritual Alignments** tailored to the Atmakaraka.`
+  },
+  lalkitab: {
+    name: "Lal Kitab System",
+    role: "You are an expert Lal Kitab Farman and Arman practitioner.",
+    specifics: `Apply authentic Lal Kitab principles:
+1. **Kalpurush Kundali Mapping**: Interpret planetary placements with Aries fixed as House 1, Taurus as House 2, etc.
+2. **Grah Status**: Identify Pakka Ghar (permanent houses), Kismat Jagane Wale Grah (luck activators), and Soye Hue Grah/Ghar (sleeping planets/houses).
+3. **Pitra Rin & Ancestral Debts**: Diagnose ancestral debts (Pitri Rin, Matri Rin, Stri Rin, Swa-Rin) from planetary combinations.
+4. **Varshphal Trends**: Key thematic trends and precautions.
+5. **Authentic Lal Kitab Totkas (Remedies)**: Clear, practical, safe remedies (e.g. offerings in running water, silver square, caring for specific animals).`
+  },
+  nadi: {
+    name: "Bhrigu Nandi Nadi",
+    role: "You are an initiate in classical Bhrigu Nandi Nadi and Tamil Nadi astrology.",
+    specifics: `Apply authentic Nadi astrology principles:
+1. **Planetary Directional Connections**:
+   - Dharma Triad (1-5-9 signs / directions)
+   - Artha Triad (2-6-10 signs)
+   - Kama Triad (3-7-11 signs)
+   - Moksha Triad (4-8-12 signs)
+2. **Karakatwa Linkages**:
+   - Jeeva Karaka (Jupiter) & its relationships to other planets (Soul journey)
+   - Karma Karaka (Saturn) & professional karma
+   - Budha (Education/Business) & Shukra (Wealth/Spouse) linkages
+3. **Planetary Conjunctions & Modifiers**: Degrees-based planetary meetings and exchange (Parivartana).
+4. **Nadi Double Transit Predictions**: Current Saturn & Jupiter transit alignments over natal planets.
+5. **Karmic Blessings & Obstacles** with Nadi remedial guidance.`
+  },
+  western: {
+    name: "Western Tropical Astrology",
+    role: "You are a master psychological and Hellenistic Western Astrologer (Tropical Zodiac, Placidus Houses).",
+    specifics: `Apply Western Tropical astrology principles:
+1. **The Big Three & Angles**: Tropical Ascendant (Rising), Sun Sign, Moon Sign, Midheaven (MC), and IC.
+2. **Planetary Positions Table**: Sun through Pluto + Chiron degrees in Tropical signs and Placidus houses.
+3. **Major Aspect Matrix**: Conjunctions, Oppositions, Trines, Squares, and Sextiles with exact orbs.
+4. **Elemental & Modality Balance**: Fire/Earth/Air/Water and Cardinal/Fixed/Mutable breakdown.
+5. **Psychological & Life Path Profile**: Core archetype, Shadow work, relationships, and career trajectory.
+6. **Current Planetary Transits & Progressions** impacting natal chart.`
+  }
 };
 
 // ---------------------------------------------------------------------------
@@ -276,38 +369,37 @@ The keys of the JSON object must remain in English as shown below.`,
 
 // ---------------------------------------------------------------------------
 // KUNDALI
-// Generates directly in target language in a single efficient call
+// Generates directly in target language in a single efficient call using the chosen system
 // ---------------------------------------------------------------------------
-export const getKundaliAnalysis = async (details: BirthDetails, language: Language): Promise<KundaliResponse> => {
-  const langKey = StorageService.getKeys.kundali(details.name, details.dob, language);
+export const getKundaliAnalysis = async (
+  details: BirthDetails,
+  language: Language,
+  system: KundaliSystem = 'kp'
+): Promise<KundaliResponse> => {
+  const config = KUNDALI_SYSTEM_PROMPTS[system] || KUNDALI_SYSTEM_PROMPTS.kp;
+  const langKey = StorageService.getKeys.kundali(details.name, details.dob, language, system);
   const cached = StorageService.get<KundaliResponse>(langKey);
-  if (cached) return cached;
+  if (cached) return { ...cached, system };
 
   const result = await withRetry(async () => {
     const text = await callAI(
-      `You are a professional Vedic astrologer (Parashari system, Lahiri Ayanamsha). Current Date: ${getCurrentDate()}.
-This is a high-precision Janma Kundali analysis. DO NOT use toxic positivity — provide truthful predictions and harsh realities when planetary math demands it.
+      `${config.role} Current Date: ${getCurrentDate()}.
+This is an authentic, high-precision Life Analysis using the ${config.name}. DO NOT use toxic positivity — provide truthful predictions and harsh realities when planetary math demands it.
 
 CRITICAL LANGUAGE REQUIREMENT:
 You MUST write the entire "report" and all textual descriptions (starLord, subLord, nakshatra, moonSign) in ${language} (using native ${language} script).
 The JSON keys ("report", "chart", "lagnaSign", "starLord", "subLord", "nakshatra", "moonSign") and house numbers ("1".."12") must remain in English.`,
-      `Generate a complete Vedic Janma Kundali for:
+      `Generate a complete Janma Kundali Life Analysis in the ${config.name} for:
 Name: ${details.name}
 DOB: ${details.dob}
 TOB: ${details.tob}
 Place: ${details.location}
 
-Include:
-1. Lagna, Moon Sign, Nakshatra, Pada, Nakshatra Lord
-2. Sidereal Planetary Positions Table (degrees, Rashi, Nakshatra, Lord, Dispositor)
-3. 12 Bhava (House) Analysis
-4. Vimshottari Dasha/Antardasha Timeline
-5. Shani Saadesati Analysis
-6. Vedic Remedies & Gemstones
+${config.specifics}
 
 Return ONLY a valid JSON object (no markdown code fences):
 {
-  "report": "Professional Markdown string in ${language} with bold headers and tables. Include Saadesati analysis.",
+  "report": "Professional Markdown string in ${language} with bold headers and tables detailing the ${config.name} analysis.",
   "chart": { "1": [], "2": [], "3": [], "4": [], "5": [], "6": [], "7": [], "8": [], "9": [], "10": [], "11": [], "12": [] },
   "lagnaSign": 1,
   "starLord": "string in ${language}",
@@ -318,7 +410,9 @@ Return ONLY a valid JSON object (no markdown code fences):
 Chart keys must be "1" through "12" with planet name arrays. lagnaSign is 1-12.`,
       true // jsonMode
     );
-    return parseAIResponse(text) as KundaliResponse;
+    const parsed = parseAIResponse(text) as KundaliResponse;
+    parsed.system = system;
+    return parsed;
   });
 
   StorageService.save(langKey, result, -1);
@@ -332,12 +426,15 @@ export const askKundaliQuestion = async (
   q: string,
   context: string,
   history: ChatMessage[],
-  lang: Language
+  lang: Language,
+  system: KundaliSystem = 'kp'
 ) => {
+  const config = KUNDALI_SYSTEM_PROMPTS[system] || KUNDALI_SYSTEM_PROMPTS.kp;
   return await withRetry(async () => {
-    const systemPrompt = `You are the user's personal Vedic Astrology Guide (Parashari system, Lahiri Ayanamsha).
+    const systemPrompt = `You are the user's personal Astrological Guide specializing in the ${config.name}.
 Kundali context: ${context}. Current Date: ${getCurrentDate()}.
-Provide life guidance based on authentic Vedic astrology. DO NOT use toxic positivity — give harsh truths when planetary math demands it.
+Answer the user's question using the specific tenets and techniques of ${config.name}.
+DO NOT use toxic positivity — give harsh truths when planetary math demands it.
 CRITICAL LANGUAGE REQUIREMENT: You MUST formulate your entire response in ${lang} (using native ${lang} script).`;
 
     return await callAIChat(systemPrompt, history, q);

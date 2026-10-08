@@ -44,6 +44,14 @@ export interface KundaliChartData {
   [houseNumber: number]: string[]; // House 1-12 mapped to array of planet names
 }
 
+export type KundaliSystem = 
+  | 'kp'          // K. P. System (Krishnamurti Paddhati)
+  | 'parashari'    // Classical Vedic Parashari
+  | 'jaimini'      // Jaimini Astrology
+  | 'lalkitab'     // Lal Kitab
+  | 'nadi'         // Bhrigu Nandi Nadi
+  | 'western';     // Western / Tropical
+
 export interface KundaliResponse {
   report: string;
   chart: KundaliChartData;
@@ -52,4 +60,5 @@ export interface KundaliResponse {
   subLord: string;
   nakshatra: string;
   moonSign: string;
+  system?: KundaliSystem;
 }

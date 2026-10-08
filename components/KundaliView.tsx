@@ -1,8 +1,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { BirthDetails, Language, ChatMessage, KundaliResponse } from '../types';
+import { BirthDetails, Language, ChatMessage, KundaliResponse, KundaliSystem } from '../types';
 import { getCoordinates, getKundaliAnalysis, askKundaliQuestion } from '../services/aiService';
 import { StorageService } from '../services/storageService';
+import { KUNDALI_SYSTEMS } from '../constants';
 import KundaliChart from './KundaliChart';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
@@ -19,6 +20,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
     tob: '',
     location: '',
   });
+  const [system, setSystem] = useState<KundaliSystem>('kp');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -38,10 +40,10 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
     scrollToBottom();
   }, [chatHistory, chatLoading]);
 
-  // Automatically refresh Kundali analysis when language changes
+  // Automatically refresh Kundali analysis when language or system changes
   useEffect(() => {
     if (analysis && details.name && details.dob && details.location) {
-      const reloadLanguage = async () => {
+      const reloadKundali = async () => {
         setLoading(true);
         setError(null);
         try {
@@ -51,17 +53,18 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
             latitude: locationData.lat,
             longitude: locationData.lng,
           };
-          const result = await getKundaliAnalysis(enrichedDetails, language);
+          const result = await getKundaliAnalysis(enrichedDetails, language, system);
           setAnalysis(result);
         } catch (err: any) {
-          console.error("Language reload failed", err);
+          console.error("Kundali reload failed", err);
+          setError(err.message || "Failed to update Kundali analysis.");
         } finally {
           setLoading(false);
         }
       };
-      reloadLanguage();
+      reloadKundali();
     }
-  }, [language]);
+  }, [language, system]);
 
   const handleProfileSelect = (name: string) => {
     const profile = profiles.find(p => p.name === name);
@@ -82,7 +85,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
         latitude: locationData.lat,
         longitude: locationData.lng,
       };
-      const result = await getKundaliAnalysis(enrichedDetails, language);
+      const result = await getKundaliAnalysis(enrichedDetails, language, system);
       setAnalysis(result);
       StorageService.saveProfile(details);
       setProfiles(StorageService.getProfiles());
@@ -104,7 +107,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
     setChatLoading(true);
 
     try {
-      const response = await askKundaliQuestion(currentQuery, analysis.report, chatHistory, language);
+      const response = await askKundaliQuestion(currentQuery, analysis.report, chatHistory, language, system);
       setChatHistory(prev => [...prev, { role: 'model', text: response }]);
     } catch (error) {
       console.error(error);
@@ -231,8 +234,53 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
               <InputField label="Birth Date" type="date" value={details.dob} onChange={(v: string) => setDetails({ ...details, dob: v })} />
               <InputField label="Birth Time" type="time" value={details.tob} onChange={(v: string) => setDetails({ ...details, tob: v })} />
             </div>
+
+            {/* Astrology System Selector */}
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between px-1">
+                <label className="text-[10px] font-black text-amber-500/80 uppercase tracking-[0.25em] flex items-center gap-1.5">
+                  <span>🌌</span> Select Kundali System
+                </label>
+                <span className="text-[10px] text-amber-300/80 font-bold tracking-wider">
+                  {KUNDALI_SYSTEMS.find(s => s.id === system)?.name}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {KUNDALI_SYSTEMS.map((sys) => {
+                  const isSelected = system === sys.id;
+                  return (
+                    <button
+                      key={sys.id}
+                      type="button"
+                      onClick={() => setSystem(sys.id)}
+                      className={`text-left p-3.5 rounded-2xl border transition-all duration-300 relative group overflow-hidden ${
+                        isSelected
+                          ? 'bg-amber-500/15 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/40'
+                          : 'bg-white/[0.03] border-white/10 hover:bg-white/[0.07] hover:border-white/20'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <span className="text-xl">{sys.icon}</span>
+                        <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${
+                          isSelected ? 'bg-amber-400/20 text-amber-300' : 'bg-white/5 text-slate-500'
+                        }`}>
+                          {sys.tradition}
+                        </span>
+                      </div>
+                      <div className="font-cinzel font-bold text-sm text-slate-200 group-hover:text-amber-200 transition-colors">
+                        {sys.name}
+                      </div>
+                      <div className="text-[11px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                        {sys.description}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <button disabled={loading} className="w-full glossy-button text-white font-bold py-4 rounded-2xl text-lg tracking-widest uppercase font-cinzel shadow-2xl">
-              Generate Life Map
+              Generate Life Map ({KUNDALI_SYSTEMS.find(s => s.id === system)?.name})
             </button>
           </form>
         </section>
@@ -244,16 +292,47 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
             <div className="w-24 h-24 border-4 border-amber-500/10 border-t-amber-500 rounded-full animate-spin"></div>
             <div className="absolute inset-0 flex items-center justify-center text-2xl animate-pulse">☀️</div>
           </div>
-          <p className="text-2xl font-cinzel text-amber-200 tracking-widest text-center">Constructing your 120-year Life Map...</p>
+          <p className="text-2xl font-cinzel text-amber-200 tracking-widest text-center">
+            Constructing {KUNDALI_SYSTEMS.find(s => s.id === system)?.name} Life Map...
+          </p>
         </div>
       )}
 
       {analysis && !loading && (
-        <div className="space-y-12 animate-in fade-in duration-1000">
+        <div className="space-y-6 animate-in fade-in duration-1000">
+          {/* Quick System Switcher Toolbar */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar p-2 bg-white/[0.03] border border-white/10 rounded-2xl backdrop-blur-xl">
+            <span className="text-[10px] font-black text-amber-500/80 uppercase tracking-widest whitespace-nowrap pl-2">
+              System:
+            </span>
+            {KUNDALI_SYSTEMS.map((sys) => {
+              const isSelected = system === sys.id;
+              return (
+                <button
+                  key={sys.id}
+                  onClick={() => setSystem(sys.id)}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                    isSelected
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                      : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 border border-transparent'
+                  }`}
+                >
+                  <span>{sys.icon}</span>
+                  <span>{sys.name}</span>
+                </button>
+              );
+            })}
+          </div>
+
           <div id="kundali-report-area" className="bg-[#010204] rounded-[40px] border border-amber-500/10 overflow-hidden shadow-[0_0_100px_rgba(251,191,36,0.05)]">
             <div className="p-6 md:p-10 border-b border-white/10 flex flex-col md:flex-row justify-between items-center gap-6 bg-gradient-to-b from-white/5 to-transparent">
               <div>
-                <h2 className="text-3xl font-cinzel text-amber-400">Life Map Report: {details.name}</h2>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h2 className="text-3xl font-cinzel text-amber-400">Life Map Report: {details.name}</h2>
+                  <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 tracking-wider">
+                    {KUNDALI_SYSTEMS.find(s => s.id === system)?.icon} {KUNDALI_SYSTEMS.find(s => s.id === system)?.name}
+                  </span>
+                </div>
                 <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">
                   <span className="flex items-center gap-1">📅 {details.dob}</span> 
                   <span className="flex items-center gap-1">⏰ {details.tob}</span> 
@@ -317,7 +396,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                 <div className="mt-16 pt-8 border-t border-white/10 opacity-60">
                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2">Disclaimer regarding AI Generation</p>
                    <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic">
-                      This application translates celestial planetary transits via advanced mathematical models based strictly on K. P. System mechanics. The Artificial Intelligence is instructed to deliver harsh life truths without filtering. No liability is assumed for choices, emotional impact, or distress caused by the generated algorithmic forecasts. They serve as personal insights, not verified life warranties.
+                      This application translates celestial planetary transits and natal charts based on authentic {KUNDALI_SYSTEMS.find(s => s.id === system)?.name} principles. The Artificial Intelligence is instructed to deliver harsh life truths without filtering. No liability is assumed for choices, emotional impact, or distress caused by the generated algorithmic forecasts. They serve as personal insights, not verified life warranties.
                    </p>
                 </div>
               </div>
@@ -328,8 +407,12 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
             <div className="flex items-center gap-4">
                <div className="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center text-2xl">🔮</div>
                <div>
-                 <h3 className="text-2xl font-cinzel text-amber-200">Celestial Consultation</h3>
-                 <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Ask detailed questions about your lifetime Mahadashas or Saadesati</p>
+                 <h3 className="text-2xl font-cinzel text-amber-200">
+                   {KUNDALI_SYSTEMS.find(s => s.id === system)?.name} Consultation
+                 </h3>
+                 <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">
+                   Ask detailed questions based on your {KUNDALI_SYSTEMS.find(s => s.id === system)?.name} chart
+                 </p>
                </div>
             </div>
             

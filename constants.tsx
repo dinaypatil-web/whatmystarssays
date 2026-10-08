@@ -52,3 +52,65 @@ export const GOOGLE_TRANSLATE_LANG_MAP: Record<Language, string> = {
   Punjabi: 'pa',
   Odia: 'or',
 };
+
+import { KundaliSystem } from './types';
+
+export interface KundaliSystemOption {
+  id: KundaliSystem;
+  name: string;
+  tagline: string;
+  description: string;
+  icon: string;
+  tradition: string;
+}
+
+export const KUNDALI_SYSTEMS: KundaliSystemOption[] = [
+  {
+    id: 'kp',
+    name: 'K. P. System',
+    tagline: 'Krishnamurti Paddhati',
+    description: 'Precision Placidus cusps, Cuspal Sub-Lords, Star Lords, Ruling Planets, and accurate event timing.',
+    icon: '⚡',
+    tradition: 'Modern Vedic Stellar'
+  },
+  {
+    id: 'parashari',
+    name: 'Parashari Vedic',
+    tagline: 'Brihat Parashara Hora Shastra',
+    description: 'Classical 12 Bhavas, planetary Yogas, Drishti, Navamsha (D9), and Vimshottari Mahadasha timeline.',
+    icon: '📜',
+    tradition: 'Classical Vedic'
+  },
+  {
+    id: 'jaimini',
+    name: 'Jaimini System',
+    tagline: 'Jaimini Upadesha Sutras',
+    description: '7 Chara Karakas (Atmakaraka, Amatyakaraka), Arudha Lagna (AL), Upapada (UL), and Chara Dasha.',
+    icon: '✨',
+    tradition: 'Sutra System'
+  },
+  {
+    id: 'lalkitab',
+    name: 'Lal Kitab',
+    tagline: 'Red Book Astrology',
+    description: 'Kalpurush natural zodiac houses, Ancestral Debts (Rin), sleeping planets, and practical remedies (Totkas).',
+    icon: '📕',
+    tradition: 'Folk Vedic'
+  },
+  {
+    id: 'nadi',
+    name: 'Bhrigu Nandi Nadi',
+    tagline: 'Nadi Astrology',
+    description: 'Planetary linkages via directional trines (1-5-9), Jeeva (Jupiter) & Karma (Saturn) combinations.',
+    icon: '🔱',
+    tradition: 'Tamil / Classical Nadi'
+  },
+  {
+    id: 'western',
+    name: 'Western Tropical',
+    tagline: 'Tropical Zodiac & Aspects',
+    description: 'Sayana zodiac, Major aspects (Trine, Square, Opposition, Sextile), and Placidus psychological analysis.',
+    icon: '🧭',
+    tradition: 'Western Hellenistic'
+  }
+];
