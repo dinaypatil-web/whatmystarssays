@@ -181,29 +181,29 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 2000): Pr
 }
 
 // ---------------------------------------------------------------------------
-// TRANSLATION
-// Translates text into target language while preserving Vedic/Sanskrit nouns.
-// Uses compact system prompt to minimise tokens.
+// TRANSLATION HELPER (Direct & Native Script)
 // ---------------------------------------------------------------------------
-const TRANSLATION_SYSTEM = (lang: Language) =>
-  `Translate the following text into ${lang}. Rules:
-1. Return ONLY the translated text — no preamble or commentary.
-2. Preserve ALL markdown formatting (**, ###, -, tables, etc.).
-3. Keep these terms untranslated: Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu, all Nakshatra names, all Rashi names, Vimshottari, Mahadasha, Antardasha, Lagna, Ascendant, Ayanamsha, Lahiri.`;
-
-const translateText = async (text: string, targetLanguage: Language): Promise<string> => {
+export const translateText = async (text: string, targetLanguage: Language): Promise<string> => {
   if (targetLanguage === "English" || !text) return text;
   try {
-    const translated = await callAI(TRANSLATION_SYSTEM(targetLanguage), text);
+    const translated = await callAI(
+      `You are an expert translator specializing in Vedic astrology.
+Translate the following text accurately and fluently into ${targetLanguage} (using native ${targetLanguage} script).
+Rules:
+1. Return ONLY the translated text — no preamble or commentary.
+2. Preserve ALL markdown formatting (headings, bullet points, bold text, tables).
+3. Naturally translate astrological and spiritual terms into appropriate ${targetLanguage} equivalents.`,
+      text
+    );
     return translated.trim() || text;
   } catch (err) {
-    console.error("Translation failed", err);
-    return text; // graceful degradation — return English rather than crashing
+    console.error("Translation helper error", err);
+    return text;
   }
 };
 
 // ---------------------------------------------------------------------------
-// GEOCODING (OpenStreetMap — no AI key needed, unchanged)
+// GEOCODING (OpenStreetMap — no AI key needed)
 // ---------------------------------------------------------------------------
 export const getCoordinates = async (location: string) => {
   const cacheKey = `coords_${location.toLowerCase().replace(/\s/g, "_")}`;
@@ -235,85 +235,63 @@ export const getCoordinates = async (location: string) => {
 
 // ---------------------------------------------------------------------------
 // HOROSCOPE
-// Strategy: Generate canonical English base once → cache → translate on demand
+// Generates directly in target language in a single efficient call
 // ---------------------------------------------------------------------------
 export const getHoroscope = async (sign: string, timeframe: Timeframe, language: Language = "English") => {
   const ttl = timeframe === "daily" ? 12 : 168;
-
-  // 1. Check translated cache
   const langKey = StorageService.getKeys.horoscope(sign, timeframe, language);
-  const cachedTranslation = StorageService.get<any>(langKey);
-  if (cachedTranslation) return cachedTranslation;
+  const cached = StorageService.get<any>(langKey);
+  if (cached) return cached;
 
-  // 2. Check English base cache
-  const baseKey = StorageService.getKeys.horoscopeBase(sign, timeframe);
-  let englishBase = StorageService.get<any>(baseKey);
-
-  // 3. Generate English base if missing
-  if (!englishBase) {
-    englishBase = await withRetry(async () => {
-      const text = await callAI(
-        `You are a Master Vedic Astrologer (Parashari system, Lahiri Ayanamsha). Current date: ${getCurrentDate()}.
+  const result = await withRetry(async () => {
+    const text = await callAI(
+      `You are a Master Vedic Astrologer (Parashari system, Lahiri Ayanamsha). Current date: ${getCurrentDate()}.
 Provide a ${timeframe} horoscope for Moon Sign / Rashi: ${sign}.
 Analyze precise sidereal planetary transits (Career, Health, Relationships, Finance) using classical Vedic principles.
-DO NOT use toxic positivity — provide harsh truths when planetary math dictates it. Respond in English only.`,
-        `Return a valid JSON object (no markdown code fences):
+DO NOT use toxic positivity — provide harsh truths when planetary math dictates it.
+
+CRITICAL LANGUAGE REQUIREMENT:
+You MUST write all textual descriptions, predictions, and field values in ${language} (using authentic native ${language} script).
+All 8 values in the JSON object must be written fluently in ${language}.
+The keys of the JSON object must remain in English as shown below.`,
+      `Return a valid JSON object (no markdown code fences):
 {
-  "overview": "string",
-  "career": "string",
-  "health": "string",
-  "relationships": "string",
-  "finance": "string",
-  "spirituality": "string",
-  "luckyColor": "string",
-  "luckyNumber": "string"
+  "overview": "Detailed overview written in ${language}",
+  "career": "Career prediction written in ${language}",
+  "health": "Health prediction written in ${language}",
+  "relationships": "Relationships prediction written in ${language}",
+  "finance": "Finance prediction written in ${language}",
+  "spirituality": "Spirituality prediction written in ${language}",
+  "luckyColor": "Lucky color in ${language}",
+  "luckyNumber": "Lucky number string"
 }`,
-        true // jsonMode
-      );
-      return parseAIResponse(text);
-    });
+      true // jsonMode
+    );
+    return parseAIResponse(text);
+  });
 
-    StorageService.save(baseKey, englishBase, ttl);
-  }
-
-  // 4. If English requested, we're done
-  if (language === "English") {
-    StorageService.save(langKey, englishBase, ttl);
-    return englishBase;
-  }
-
-  // 5. Translate from canonical English base
-  const translated = { ...englishBase };
-  for (const key of Object.keys(translated)) {
-    if (typeof translated[key] === "string") {
-      translated[key] = await translateText(translated[key], language);
-    }
-  }
-
-  StorageService.save(langKey, translated, ttl);
-  return translated;
+  StorageService.save(langKey, result, ttl);
+  return result;
 };
 
 // ---------------------------------------------------------------------------
 // KUNDALI
+// Generates directly in target language in a single efficient call
 // ---------------------------------------------------------------------------
 export const getKundaliAnalysis = async (details: BirthDetails, language: Language): Promise<KundaliResponse> => {
-  // 1. Check translated cache
   const langKey = StorageService.getKeys.kundali(details.name, details.dob, language);
-  const cachedTranslation = StorageService.get<KundaliResponse>(langKey);
-  if (cachedTranslation) return cachedTranslation;
+  const cached = StorageService.get<KundaliResponse>(langKey);
+  if (cached) return cached;
 
-  // 2. Check English base cache
-  const baseKey = StorageService.getKeys.kundaliBase(details.name, details.dob);
-  let englishBase = StorageService.get<KundaliResponse>(baseKey);
+  const result = await withRetry(async () => {
+    const text = await callAI(
+      `You are a professional Vedic astrologer (Parashari system, Lahiri Ayanamsha). Current Date: ${getCurrentDate()}.
+This is a high-precision Janma Kundali analysis. DO NOT use toxic positivity — provide truthful predictions and harsh realities when planetary math demands it.
 
-  // 3. Generate English base if missing
-  if (!englishBase) {
-    englishBase = await withRetry(async () => {
-      const text = await callAI(
-        `You are a professional Vedic astrologer (Parashari system, Lahiri Ayanamsha). Current Date: ${getCurrentDate()}.
-This is a high-precision Janma Kundali analysis. DO NOT use toxic positivity — provide truthful predictions and harsh realities when planetary math demands it. Respond in English only.`,
-        `Generate a complete Vedic Janma Kundali for:
+CRITICAL LANGUAGE REQUIREMENT:
+You MUST write the entire "report" and all textual descriptions (starLord, subLord, nakshatra, moonSign) in ${language} (using native ${language} script).
+The JSON keys ("report", "chart", "lagnaSign", "starLord", "subLord", "nakshatra", "moonSign") and house numbers ("1".."12") must remain in English.`,
+      `Generate a complete Vedic Janma Kundali for:
 Name: ${details.name}
 DOB: ${details.dob}
 TOB: ${details.tob}
@@ -329,39 +307,22 @@ Include:
 
 Return ONLY a valid JSON object (no markdown code fences):
 {
-  "report": "Professional Markdown string with bold headers and tables. Include Saadesati analysis.",
+  "report": "Professional Markdown string in ${language} with bold headers and tables. Include Saadesati analysis.",
   "chart": { "1": [], "2": [], "3": [], "4": [], "5": [], "6": [], "7": [], "8": [], "9": [], "10": [], "11": [], "12": [] },
   "lagnaSign": 1,
-  "starLord": "string",
-  "subLord": "string",
-  "nakshatra": "string",
-  "moonSign": "string"
+  "starLord": "string in ${language}",
+  "subLord": "string in ${language}",
+  "nakshatra": "string in ${language}",
+  "moonSign": "string in ${language}"
 }
 Chart keys must be "1" through "12" with planet name arrays. lagnaSign is 1-12.`,
-        true // jsonMode
-      );
-      return parseAIResponse(text) as KundaliResponse;
-    });
+      true // jsonMode
+    );
+    return parseAIResponse(text) as KundaliResponse;
+  });
 
-    StorageService.save(baseKey, englishBase, -1);
-  }
-
-  // 4. If English, return directly
-  if (language === "English") {
-    StorageService.save(langKey, englishBase, -1);
-    return englishBase;
-  }
-
-  // 5. Translate from canonical English base
-  const translated: KundaliResponse = { ...englishBase };
-  if (translated.report) translated.report = await translateText(translated.report, language);
-  if (translated.starLord) translated.starLord = await translateText(translated.starLord, language);
-  if (translated.subLord) translated.subLord = await translateText(translated.subLord, language);
-  if (translated.nakshatra) translated.nakshatra = await translateText(translated.nakshatra, language);
-  if (translated.moonSign) translated.moonSign = await translateText(translated.moonSign, language);
-
-  StorageService.save(langKey, translated, -1);
-  return translated;
+  StorageService.save(langKey, result, -1);
+  return result;
 };
 
 // ---------------------------------------------------------------------------
@@ -376,10 +337,10 @@ export const askKundaliQuestion = async (
   return await withRetry(async () => {
     const systemPrompt = `You are the user's personal Vedic Astrology Guide (Parashari system, Lahiri Ayanamsha).
 Kundali context: ${context}. Current Date: ${getCurrentDate()}.
-Provide life guidance based on authentic Vedic astrology. DO NOT use toxic positivity — give harsh truths when planetary math demands it. Respond in English only.`;
+Provide life guidance based on authentic Vedic astrology. DO NOT use toxic positivity — give harsh truths when planetary math demands it.
+CRITICAL LANGUAGE REQUIREMENT: You MUST formulate your entire response in ${lang} (using native ${lang} script).`;
 
-    const result = await callAIChat(systemPrompt, history, q);
-    return await translateText(result, lang);
+    return await callAIChat(systemPrompt, history, q);
   });
 };
 
@@ -397,72 +358,55 @@ export const askNumerologyQuestion = async (
 ) => {
   return await withRetry(async () => {
     const context = `DOB: ${dob}, Mulank: ${mulank}, Bhagyank: ${bhagyank}, Loshu Grid: ${JSON.stringify(loshu)}`;
-    const systemPrompt = `You are a Master Vedic Numerologist. Answer questions based on: ${context}. Respond in English only.`;
+    const systemPrompt = `You are a Master Vedic Numerologist. Answer questions based on: ${context}.
+CRITICAL LANGUAGE REQUIREMENT: You MUST formulate your entire response in ${lang} (using native ${lang} script).`;
 
-    const result = await callAIChat(systemPrompt, history, q);
-    return await translateText(result, lang);
+    return await callAIChat(systemPrompt, history, q);
   });
 };
 
 // ---------------------------------------------------------------------------
 // MATCHMAKING
-// Strategy: Generate canonical English base once → cache → translate on demand
+// Generates directly in target language in a single efficient call
 // ---------------------------------------------------------------------------
 export const getMatchmaking = async (details: MatchmakingDetails, language: Language) => {
-  // 1. Check translated cache
   const langKey = StorageService.getKeys.match(details.boy.name, details.girl.name, language);
-  const cachedTranslation = StorageService.get<string>(langKey);
-  if (cachedTranslation) return cachedTranslation;
+  const cached = StorageService.get<string>(langKey);
+  if (cached) return cached;
 
-  // 2. Check English base
-  const baseKey = StorageService.getKeys.matchBase(details.boy.name, details.girl.name);
-  let englishBase = StorageService.get<string>(baseKey);
-
-  // 3. Generate English base if missing
-  if (!englishBase) {
-    englishBase = await withRetry(async () => {
-      return await callAI(
-        `You are a master Vedic astrology matchmaking expert (Parashari, Lahiri Ayanamsha). DO NOT use toxic positivity — provide strict warnings and genuine risk factors. Respond in English only.`,
-        `Vedic Kundali Milan (Compatibility) for ${details.boy.name} & ${details.girl.name}.
+  const result = await withRetry(async () => {
+    return await callAI(
+      `You are a master Vedic astrology matchmaking expert (Parashari, Lahiri Ayanamsha). DO NOT use toxic positivity — provide strict warnings and genuine risk factors.
+CRITICAL LANGUAGE REQUIREMENT: Write the entire compatibility analysis and report exclusively in ${language} (using native ${language} script).`,
+      `Vedic Kundali Milan (Compatibility) for ${details.boy.name} & ${details.girl.name}.
 Perform classical Ashtakoot Gun Milan (36-point), plus:
 - Mangal Dosha analysis for both parties
 - Navamsa chart compatibility
 - 7th house lord analysis
 - Venus and Jupiter placement compatibility
 - Dasha period overlaps for marriage timing
-Return as professional Markdown.`
-      );
-    });
+Return as professional Markdown in ${language}.`
+    );
+  });
 
-    StorageService.save(baseKey, englishBase, -1);
-  }
-
-  // 4. Translate if needed
-  const result = await translateText(englishBase, language);
   StorageService.save(langKey, result, -1);
   return result;
 };
 
 // ---------------------------------------------------------------------------
 // NUMEROLOGY ANALYSIS
-// Strategy: Generate canonical English base once → cache → translate on demand
+// Generates directly in target language in a single efficient call
 // ---------------------------------------------------------------------------
 export const getNumerologyAnalysis = async (dob: string, m: number, b: number, loshu: any, lang: Language) => {
-  // 1. Check translated cache
   const langKey = StorageService.getKeys.numerology(dob, lang);
-  const cachedTranslation = StorageService.get<string>(langKey);
-  if (cachedTranslation) return cachedTranslation;
+  const cached = StorageService.get<string>(langKey);
+  if (cached) return cached;
 
-  // 2. Check English base
-  const baseKey = StorageService.getKeys.numerologyBase(dob);
-  let englishBase = StorageService.get<string>(baseKey);
-
-  // 3. Generate English base if missing
-  if (!englishBase) {
-    englishBase = await withRetry(async () => {
-      return await callAI(
-        `You are a Master Vedic Numerologist. Provide detailed, accurate analysis. Respond in English only.`,
-        `Vedic Numerology analysis for DOB: ${dob}.
+  const result = await withRetry(async () => {
+    return await callAI(
+      `You are a Master Vedic Numerologist. Provide detailed, accurate analysis.
+CRITICAL LANGUAGE REQUIREMENT: Write the entire analysis exclusively in ${lang} (using native ${lang} script).`,
+      `Vedic Numerology analysis for DOB: ${dob}.
 Mulank (Psychic Number): ${m}
 Bhagyank (Destiny Number): ${b}
 Loshu Grid: ${JSON.stringify(loshu)}
@@ -474,15 +418,10 @@ Include:
 - Lucky numbers, colours, gemstones, and directions
 - Compatible and challenging periods
 - Name correction recommendations if applicable
-Return as structured Markdown.`
-      );
-    });
+Return as structured Markdown in ${lang}.`
+    );
+  });
 
-    StorageService.save(baseKey, englishBase, -1);
-  }
-
-  // 4. Translate if needed
-  const result = await translateText(englishBase, lang);
   StorageService.save(langKey, result, -1);
   return result;
 };
@@ -501,9 +440,8 @@ export const getPalmistryAnalysis = async (image: string, lang: Language) => {
 - Mount analysis: Jupiter, Saturn, Apollo, Mercury, Venus, Moon
 - Special marks: crosses, stars, triangles, islands and their Vedic significance
 - Overall assessment: wealth potential, health warnings, spiritual development
-Write the ENTIRE response in English.`;
+CRITICAL LANGUAGE REQUIREMENT: Write the ENTIRE analysis exclusively in ${lang} (using native ${lang} script).`;
 
-    const result = await callAIVision(textPrompt, image);
-    return await translateText(result, lang);
+    return await callAIVision(textPrompt, image);
   });
 };

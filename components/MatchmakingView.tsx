@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BirthDetails, MatchmakingDetails, Language } from '../types';
 import { getMatchmaking, getCoordinates } from '../services/aiService';
 import ReactMarkdown from 'react-markdown';
@@ -32,6 +32,33 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
       }));
     }
   };
+
+  // Automatically refresh Matchmaking report when language changes
+  useEffect(() => {
+    if (result && details.boy.name && details.girl.name && details.boy.location && details.girl.location) {
+      const reloadLanguage = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          const [boyCoords, girlCoords] = await Promise.all([
+            getCoordinates(details.boy.location),
+            getCoordinates(details.girl.location)
+          ]);
+          const enrichedDetails: MatchmakingDetails = {
+            boy: { ...details.boy, latitude: boyCoords.lat, longitude: boyCoords.lng },
+            girl: { ...details.girl, latitude: girlCoords.lat, longitude: girlCoords.lng }
+          };
+          const data = await getMatchmaking(enrichedDetails, language);
+          setResult(data);
+        } catch (err: any) {
+          console.error("Matchmaking language reload failed", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      reloadLanguage();
+    }
+  }, [language]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

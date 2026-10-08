@@ -1,7 +1,8 @@
 
 import { Language } from "../types";
 
-const CACHE_PREFIX = 'jyotish_cache_';
+const LEGACY_CACHE_PREFIX = 'jyotish_cache_';
+const CACHE_PREFIX = 'jyotish_v4_';
 
 interface CacheEntry<T> {
   data: T;
@@ -47,12 +48,7 @@ export const StorageService = {
    * Specific keys for the app
    */
   getKeys: {
-    // Base (English) cache keys — language-neutral canonical source
-    horoscopeBase: (sign: string, timeframe: string) => `horo_${sign}_${timeframe}_EN`,
-    kundaliBase: (name: string, dob: string) => `kundali_${name.trim().toLowerCase()}_${dob}_EN`,
-    matchBase: (bName: string, gName: string) => `match_${bName.trim().toLowerCase()}_${gName.trim().toLowerCase()}_EN`,
-    numerologyBase: (dob: string) => `num_${dob}_EN`,
-    // Translated cache keys — derived from the English base
+    // Prediction cache keys — language-aware
     horoscope: (sign: string, timeframe: string, lang: Language) => `horo_${sign}_${timeframe}_${lang}`,
     kundali: (name: string, dob: string, lang: Language) => `kundali_${name.trim().toLowerCase()}_${dob}_${lang}`,
     match: (bName: string, gName: string, lang: Language) => `match_${bName.trim().toLowerCase()}_${gName.trim().toLowerCase()}_${lang}`,
@@ -62,7 +58,7 @@ export const StorageService = {
   },
 
   setUserSign: (sign: string) => localStorage.setItem(CACHE_PREFIX + 'pref_sign', sign),
-  getUserSign: () => localStorage.getItem(CACHE_PREFIX + 'pref_sign'),
+  getUserSign: () => localStorage.getItem(CACHE_PREFIX + 'pref_sign') || localStorage.getItem(LEGACY_CACHE_PREFIX + 'pref_sign'),
 
   /**
    * Saves a user profile for quick re-entry
@@ -85,7 +81,7 @@ export const StorageService = {
    * Retrieves all saved profiles
    */
   getProfiles: (): { name: string; dob: string; tob: string; location: string }[] => {
-    const raw = localStorage.getItem(CACHE_PREFIX + 'user_profiles');
+    const raw = localStorage.getItem(CACHE_PREFIX + 'user_profiles') || localStorage.getItem(LEGACY_CACHE_PREFIX + 'user_profiles');
     try {
       return raw ? JSON.parse(raw) : [];
     } catch {

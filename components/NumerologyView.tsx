@@ -78,6 +78,25 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
     setNumerologyData(data);
   }, [dob]);
 
+  // Automatically refresh Numerology analysis when language changes
+  useEffect(() => {
+    if (analysis && numerologyData && dob) {
+      const reloadLanguage = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          const result = await getNumerologyAnalysis(dob, numerologyData.mulank, numerologyData.bhagyank, numerologyData.loshu, language);
+          setAnalysis(result);
+        } catch (err: any) {
+          console.error("Numerology language reload failed", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      reloadLanguage();
+    }
+  }, [language]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!numerologyData) return;

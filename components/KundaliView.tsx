@@ -38,6 +38,31 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
     scrollToBottom();
   }, [chatHistory, chatLoading]);
 
+  // Automatically refresh Kundali analysis when language changes
+  useEffect(() => {
+    if (analysis && details.name && details.dob && details.location) {
+      const reloadLanguage = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          const locationData = await getCoordinates(details.location);
+          const enrichedDetails = {
+            ...details,
+            latitude: locationData.lat,
+            longitude: locationData.lng,
+          };
+          const result = await getKundaliAnalysis(enrichedDetails, language);
+          setAnalysis(result);
+        } catch (err: any) {
+          console.error("Language reload failed", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      reloadLanguage();
+    }
+  }, [language]);
+
   const handleProfileSelect = (name: string) => {
     const profile = profiles.find(p => p.name === name);
     if (profile) {

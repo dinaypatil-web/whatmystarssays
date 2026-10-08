@@ -87,6 +87,13 @@ const PalmistryView: React.FC<PalmistryViewProps> = ({ language }) => {
     }
   };
 
+  // Automatically refresh Palm analysis when language changes
+  useEffect(() => {
+    if (analysis && image) {
+      analyzePalm();
+    }
+  }, [language]);
+
   const downloadPDF = async () => {
     const elementId = 'palm-report-area';
     const element = document.getElementById(elementId);
