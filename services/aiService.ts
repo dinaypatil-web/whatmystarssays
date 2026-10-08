@@ -472,11 +472,13 @@ export const askNumerologyQuestion = async (
   bhagyank: number,
   loshu: any,
   history: ChatMessage[],
-  lang: Language
+  lang: Language,
+  name: string = ''
 ) => {
   return await withRetry(async () => {
-    const context = `DOB: ${dob}, Mulank: ${mulank}, Bhagyank: ${bhagyank}, Loshu Grid: ${JSON.stringify(loshu)}`;
-    const systemPrompt = `You are a Master Vedic Numerologist. Answer questions based on: ${context}.
+    const context = `${name ? `Name: ${name}, ` : ''}DOB: ${dob}, Mulank: ${mulank}, Bhagyank: ${bhagyank}, Loshu Grid: ${JSON.stringify(loshu)}`;
+    const systemPrompt = `You are a Master Vedic & Chaldean Numerologist specializing in destiny, Namaank, and Name Correction. Answer questions based on: ${context}.
+If the user asks about spelling options, name alterations, business names, or signatures, provide precise letter-by-letter Chaldean calculations and guidance.
 CRITICAL LANGUAGE REQUIREMENT: You MUST formulate your entire response in ${lang} (using native ${lang} script).`;
 
     return await callAIChat(systemPrompt, history, q);
@@ -515,28 +517,69 @@ Return as professional Markdown in ${language}.`
 // NUMEROLOGY ANALYSIS
 // Generates directly in target language in a single efficient call
 // ---------------------------------------------------------------------------
-export const getNumerologyAnalysis = async (dob: string, m: number, b: number, loshu: any, lang: Language) => {
-  const langKey = StorageService.getKeys.numerology(dob, lang);
+export const getNumerologyAnalysis = async (
+  dob: string,
+  m: number,
+  b: number,
+  loshu: any,
+  lang: Language,
+  name: string = ''
+) => {
+  const langKey = StorageService.getKeys.numerology(dob, lang, name);
   const cached = StorageService.get<string>(langKey);
   if (cached) return cached;
 
   const result = await withRetry(async () => {
     return await callAI(
-      `You are a Master Vedic Numerologist. Provide detailed, accurate analysis.
+      `You are a Master Vedic and Chaldean Numerologist specializing in Astrological Name Correction, Namaank Alignment, and Destiny Rectification.
+Provide an authoritative, detailed numerology report with practical, highly auspicious name correction recommendations.
 CRITICAL LANGUAGE REQUIREMENT: Write the entire analysis exclusively in ${lang} (using native ${lang} script).`,
-      `Vedic Numerology analysis for DOB: ${dob}.
-Mulank (Psychic Number): ${m}
-Bhagyank (Destiny Number): ${b}
-Loshu Grid: ${JSON.stringify(loshu)}
+      `Vedic & Chaldean Numerology analysis for:
+${name ? `Person's Full Name: ${name}` : 'Name: Not provided'}
+Date of Birth: ${dob}
+Mulank (Psychic / Root Number): ${m}
+Bhagyank (Destiny / Life Path Number): ${b}
+Loshu Grid State: ${JSON.stringify(loshu)}
 
-Include:
-- Deep character and personality analysis (Mulank)
-- Life path and destiny analysis (Bhagyank)
-- Planes of expression from Loshu Grid (absent numbers and impacts)
-- Lucky numbers, colours, gemstones, and directions
-- Compatible and challenging periods
-- Name correction recommendations if applicable
-Return as structured Markdown in ${lang}.`
+You MUST include comprehensive sections:
+1. **Core Number Profile (मूलांक व भाग्यांक विश्लेषण)**:
+   - Mulank (${m}) - Ruling Planet, Personality Blueprint, Strengths & Pitfalls.
+   - Bhagyank (${b}) - Ruling Planet, Karmic Destiny, Life Purpose.
+   - Core Relationship: Synergy or friction between Mulank (${m}) and Bhagyank (${b}).
+
+2. **Loshu Grid Planes & Missing Numbers (रिक्त अंक व प्रभाव)**:
+   - Present numbers and dominant planes (Thought, Will, Action, Mental, Emotional, Practical).
+   - Missing numbers and their specific life voids (e.g. missing 5/6 affecting stability, luxury, or communication).
+
+3. **ASTROLOGICAL NAME CORRECTION & NAMAANK ALIGNMENT (नाम सुधार व नामांक विश्लेषण)**:
+${name ? `
+   - **Current Name Assessment**:
+     * Calculate exact Chaldean Compound Number and Single Digit Namaank for "${name}".
+     * Analyze if "${name}" harmonizes or creates friction with Mulank (${m}) and Bhagyank (${b}).
+     * Point out whether the current compound frequency attracts delays, struggle, or smooth success.
+   - **3 to 4 AUSPICIOUS NAME CORRECTION OPTIONS (अति-शुभ सुधारात्मक नाम विकल्प)**:
+     Provide 3 to 4 concrete, phonetically natural, and socially easy-to-use spelling variations (e.g., adding a specific vowel like 'A' or 'E', repeating a consonant, or adjusting middle initials).
+     For EACH proposed spelling, present a clear table or breakdown:
+     * **Altered Spelling**: (e.g., "Rohaan Sharma", "Rohan K. Sharma", etc.)
+     * **New Chaldean Compound Number & Single Digit**: (Target auspicious vibrations like 1, 5, or 6 with compound numbers such as 19, 23, 24, 32, 37, 41, 42, 46, 51).
+     * **Ruling Planet & Energetic Benefit**: (e.g., Sun for authority, Mercury for business/wealth, Venus for luxury and relationships).
+     * **Specific Life Improvements**: (How this exact vibration rectifies missing Loshu grid numbers and removes blocks).
+   - **Daily Name Activation Ritual (नाम ऊर्जा सक्रियण विधि)**:
+     * How to activate the new vibration without legal document changes (writing the corrected name 21 or 108 times daily in green/blue ink).
+     * Signature optimization guidelines (slanting upwards at 45 degrees, never crossing or cutting through the name).
+     * Practical tips for social media, business cards, and email signatures.
+` : `
+   - Ideal Target Namaank (Name Numbers) compatible with Mulank ${m} and Bhagyank ${b}.
+   - Golden compound numbers to aim for (such as 19, 23, 24, 32, 37, 41, 42).
+   - Rules for selecting an auspicious business or personal name.
+`}
+
+4. **Remedies & Auspicious Timing (शुभ उपाय व दिशा)**:
+   - Lucky Numbers, Lucky Days, Lucky Colours, Favourable Directions.
+   - Gemstone & Rudraksha recommendations.
+   - Auspicious daily affirmations and planetary mantras.
+
+Return as beautifully formatted Markdown with bold titles, clean tables, and bullet points in ${lang}.`
     );
   });
 
