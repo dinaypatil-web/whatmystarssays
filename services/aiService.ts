@@ -64,8 +64,9 @@ export const KUNDALI_SYSTEM_PROMPTS: Record<KundaliSystem, {
    - 2nd & 11th Cusp Sub-Lords (Wealth, Financial Gains)
    - 7th Cusp Sub-Lord (Marriage & Partnerships)
    - 10th Cusp Sub-Lord (Career & Profession)
-5. **Current Dasha-Bhukti (Vimshottari)** and sub-lord event timing.
-6. **K. P. Remedies & Gemstones** based on beneficial cuspal significators.`
+5. **Vimshottari Mahadasha Lifelong Timeline Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for all 9 Mahadasha periods covering the full 120-year span starting from the native's birth date. Highlight the currently active Mahadasha and Antardasha.
+6. **Shani Saadesati Lifecycle Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for all 3 phases (1st Phase / Rising, 2nd Phase / Peak, 3rd Phase / Setting) of Saturn's transit over the natal Moon sign. State clearly whether the native is in a Past, Currently Active, or Upcoming Saadesati period.
+7. **K. P. Remedies & Gemstones** based on beneficial cuspal significators.`
   },
   parashari: {
     name: "Classical Vedic Parashari",
@@ -75,8 +76,8 @@ export const KUNDALI_SYSTEM_PROMPTS: Record<KundaliSystem, {
 2. **Planetary Positions Table**: Sidereal degrees, Rashi, Nakshatra, Lord, Exaltation/Debilitation/Own Sign, Retrograde status, Combust status.
 3. **12 Bhava (House) In-Depth Analysis**: Detailed assessment of Kendras (1, 4, 7, 10), Trikonas (1, 5, 9), and Dusthanas (6, 8, 12).
 4. **Planetary Yogas**: Identify major Raja Yogas, Dhana Yogas, Pancha Mahapurusha Yogas, Gajakesari Yoga, Viparita Yogas, and Doshas (Mangal/Kalsarp).
-5. **Vimshottari Mahadasha Timeline**: Current Mahadasha & Antardasha with precise predictive forecast.
-6. **Shani Saadesati & Kantaka Shani Analysis**.
+5. **Vimshottari Mahadasha Lifelong Timeline Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year, e.g., 1995 – 2015) for all 9 Mahadashas from birth date up to 120 years. State the currently active Mahadasha and Antardasha with predictive dates.
+6. **Shani Saadesati Lifecycle Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for all 3 phases (1st Phase / Rising, 2nd Phase / Peak, 3rd Phase / Setting). State clearly if Saadesati is Past, Currently Active, or Upcoming.
 7. **Classical Vedic Remedies**: Mantras, gemstones, fasts, and daan (charity).`
   },
   jaimini: {
@@ -93,9 +94,10 @@ export const KUNDALI_SYSTEM_PROMPTS: Record<KundaliSystem, {
    - Darakaraka (DK - Spouse & Partnerships)
 2. **Special Lagnas**: Lagna, Arudha Lagna (AL), Upapada Lagna (UL), Darapada (A7), and Karakamsa Lagna.
 3. **Jaimini Rashi Drishti**: Aspects between cardinal, fixed, and mutable signs.
-4. **Chara Dasha Analysis**: Current Chara Dasha sign period and predictive life implications.
-5. **Soul Mission & Marriage Analysis** based on AK and UL.
-6. **Jaimini Remedies & Spiritual Alignments** tailored to the Atmakaraka.`
+4. **Chara Dasha Timeline Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for each sign Dasha period and identify the current active Dasha.
+5. **Vimshottari Mahadasha & Shani Saadesati Years Table (MANDATORY)**: Provide the exact calendar year ranges for the native's Mahadashas and Saturn Saadesati transit cycles.
+6. **Soul Mission & Marriage Analysis** based on AK and UL.
+7. **Jaimini Remedies & Spiritual Alignments** tailored to the Atmakaraka.`
   },
   lalkitab: {
     name: "Lal Kitab System",
@@ -104,8 +106,9 @@ export const KUNDALI_SYSTEM_PROMPTS: Record<KundaliSystem, {
 1. **Kalpurush Kundali Mapping**: Interpret planetary placements with Aries fixed as House 1, Taurus as House 2, etc.
 2. **Grah Status**: Identify Pakka Ghar (permanent houses), Kismat Jagane Wale Grah (luck activators), and Soye Hue Grah/Ghar (sleeping planets/houses).
 3. **Pitra Rin & Ancestral Debts**: Diagnose ancestral debts (Pitri Rin, Matri Rin, Stri Rin, Swa-Rin) from planetary combinations.
-4. **Varshphal Trends**: Key thematic trends and precautions.
-5. **Authentic Lal Kitab Totkas (Remedies)**: Clear, practical, safe remedies (e.g. offerings in running water, silver square, caring for specific animals).`
+4. **Lal Kitab Grah Dasha & Vimshottari Timeline Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for major planetary dasha periods.
+5. **Shani Saadesati / Saturn Cycle Timeline Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for the 3 phases of Saturn's transit.
+6. **Authentic Lal Kitab Totkas (Remedies)**: Clear, practical, safe remedies (e.g. offerings in running water, silver square, caring for specific animals).`
   },
   nadi: {
     name: "Bhrigu Nandi Nadi",
@@ -120,8 +123,8 @@ export const KUNDALI_SYSTEM_PROMPTS: Record<KundaliSystem, {
    - Jeeva Karaka (Jupiter) & its relationships to other planets (Soul journey)
    - Karma Karaka (Saturn) & professional karma
    - Budha (Education/Business) & Shukra (Wealth/Spouse) linkages
-3. **Planetary Conjunctions & Modifiers**: Degrees-based planetary meetings and exchange (Parivartana).
-4. **Nadi Double Transit Predictions**: Current Saturn & Jupiter transit alignments over natal planets.
+3. **Vimshottari Dasha Timeline Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for all planetary dasha cycles from birth date.
+4. **Shani Saadesati & Double Transit Timeline (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for Saturn Saadesati phases (Rising, Peak, Setting) over natal Moon.
 5. **Karmic Blessings & Obstacles** with Nadi remedial guidance.`
   },
   western: {
@@ -131,9 +134,9 @@ export const KUNDALI_SYSTEM_PROMPTS: Record<KundaliSystem, {
 1. **The Big Three & Angles**: Tropical Ascendant (Rising), Sun Sign, Moon Sign, Midheaven (MC), and IC.
 2. **Planetary Positions Table**: Sun through Pluto + Chiron degrees in Tropical signs and Placidus houses.
 3. **Major Aspect Matrix**: Conjunctions, Oppositions, Trines, Squares, and Sextiles with exact orbs.
-4. **Elemental & Modality Balance**: Fire/Earth/Air/Water and Cardinal/Fixed/Mutable breakdown.
-5. **Psychological & Life Path Profile**: Core archetype, Shadow work, relationships, and career trajectory.
-6. **Current Planetary Transits & Progressions** impacting natal chart.`
+4. **Major Life Transits & Saturn Return Timeline Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for major Saturn transit cycles (Saturn Return at age 28-30 and 58-60) and Saturn over natal Moon.
+5. **Progressed Timeline / Dasha Equivalent Table (MANDATORY)**: Provide the year-by-year major planetary transit phases with exact calendar years.
+6. **Psychological & Life Path Profile**: Core archetype, Shadow work, relationships, and career trajectory.`
   }
 };
 
@@ -388,7 +391,7 @@ This is an authentic, high-precision Life Analysis using the ${config.name}. DO 
 
 CRITICAL LANGUAGE REQUIREMENT:
 You MUST write the entire "report" and all textual descriptions (starLord, subLord, nakshatra, moonSign) in ${language} (using native ${language} script).
-The JSON keys ("report", "chart", "lagnaSign", "starLord", "subLord", "nakshatra", "moonSign") and house numbers ("1".."12") must remain in English.`,
+The JSON keys ("report", "chart", "lagnaSign", "starLord", "subLord", "nakshatra", "moonSign", "mahadashas", "saadesatiCycles") and house numbers ("1".."12") must remain in English.`,
       `Generate a complete Janma Kundali Life Analysis in the ${config.name} for:
 Name: ${details.name}
 DOB: ${details.dob}
@@ -399,13 +402,31 @@ ${config.specifics}
 
 Return ONLY a valid JSON object (no markdown code fences):
 {
-  "report": "Professional Markdown string in ${language} with bold headers and tables detailing the ${config.name} analysis.",
+  "report": "Professional Markdown string in ${language} with bold headers and tables detailing the ${config.name} analysis. MUST include a prominent Vimshottari Mahadasha Table with exact start and end years (e.g. 1995-2015) and a Shani Saadesati Table with exact years for 1st, 2nd, and 3rd phases.",
   "chart": { "1": [], "2": [], "3": [], "4": [], "5": [], "6": [], "7": [], "8": [], "9": [], "10": [], "11": [], "12": [] },
   "lagnaSign": 1,
   "starLord": "string in ${language}",
   "subLord": "string in ${language}",
   "nakshatra": "string in ${language}",
-  "moonSign": "string in ${language}"
+  "moonSign": "string in ${language}",
+  "mahadashas": [
+    {
+      "planet": "Planet Name in ${language}",
+      "startYear": "YYYY",
+      "endYear": "YYYY",
+      "durationYears": 16,
+      "isCurrent": false
+    }
+  ],
+  "saadesatiCycles": [
+    {
+      "phase": "1st Phase (Rising) / 2nd Phase (Peak) / 3rd Phase (Setting)",
+      "startYear": "YYYY",
+      "endYear": "YYYY",
+      "status": "past",
+      "description": "Short explanation in ${language}"
+    }
+  ]
 }
 Chart keys must be "1" through "12" with planet name arrays. lagnaSign is 1-12.`,
       true // jsonMode

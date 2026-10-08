@@ -52,6 +52,22 @@ export type KundaliSystem =
   | 'nadi'         // Bhrigu Nandi Nadi
   | 'western';     // Western / Tropical
 
+export interface MahadashaPeriod {
+  planet: string;
+  startYear: number | string;
+  endYear: number | string;
+  durationYears?: number | string;
+  isCurrent?: boolean;
+}
+
+export interface SaadesatiPhase {
+  phase: string;
+  startYear: number | string;
+  endYear: number | string;
+  status: 'past' | 'active' | 'upcoming';
+  description?: string;
+}
+
 export interface KundaliResponse {
   report: string;
   chart: KundaliChartData;
@@ -61,4 +77,6 @@ export interface KundaliResponse {
   nakshatra: string;
   moonSign: string;
   system?: KundaliSystem;
+  mahadashas?: MahadashaPeriod[];
+  saadesatiCycles?: SaadesatiPhase[];
 }

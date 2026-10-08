@@ -1,13 +1,182 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { BirthDetails, Language, ChatMessage, KundaliResponse, KundaliSystem } from '../types';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { BirthDetails, Language, ChatMessage, KundaliResponse, KundaliSystem, MahadashaPeriod, SaadesatiPhase } from '../types';
 import { getCoordinates, getKundaliAnalysis, askKundaliQuestion } from '../services/aiService';
 import { StorageService } from '../services/storageService';
 import { KUNDALI_SYSTEMS } from '../constants';
 import KundaliChart from './KundaliChart';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+
+const PLANET_ICONS: Record<string, string> = {
+  Sun: '☀️',
+  Surya: '☀️',
+  Moon: '🌙',
+  Chandra: '🌙',
+  Mars: '♂️',
+  Mangal: '♂️',
+  Mercury: '☿',
+  Budh: '☿',
+  Jupiter: '♃',
+  Guru: '♃',
+  Venus: '♀',
+  Shukra: '♀',
+  Saturn: '🪐',
+  Shani: '🪐',
+  Rahu: '☊',
+  Ketu: '☋',
+};
+
+const getPlanetIcon = (planet: string = ''): string => {
+  const p = planet.toLowerCase();
+  for (const [key, icon] of Object.entries(PLANET_ICONS)) {
+    if (p.includes(key.toLowerCase())) return icon;
+  }
+  return '✨';
+};
+
+const isDashaActive = (dasha: MahadashaPeriod): boolean => {
+  if (dasha.isCurrent !== undefined) return Boolean(dasha.isCurrent);
+  const currentYear = new Date().getFullYear();
+  const start = parseInt(String(dasha.startYear), 10);
+  const end = parseInt(String(dasha.endYear), 10);
+  if (!isNaN(start) && !isNaN(end)) {
+    return currentYear >= start && currentYear <= end;
+  }
+  return false;
+};
+
+const getSaadesatiBadge = (cycle: SaadesatiPhase) => {
+  const currentYear = new Date().getFullYear();
+  const start = parseInt(String(cycle.startYear), 10);
+  const end = parseInt(String(cycle.endYear), 10);
+  let status = cycle.status?.toLowerCase();
+  if (!status && !isNaN(start) && !isNaN(end)) {
+    if (currentYear < start) status = 'upcoming';
+    else if (currentYear > end) status = 'past';
+    else status = 'active';
+  }
+
+  if (status === 'active') {
+    return {
+      type: 'active',
+      label: '⚡ Active Now',
+      classes: 'bg-amber-400/20 text-amber-300 border-amber-400/40',
+    };
+  }
+  if (status === 'upcoming') {
+    return {
+      type: 'upcoming',
+      label: '⏳ Upcoming',
+      classes: 'bg-sky-400/20 text-sky-300 border-sky-400/40',
+    };
+  }
+  return {
+    type: 'past',
+    label: '✓ Completed',
+    classes: 'bg-emerald-400/10 text-emerald-300 border-emerald-400/30',
+  };
+};
+
+const extractDashaFromReport = (report: string): MahadashaPeriod[] => {
+  if (!report) return [];
+  const periods: MahadashaPeriod[] = [];
+  const currentYear = new Date().getFullYear();
+
+  // Pattern 1: Table row e.g. | Saturn (Shani) | 2011 – 2030 | 19 Years | Active |
+  const tableRegex = /\|\s*([^|\n]+?)\s*\|\s*(\d{4})\s*[-–—]\s*(\d{4})\s*\|\s*([^|\n]*?)\s*\|/g;
+  let match;
+  while ((match = tableRegex.exec(report)) !== null) {
+    const planetRaw = match[1].trim();
+    if (/planet|graha|dasha|nakshatra|system|house/i.test(planetRaw)) continue;
+    const startYear = parseInt(match[2], 10);
+    const endYear = parseInt(match[3], 10);
+    const durationMatch = match[4].match(/(\d+)/);
+    const duration = durationMatch ? parseInt(durationMatch[1], 10) : endYear - startYear;
+    periods.push({
+      planet: planetRaw,
+      startYear,
+      endYear,
+      durationYears: duration,
+      isCurrent: currentYear >= startYear && currentYear <= endYear,
+    });
+  }
+
+  // Pattern 2: Bullet points e.g. - **Saturn / Shani**: 2011 – 2030 (19 years)
+  if (periods.length === 0) {
+    const bulletRegex = /[-*]\s*\*\*([^*]+?)\*\*[:\s]+(\d{4})\s*[-–—]\s*(\d{4})(?:[^(]*\(([^)]+)\))?/g;
+    while ((match = bulletRegex.exec(report)) !== null) {
+      const planetRaw = match[1].trim();
+      if (/phase|saadesati|sade\s*sati|overview|analysis/i.test(planetRaw)) continue;
+      const startYear = parseInt(match[2], 10);
+      const endYear = parseInt(match[3], 10);
+      const durStr = match[4] || '';
+      const durMatch = durStr.match(/(\d+)/);
+      const duration = durMatch ? parseInt(durMatch[1], 10) : endYear - startYear;
+      periods.push({
+        planet: planetRaw,
+        startYear,
+        endYear,
+        durationYears: duration,
+        isCurrent: currentYear >= startYear && currentYear <= endYear,
+      });
+    }
+  }
+
+  return periods;
+};
+
+const extractSaadesatiFromReport = (report: string): SaadesatiPhase[] => {
+  if (!report) return [];
+  const phases: SaadesatiPhase[] = [];
+  const currentYear = new Date().getFullYear();
+
+  // Pattern 1: Table row
+  const tableRegex = /\|\s*([^|\n]*(?:Phase|चरण|Shani|Rising|Peak|Setting|उदय|शिखर|अस्त)[^|\n]*)\s*\|\s*(\d{4})\s*[-–—]\s*(\d{4})\s*\|([^|\n]*)\|/gi;
+  let match;
+  while ((match = tableRegex.exec(report)) !== null) {
+    const phaseName = match[1].trim();
+    if (/status|table|phase\s*name/i.test(phaseName)) continue;
+    const startYear = parseInt(match[2], 10);
+    const endYear = parseInt(match[3], 10);
+    const desc = match[4]?.trim() || '';
+    let status: 'past' | 'active' | 'upcoming' = 'past';
+    if (currentYear < startYear) status = 'upcoming';
+    else if (currentYear >= startYear && currentYear <= endYear) status = 'active';
+    phases.push({
+      phase: phaseName,
+      startYear,
+      endYear,
+      status,
+      description: desc,
+    });
+  }
+
+  // Pattern 2: Bullet points
+  if (phases.length === 0) {
+    const bulletRegex = /[-*]\s*\*\*([^*]+?(?:Phase|चरण|Rising|Peak|Setting|उदय|शिखर|अस्त)[^*]*)\*\*[:\s]+(\d{4})\s*[-–—]\s*(\d{4})[:\s-–]*(.*)/gi;
+    while ((match = bulletRegex.exec(report)) !== null) {
+      const phaseName = match[1].trim();
+      const startYear = parseInt(match[2], 10);
+      const endYear = parseInt(match[3], 10);
+      const desc = match[4]?.trim() || '';
+      let status: 'past' | 'active' | 'upcoming' = 'past';
+      if (currentYear < startYear) status = 'upcoming';
+      else if (currentYear >= startYear && currentYear <= endYear) status = 'active';
+      phases.push({
+        phase: phaseName,
+        startYear,
+        endYear,
+        status,
+        description: desc,
+      });
+    }
+  }
+
+  return phases;
+};
 
 interface KundaliViewProps {
   language: Language;
@@ -35,6 +204,18 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  const displayMahadashas = useMemo(() => {
+    if (!analysis) return [];
+    if (analysis.mahadashas && analysis.mahadashas.length > 0) return analysis.mahadashas;
+    return extractDashaFromReport(analysis.report);
+  }, [analysis]);
+
+  const displaySaadesati = useMemo(() => {
+    if (!analysis) return [];
+    if (analysis.saadesatiCycles && analysis.saadesatiCycles.length > 0) return analysis.saadesatiCycles;
+    return extractSaadesatiFromReport(analysis.report);
+  }, [analysis]);
 
   useEffect(() => {
     scrollToBottom();
@@ -344,6 +525,133 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
               </button>
             </div>
 
+            {/* Dedicated Planetary Timeline Cards: Vimshottari Mahadasha & Shani Saadesati */}
+            {(displayMahadashas.length > 0 || displaySaadesati.length > 0) && (
+              <div className="p-6 md:p-10 border-b border-white/10 bg-gradient-to-b from-amber-500/[0.04] to-transparent space-y-8">
+                {/* Mahadasha Timeline */}
+                {displayMahadashas.length > 0 && (
+                  <div>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                      <div>
+                        <h3 className="text-lg md:text-xl font-cinzel font-bold text-amber-300 flex items-center gap-2">
+                          <span>⏳</span> Vimshottari Mahadasha Timeline (120-Year Cycle)
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          Exact planetary period calendar years calculated from birth Nakshatra
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                          Current Dasha Active
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-3">
+                      {displayMahadashas.map((dasha, idx) => {
+                        const isCurrent = isDashaActive(dasha);
+                        return (
+                          <div
+                            key={idx}
+                            className={`p-3.5 rounded-2xl border transition-all relative flex flex-col justify-between ${
+                              isCurrent
+                                ? 'bg-amber-500/20 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.25)] ring-1 ring-amber-400/50'
+                                : 'bg-white/[0.03] border-white/10 hover:border-white/20'
+                            }`}
+                          >
+                            {isCurrent && (
+                              <div className="absolute -top-2 -right-2 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 font-black text-[9px] uppercase px-2 py-0.5 rounded-full shadow-md tracking-wider">
+                                Active
+                              </div>
+                            )}
+                            <div>
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <span className="text-lg">{getPlanetIcon(dasha.planet)}</span>
+                                {dasha.durationYears && (
+                                  <span className="text-[10px] font-mono font-semibold text-slate-400">
+                                    {dasha.durationYears}y
+                                  </span>
+                                )}
+                              </div>
+                              <div className={`font-cinzel font-bold text-sm truncate ${isCurrent ? 'text-amber-200' : 'text-slate-200'}`}>
+                                {dasha.planet}
+                              </div>
+                            </div>
+                            <div className="mt-3 pt-2 border-t border-white/10">
+                              <div className={`font-mono font-bold text-xs ${isCurrent ? 'text-amber-300' : 'text-slate-300'}`}>
+                                {dasha.startYear} – {dasha.endYear}
+                              </div>
+                              <div className="text-[10px] text-slate-500 font-medium">
+                                Calendar Years
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Shani Saadesati Phases */}
+                {displaySaadesati.length > 0 && (
+                  <div className="pt-4 border-t border-white/5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                      <div>
+                        <h3 className="text-lg md:text-xl font-cinzel font-bold text-amber-300 flex items-center gap-2">
+                          <span>🪐</span> Shani Saadesati Timeline (Saturn 7.5-Year Transit)
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          Three 2.5-year phases relative to Natal Moon ({analysis.moonSign || 'Chandra'})
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {displaySaadesati.map((cycle, idx) => {
+                        const statusBadge = getSaadesatiBadge(cycle);
+                        return (
+                          <div
+                            key={idx}
+                            className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${
+                              statusBadge.type === 'active'
+                                ? 'bg-amber-500/15 border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/40'
+                                : statusBadge.type === 'upcoming'
+                                ? 'bg-sky-500/10 border-sky-500/30'
+                                : 'bg-white/[0.03] border-white/10'
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between gap-2 mb-2">
+                                <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${statusBadge.classes}`}>
+                                  {statusBadge.label}
+                                </span>
+                                <span className="font-mono font-bold text-sm text-amber-300">
+                                  {cycle.startYear} – {cycle.endYear}
+                                </span>
+                              </div>
+                              <h4 className="font-cinzel font-bold text-base text-slate-100 mb-1">
+                                {cycle.phase}
+                              </h4>
+                              {cycle.description && (
+                                <p className="text-xs text-slate-300/90 leading-relaxed mt-2">
+                                  {cycle.description}
+                                </p>
+                              )}
+                            </div>
+                            <div className="mt-4 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                              <span>Transit Duration</span>
+                              <span className="text-slate-300">~2.5 Years</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 p-6 md:p-12">
               <div className="lg:col-span-5 space-y-8">
                 <KundaliChart data={analysis.chart} lagnaSign={analysis.lagnaSign} />
@@ -373,7 +681,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                 </div>
               </div>
               <div className="lg:col-span-7 prose prose-invert prose-amber max-w-none prose-h1:font-cinzel prose-h2:font-cinzel prose-h2:text-amber-400 prose-h3:text-amber-200 prose-p:text-slate-300 leading-relaxed text-sm md:text-base">
-                <ReactMarkdown>{typeof analysis.report === 'string' ? analysis.report : JSON.stringify(analysis.report)}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{typeof analysis.report === 'string' ? analysis.report : JSON.stringify(analysis.report)}</ReactMarkdown>
                 
                 {chatHistory.length > 0 && (
                   <div className="mt-16 pt-8 border-t border-white/10">
@@ -385,7 +693,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                             {msg.role === 'user' ? 'Question' : 'Counsel'}
                           </p>
                           <div className="text-slate-300 text-sm leading-relaxed">
-                             <ReactMarkdown>{msg.text}</ReactMarkdown>
+                             <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
                           </div>
                         </div>
                       ))}
@@ -429,7 +737,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                     ? 'bg-amber-600/20 border border-amber-500/30 text-amber-50 rounded-tr-none shadow-lg' 
                     : 'bg-white/5 border border-white/10 text-slate-300 rounded-tl-none prose prose-invert prose-sm'
                   }`}>
-                    {msg.role === 'user' ? msg.text : <ReactMarkdown>{msg.text}</ReactMarkdown>}
+                    {msg.role === 'user' ? msg.text : <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>}
                   </div>
                 </div>
               ))}

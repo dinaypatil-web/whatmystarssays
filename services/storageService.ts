@@ -2,7 +2,7 @@
 import { Language, KundaliSystem } from "../types";
 
 const LEGACY_CACHE_PREFIX = 'jyotish_cache_';
-const CACHE_PREFIX = 'jyotish_v4_';
+const CACHE_PREFIX = 'jyotish_v5_';
 
 interface CacheEntry<T> {
   data: T;
