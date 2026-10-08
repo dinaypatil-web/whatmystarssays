@@ -3,22 +3,12 @@ import { BirthDetails, MatchmakingDetails, Timeframe, Language, ChatMessage, Kun
 import { StorageService } from "./storageService";
 
 // ---------------------------------------------------------------------------
-// ✅ DUAL-PROVIDER CONFIG
-// Primary:  Gemini Flash 2.0  (Google AI — 1,000,000 tokens/day FREE)
-// Fallback: OpenRouter        (google/gemma-4-31b-it:free — ~200 req/day)
+// CONFIG — Gemini Flash (Google AI, 1,000,000 tokens/day FREE)
 // ---------------------------------------------------------------------------
-const GEMINI_MODEL       = "gemini-3.8-flash";
-const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-const OPENROUTER_MODEL   = "google/gemma-4-31b-it:free";
-
-const PLACEHOLDER_KEY = "sk-or-paste-your-key-here";
-const getOpenRouterKey = () => {
-  const key = process.env.OPENROUTER_API_KEY || "";
-  return key === PLACEHOLDER_KEY ? "" : key;
-};
+const GEMINI_MODEL = "gemini-3.8-flash";
 const getGeminiKey = () => process.env.API_KEY || "";
 
-// Chat-history trimming — cap at 10 messages (5 user+assistant pairs)
+// Cap chat history to 10 messages to prevent runaway token usage
 const MAX_HISTORY_MESSAGES = 10;
 
 const getCurrentDate = () => {
@@ -27,163 +17,80 @@ const getCurrentDate = () => {
 };
 
 // ---------------------------------------------------------------------------
-// PRIMARY: Gemini Flash 2.0
+// GEMINI CORE HELPERS
 // ---------------------------------------------------------------------------
 interface GeminiMessage {
   role: "user" | "model";
   parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }>;
 }
 
-const callGemini = async (
-  messages: GeminiMessage[],
-  opts: { jsonMode?: boolean } = {}
-): Promise<string> => {
+const buildGeminiClient = () => {
   const apiKey = getGeminiKey();
-  if (!apiKey) throw new Error("GEMINI_KEY_MISSING");
+  if (!apiKey) throw new Error("Gemini API key is missing. Add VITE_API_KEY to your Vercel environment variables.");
+  return new GoogleGenAI({ apiKey });
+};
 
-  const ai = new GoogleGenAI({ apiKey });
-  const history = messages.slice(0, -1);
-  const lastMsg = messages[messages.length - 1];
+/** Text-only request */
+const callAI = async (systemPrompt: string, userPrompt: string, jsonMode = false): Promise<string> => {
+  const ai = buildGeminiClient();
+  const messages: GeminiMessage[] = [];
+  if (systemPrompt) {
+    messages.push({ role: "user",  parts: [{ text: systemPrompt }] });
+    messages.push({ role: "model", parts: [{ text: "Understood. I will follow these instructions precisely." }] });
+  }
+  messages.push({ role: "user", parts: [{ text: userPrompt }] });
 
-  const chat = ai.chats.create({ model: GEMINI_MODEL, history } as any);
-  const response = await chat.sendMessage({ message: lastMsg.parts as any });
+  const chat = ai.chats.create({ model: GEMINI_MODEL, history: messages.slice(0, -1) } as any);
+  const response = await chat.sendMessage({ message: messages[messages.length - 1].parts as any });
 
   let text = response.text ?? "";
   if (!text) throw new Error("Empty response from Gemini.");
-  // Strip markdown code fences Gemini sometimes adds around JSON
-  if (opts.jsonMode) {
+  if (jsonMode) {
     text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
   }
   return text;
 };
 
-// ---------------------------------------------------------------------------
-// FALLBACK: OpenRouter
-// ---------------------------------------------------------------------------
-interface OpenRouterMessage {
-  role: "system" | "user" | "assistant";
-  content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>;
-}
+/** Multi-turn chat — history trimmed to MAX_HISTORY_MESSAGES */
+const callAIChat = async (systemPrompt: string, history: ChatMessage[], userQuestion: string): Promise<string> => {
+  const ai = buildGeminiClient();
+  const trimmedHistory = history.slice(-MAX_HISTORY_MESSAGES);
 
-const callOpenRouter = async (
-  messages: OpenRouterMessage[],
-  opts: { jsonMode?: boolean; model?: string } = {}
-): Promise<string> => {
-  const apiKey = getOpenRouterKey();
-  if (!apiKey) {
-    throw new Error(
-      "OpenRouter API key is missing. Please add OPENROUTER_API_KEY=sk-or-... to your .env file. Get a free key at https://openrouter.ai/"
-    );
+  const messages: GeminiMessage[] = [];
+  if (systemPrompt) {
+    messages.push({ role: "user",  parts: [{ text: systemPrompt }] });
+    messages.push({ role: "model", parts: [{ text: "Understood. Ready to assist." }] });
   }
-
-  const model = opts.model || OPENROUTER_MODEL;
-  const body: any = { model, messages };
-  if (opts.jsonMode) body.response_format = { type: "json_object" };
-
-  const response = await fetch(OPENROUTER_API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "https://whatmystarssays.app",
-      "X-Title": "What My Stars Says",
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    if (response.status === 401) throw new Error("Invalid or missing OpenRouter API key.");
-    if (response.status === 429) throw new Error("Rate limit reached. Please try again shortly.");
-    throw new Error(`OpenRouter API error ${response.status}: ${errText}`);
+  for (const msg of trimmedHistory) {
+    messages.push({ role: msg.role === "user" ? "user" : "model", parts: [{ text: msg.text }] });
   }
+  messages.push({ role: "user", parts: [{ text: userQuestion }] });
 
-  const data = await response.json();
-  const text = data?.choices?.[0]?.message?.content ?? "";
-  if (!text) throw new Error("Empty response from OpenRouter.");
+  const chat = ai.chats.create({ model: GEMINI_MODEL, history: messages.slice(0, -1) } as any);
+  const response = await chat.sendMessage({ message: messages[messages.length - 1].parts as any });
+
+  const text = response.text ?? "";
+  if (!text) throw new Error("Empty response from Gemini.");
   return text;
 };
 
-// ---------------------------------------------------------------------------
-// UNIFIED AI CALL  (Gemini primary → OpenRouter fallback)
-// ---------------------------------------------------------------------------
-const isQuotaError = (err: any) =>
-  err?.message === "GEMINI_KEY_MISSING" ||
-  String(err).includes("quota") ||
-  String(err).includes("429") ||
-  String(err).includes("RESOURCE_EXHAUSTED");
-
-/** Text-only request */
-const callAI = async (systemPrompt: string, userPrompt: string, jsonMode = false): Promise<string> => {
-  try {
-    const messages: GeminiMessage[] = [];
-    if (systemPrompt) {
-      messages.push({ role: "user",  parts: [{ text: systemPrompt }] });
-      messages.push({ role: "model", parts: [{ text: "Understood. I will follow these instructions precisely." }] });
-    }
-    messages.push({ role: "user", parts: [{ text: userPrompt }] });
-    return await callGemini(messages, { jsonMode });
-  } catch (err: any) {
-    if (!isQuotaError(err)) throw err;
-    console.warn("Gemini unavailable, falling back to OpenRouter:", err?.message);
-  }
-  // Fallback
-  const orMessages: OpenRouterMessage[] = [];
-  if (systemPrompt) orMessages.push({ role: "system", content: systemPrompt });
-  orMessages.push({ role: "user", content: userPrompt });
-  return callOpenRouter(orMessages, { jsonMode });
-};
-
-/** Multi-turn chat request — history trimmed to MAX_HISTORY_MESSAGES */
-const callAIChat = async (systemPrompt: string, history: ChatMessage[], userQuestion: string): Promise<string> => {
-  const trimmedHistory = history.slice(-MAX_HISTORY_MESSAGES);
-  try {
-    const messages: GeminiMessage[] = [];
-    if (systemPrompt) {
-      messages.push({ role: "user",  parts: [{ text: systemPrompt }] });
-      messages.push({ role: "model", parts: [{ text: "Understood. Ready to assist." }] });
-    }
-    for (const msg of trimmedHistory) {
-      messages.push({ role: msg.role === "user" ? "user" : "model", parts: [{ text: msg.text }] });
-    }
-    messages.push({ role: "user", parts: [{ text: userQuestion }] });
-    return await callGemini(messages);
-  } catch (err: any) {
-    if (!isQuotaError(err)) throw err;
-    console.warn("Gemini chat unavailable, falling back to OpenRouter:", err?.message);
-  }
-  // Fallback
-  const orMessages: OpenRouterMessage[] = [];
-  if (systemPrompt) orMessages.push({ role: "system", content: systemPrompt });
-  for (const msg of trimmedHistory) {
-    orMessages.push({ role: msg.role === "user" ? "user" : "assistant", content: msg.text });
-  }
-  orMessages.push({ role: "user", content: userQuestion });
-  return callOpenRouter(orMessages);
-};
-
-/** Vision request (Palmistry) */
+/** Vision request — for Palmistry image analysis */
 const callAIVision = async (textPrompt: string, imageDataUrl: string): Promise<string> => {
+  const ai = buildGeminiClient();
   const mimeType = imageDataUrl.split(";")[0].replace("data:", "") || "image/jpeg";
   const base64Data = imageDataUrl.split(",")[1] || imageDataUrl;
-  try {
-    const apiKey = getGeminiKey();
-    if (!apiKey) throw new Error("GEMINI_KEY_MISSING");
-    const ai = new GoogleGenAI({ apiKey });
-    const chat = ai.chats.create({ model: GEMINI_MODEL, history: [] } as any);
-    const response = await chat.sendMessage({
-      message: [{ text: textPrompt }, { inlineData: { mimeType, data: base64Data } }] as any,
-    });
-    return response.text ?? "";
-  } catch (err: any) {
-    if (!isQuotaError(err)) throw err;
-    console.warn("Gemini vision unavailable, falling back to OpenRouter:", err?.message);
-  }
-  // Fallback
-  const imageUrl = imageDataUrl.startsWith("data:") ? imageDataUrl : `data:image/jpeg;base64,${imageDataUrl}`;
-  return callOpenRouter([
-    { role: "user", content: [{ type: "text", text: textPrompt }, { type: "image_url", image_url: { url: imageUrl } }] },
-  ], { model: OPENROUTER_MODEL });
+
+  const chat = ai.chats.create({ model: GEMINI_MODEL, history: [] } as any);
+  const response = await chat.sendMessage({
+    message: [
+      { text: textPrompt },
+      { inlineData: { mimeType, data: base64Data } },
+    ] as any,
+  });
+
+  const text = response.text ?? "";
+  if (!text) throw new Error("Empty response from Gemini.");
+  return text;
 };
 
 // ---------------------------------------------------------------------------
@@ -523,7 +430,6 @@ Return as structured Markdown.`
 // ---------------------------------------------------------------------------
 // PALMISTRY
 // (Not cached — image-based, each upload is unique)
-// Gemini Flash is natively multimodal; OpenRouter used as fallback.
 // ---------------------------------------------------------------------------
 export const getPalmistryAnalysis = async (image: string, lang: Language) => {
   return await withRetry(async () => {
