@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BirthDetails, Language, ChatMessage, KundaliResponse } from '../types';
 import { getCoordinates, getKundaliAnalysis, askKundaliQuestion } from '../services/aiService';
+import { StorageService } from '../services/storageService';
 import KundaliChart from './KundaliChart';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
@@ -173,7 +174,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
       {!analysis && !loading && (
         <section className="mirror-card p-6 md:p-12 rounded-3xl animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="mb-10 text-center">
-            <h2 className="text-3xl md:text-5xl font-cinzel text-amber-100 mb-4 tracking-tight">K. P. System Life Analysis</h2>
+            <h2 className="text-3xl md:text-5xl font-cinzel text-amber-100 mb-4 tracking-tight">Vedic Janma Kundali Analysis</h2>
             <p className="text-slate-400 max-w-xl mx-auto text-sm md:text-base">Decode your entire life journey, from personality traits to Vimshottari Mahadashas, lifetime timelines, and house interpretations.</p>
           </div>
 

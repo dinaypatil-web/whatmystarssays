@@ -1,13 +1,194 @@
 import { GoogleGenAI } from "@google/genai";
-import { BirthDetails, MatchmakingDetails, MoonSign, Timeframe, Language, ChatMessage, KundaliResponse } from "../types";
-import { GOOGLE_TRANSLATE_LANG_MAP } from "../constants";
+import { BirthDetails, MatchmakingDetails, Timeframe, Language, ChatMessage, KundaliResponse } from "../types";
 import { StorageService } from "./storageService";
+
+// ---------------------------------------------------------------------------
+// ✅ DUAL-PROVIDER CONFIG
+// Primary:  Gemini Flash 2.0  (Google AI — 1,000,000 tokens/day FREE)
+// Fallback: OpenRouter        (google/gemma-4-31b-it:free — ~200 req/day)
+// ---------------------------------------------------------------------------
+const GEMINI_MODEL       = "gemini-2.0-flash";
+const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_MODEL   = "google/gemma-4-31b-it:free";
+
+const PLACEHOLDER_KEY = "sk-or-paste-your-key-here";
+const getOpenRouterKey = () => {
+  const key = process.env.OPENROUTER_API_KEY || "";
+  return key === PLACEHOLDER_KEY ? "" : key;
+};
+const getGeminiKey = () => process.env.API_KEY || "";
+
+// Chat-history trimming — cap at 10 messages (5 user+assistant pairs)
+const MAX_HISTORY_MESSAGES = 10;
 
 const getCurrentDate = () => {
   const now = new Date();
-  return `${now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+  return `${now.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} ${now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`;
 };
 
+// ---------------------------------------------------------------------------
+// PRIMARY: Gemini Flash 2.0
+// ---------------------------------------------------------------------------
+interface GeminiMessage {
+  role: "user" | "model";
+  parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }>;
+}
+
+const callGemini = async (
+  messages: GeminiMessage[],
+  opts: { jsonMode?: boolean } = {}
+): Promise<string> => {
+  const apiKey = getGeminiKey();
+  if (!apiKey) throw new Error("GEMINI_KEY_MISSING");
+
+  const ai = new GoogleGenAI({ apiKey });
+  const history = messages.slice(0, -1);
+  const lastMsg = messages[messages.length - 1];
+
+  const chat = ai.chats.create({ model: GEMINI_MODEL, history } as any);
+  const response = await chat.sendMessage({ message: lastMsg.parts as any });
+
+  let text = response.text ?? "";
+  if (!text) throw new Error("Empty response from Gemini.");
+  // Strip markdown code fences Gemini sometimes adds around JSON
+  if (opts.jsonMode) {
+    text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  }
+  return text;
+};
+
+// ---------------------------------------------------------------------------
+// FALLBACK: OpenRouter
+// ---------------------------------------------------------------------------
+interface OpenRouterMessage {
+  role: "system" | "user" | "assistant";
+  content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>;
+}
+
+const callOpenRouter = async (
+  messages: OpenRouterMessage[],
+  opts: { jsonMode?: boolean; model?: string } = {}
+): Promise<string> => {
+  const apiKey = getOpenRouterKey();
+  if (!apiKey) {
+    throw new Error(
+      "OpenRouter API key is missing. Please add OPENROUTER_API_KEY=sk-or-... to your .env file. Get a free key at https://openrouter.ai/"
+    );
+  }
+
+  const model = opts.model || OPENROUTER_MODEL;
+  const body: any = { model, messages };
+  if (opts.jsonMode) body.response_format = { type: "json_object" };
+
+  const response = await fetch(OPENROUTER_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://whatmystarssays.app",
+      "X-Title": "What My Stars Says",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    if (response.status === 401) throw new Error("Invalid or missing OpenRouter API key.");
+    if (response.status === 429) throw new Error("Rate limit reached. Please try again shortly.");
+    throw new Error(`OpenRouter API error ${response.status}: ${errText}`);
+  }
+
+  const data = await response.json();
+  const text = data?.choices?.[0]?.message?.content ?? "";
+  if (!text) throw new Error("Empty response from OpenRouter.");
+  return text;
+};
+
+// ---------------------------------------------------------------------------
+// UNIFIED AI CALL  (Gemini primary → OpenRouter fallback)
+// ---------------------------------------------------------------------------
+const isQuotaError = (err: any) =>
+  err?.message === "GEMINI_KEY_MISSING" ||
+  String(err).includes("quota") ||
+  String(err).includes("429") ||
+  String(err).includes("RESOURCE_EXHAUSTED");
+
+/** Text-only request */
+const callAI = async (systemPrompt: string, userPrompt: string, jsonMode = false): Promise<string> => {
+  try {
+    const messages: GeminiMessage[] = [];
+    if (systemPrompt) {
+      messages.push({ role: "user",  parts: [{ text: systemPrompt }] });
+      messages.push({ role: "model", parts: [{ text: "Understood. I will follow these instructions precisely." }] });
+    }
+    messages.push({ role: "user", parts: [{ text: userPrompt }] });
+    return await callGemini(messages, { jsonMode });
+  } catch (err: any) {
+    if (!isQuotaError(err)) throw err;
+    console.warn("Gemini unavailable, falling back to OpenRouter:", err?.message);
+  }
+  // Fallback
+  const orMessages: OpenRouterMessage[] = [];
+  if (systemPrompt) orMessages.push({ role: "system", content: systemPrompt });
+  orMessages.push({ role: "user", content: userPrompt });
+  return callOpenRouter(orMessages, { jsonMode });
+};
+
+/** Multi-turn chat request — history trimmed to MAX_HISTORY_MESSAGES */
+const callAIChat = async (systemPrompt: string, history: ChatMessage[], userQuestion: string): Promise<string> => {
+  const trimmedHistory = history.slice(-MAX_HISTORY_MESSAGES);
+  try {
+    const messages: GeminiMessage[] = [];
+    if (systemPrompt) {
+      messages.push({ role: "user",  parts: [{ text: systemPrompt }] });
+      messages.push({ role: "model", parts: [{ text: "Understood. Ready to assist." }] });
+    }
+    for (const msg of trimmedHistory) {
+      messages.push({ role: msg.role === "user" ? "user" : "model", parts: [{ text: msg.text }] });
+    }
+    messages.push({ role: "user", parts: [{ text: userQuestion }] });
+    return await callGemini(messages);
+  } catch (err: any) {
+    if (!isQuotaError(err)) throw err;
+    console.warn("Gemini chat unavailable, falling back to OpenRouter:", err?.message);
+  }
+  // Fallback
+  const orMessages: OpenRouterMessage[] = [];
+  if (systemPrompt) orMessages.push({ role: "system", content: systemPrompt });
+  for (const msg of trimmedHistory) {
+    orMessages.push({ role: msg.role === "user" ? "user" : "assistant", content: msg.text });
+  }
+  orMessages.push({ role: "user", content: userQuestion });
+  return callOpenRouter(orMessages);
+};
+
+/** Vision request (Palmistry) */
+const callAIVision = async (textPrompt: string, imageDataUrl: string): Promise<string> => {
+  const mimeType = imageDataUrl.split(";")[0].replace("data:", "") || "image/jpeg";
+  const base64Data = imageDataUrl.split(",")[1] || imageDataUrl;
+  try {
+    const apiKey = getGeminiKey();
+    if (!apiKey) throw new Error("GEMINI_KEY_MISSING");
+    const ai = new GoogleGenAI({ apiKey });
+    const chat = ai.chats.create({ model: GEMINI_MODEL, history: [] } as any);
+    const response = await chat.sendMessage({
+      message: [{ text: textPrompt }, { inlineData: { mimeType, data: base64Data } }] as any,
+    });
+    return response.text ?? "";
+  } catch (err: any) {
+    if (!isQuotaError(err)) throw err;
+    console.warn("Gemini vision unavailable, falling back to OpenRouter:", err?.message);
+  }
+  // Fallback
+  const imageUrl = imageDataUrl.startsWith("data:") ? imageDataUrl : `data:image/jpeg;base64,${imageDataUrl}`;
+  return callOpenRouter([
+    { role: "user", content: [{ type: "text", text: textPrompt }, { type: "image_url", image_url: { url: imageUrl } }] },
+  ], { model: OPENROUTER_MODEL });
+};
+
+// ---------------------------------------------------------------------------
+// UTILS
+// ---------------------------------------------------------------------------
 const parseAIResponse = (text: string) => {
   if (!text) throw new Error("Empty response.");
   try {
@@ -25,295 +206,338 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 2, delay = 2000): Pr
     return await fn();
   } catch (error: any) {
     if (retries > 0) {
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
       return withRetry(fn, retries - 1, delay * 2);
     }
     throw error;
   }
 }
 
+// ---------------------------------------------------------------------------
+// TRANSLATION
+// Translates text into target language while preserving Vedic/Sanskrit nouns.
+// Uses compact system prompt to minimise tokens.
+// ---------------------------------------------------------------------------
+const TRANSLATION_SYSTEM = (lang: Language) =>
+  `Translate the following text into ${lang}. Rules:
+1. Return ONLY the translated text — no preamble or commentary.
+2. Preserve ALL markdown formatting (**, ###, -, tables, etc.).
+3. Keep these terms untranslated: Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu, all Nakshatra names, all Rashi names, Vimshottari, Mahadasha, Antardasha, Lagna, Ascendant, Ayanamsha, Lahiri.`;
+
 const translateText = async (text: string, targetLanguage: Language): Promise<string> => {
-  if (targetLanguage === 'English' || !text) return text;
-  
+  if (targetLanguage === "English" || !text) return text;
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: text,
-      config: {
-        systemInstruction: `You are a professional API translation engine. Translate the following text into ${targetLanguage}. 
-        CRITICAL INSTRUCTIONS:
-        1. Return ONLY the translated text. No introductions, no explanations, no conversational filler.
-        2. Preserve ALL markdown formatting exactly as it is (e.g. **, ###, -, etc).
-        3. Preserve any underlying JSON keys if parsing JSON string, but translate the values.`,
-        temperature: 0.1
-      }
-    });
-    
-    const translated = response.text?.trim();
-    return translated || text;
+    const translated = await callAI(TRANSLATION_SYSTEM(targetLanguage), text);
+    return translated.trim() || text;
   } catch (err) {
-    console.error("Translation logic failed", err);
-    return text; // Fallback to English on error
+    console.error("Translation failed", err);
+    return text; // graceful degradation — return English rather than crashing
   }
 };
 
+// ---------------------------------------------------------------------------
+// GEOCODING (OpenStreetMap — no AI key needed, unchanged)
+// ---------------------------------------------------------------------------
 export const getCoordinates = async (location: string) => {
-  const cacheKey = `coords_${location.toLowerCase().replace(/\s/g, '_')}`;
+  const cacheKey = `coords_${location.toLowerCase().replace(/\s/g, "_")}`;
   const cached = StorageService.get<any>(cacheKey) || null;
   if (cached) return cached;
 
   const result = await withRetry(async () => {
-    // Replace Gemini with Nominatim Free Geocoding API
-    const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`, {
-      headers: {
-        'User-Agent': 'WhatMyStarsSaysKPSystemApp/1.0'
-      }
-    });
-    
-    if (!response.ok) throw new Error('Geocoding request failed');
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`,
+      { headers: { "User-Agent": "WhatMyStarsSaysVedicApp/1.0" } }
+    );
+
+    if (!response.ok) throw new Error("Geocoding request failed");
     const data = await response.json();
-    
-    if (!data || data.length === 0) {
-      throw new Error(`Location not found: ${location}`);
-    }
-    
+
+    if (!data || data.length === 0) throw new Error(`Location not found: ${location}`);
+
     return {
       lat: parseFloat(data[0].lat),
       lng: parseFloat(data[0].lon),
-      formattedAddress: data[0].display_name
+      formattedAddress: data[0].display_name,
     };
   });
 
-  // Adding an aggressive timeout to not spam Nominatim
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, 1000));
   StorageService.save(cacheKey, result, 720);
   return result;
 };
 
-export const getHoroscope = async (sign: string, timeframe: Timeframe, language: Language = 'English') => {
-  const cacheKey = StorageService.getKeys.horoscope(sign, timeframe, language);
-  const cached = StorageService.get<any>(cacheKey);
-  if (cached) return cached;
+// ---------------------------------------------------------------------------
+// HOROSCOPE
+// Strategy: Generate canonical English base once → cache → translate on demand
+// ---------------------------------------------------------------------------
+export const getHoroscope = async (sign: string, timeframe: Timeframe, language: Language = "English") => {
+  const ttl = timeframe === "daily" ? 12 : 168;
 
-  const result = await withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-    const prompt = `As a Master K. P. System Astrologer, current date ${getCurrentDate()}. Provide a ${timeframe} horoscope for Moon Sign ${sign}.
-    Analyze precise planetary transits and their impact on Career, Health, Relationships, and Finance. You are strictly forbidden from using toxic positivity. You MUST provide harsh truths, warnings, and authentic bad predictions if the planetary math dictates it. You are an unvarnished predictor of truth.
-    You must return a valid JSON object in English.
-    Schema to match:
-    {
-      "overview": "string",
-      "career": "string",
-      "health": "string",
-      "relationships": "string",
-      "finance": "string",
-      "spirituality": "string",
-      "luckyColor": "string",
-      "luckyNumber": "string"
-    }`;
-    
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json"
-      }
+  // 1. Check translated cache
+  const langKey = StorageService.getKeys.horoscope(sign, timeframe, language);
+  const cachedTranslation = StorageService.get<any>(langKey);
+  if (cachedTranslation) return cachedTranslation;
+
+  // 2. Check English base cache
+  const baseKey = StorageService.getKeys.horoscopeBase(sign, timeframe);
+  let englishBase = StorageService.get<any>(baseKey);
+
+  // 3. Generate English base if missing
+  if (!englishBase) {
+    englishBase = await withRetry(async () => {
+      const text = await callAI(
+        `You are a Master Vedic Astrologer (Parashari system, Lahiri Ayanamsha). Current date: ${getCurrentDate()}.
+Provide a ${timeframe} horoscope for Moon Sign / Rashi: ${sign}.
+Analyze precise sidereal planetary transits (Career, Health, Relationships, Finance) using classical Vedic principles.
+DO NOT use toxic positivity — provide harsh truths when planetary math dictates it. Respond in English only.`,
+        `Return a valid JSON object (no markdown code fences):
+{
+  "overview": "string",
+  "career": "string",
+  "health": "string",
+  "relationships": "string",
+  "finance": "string",
+  "spirituality": "string",
+  "luckyColor": "string",
+  "luckyNumber": "string"
+}`,
+        true // jsonMode
+      );
+      return parseAIResponse(text);
     });
-    
-    const parsed = parseAIResponse(response.text || "{}");
-    if (language !== 'English') {
-      for (const key of Object.keys(parsed)) {
-        if (typeof parsed[key] === 'string') {
-          parsed[key] = await translateText(parsed[key], language);
-        }
-      }
-    }
-    return parsed;
-  });
 
-  StorageService.save(cacheKey, result, timeframe === 'daily' ? 12 : 168);
-  return result;
+    StorageService.save(baseKey, englishBase, ttl);
+  }
+
+  // 4. If English requested, we're done
+  if (language === "English") {
+    StorageService.save(langKey, englishBase, ttl);
+    return englishBase;
+  }
+
+  // 5. Translate from canonical English base
+  const translated = { ...englishBase };
+  for (const key of Object.keys(translated)) {
+    if (typeof translated[key] === "string") {
+      translated[key] = await translateText(translated[key], language);
+    }
+  }
+
+  StorageService.save(langKey, translated, ttl);
+  return translated;
 };
 
+// ---------------------------------------------------------------------------
+// KUNDALI
+// ---------------------------------------------------------------------------
 export const getKundaliAnalysis = async (details: BirthDetails, language: Language): Promise<KundaliResponse> => {
-  const cacheKey = StorageService.getKeys.kundali(details.name, details.dob, language);
-  const cached = StorageService.get<KundaliResponse>(cacheKey);
-  if (cached) return cached;
+  // 1. Check translated cache
+  const langKey = StorageService.getKeys.kundali(details.name, details.dob, language);
+  const cachedTranslation = StorageService.get<KundaliResponse>(langKey);
+  if (cachedTranslation) return cachedTranslation;
 
-  const result = await withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-    const prompt = `Generate a high-precision Authentic Vedic Janma Kundali chart and K. P. System "Life Map" for: ${details.name}, DOB: ${details.dob}, TOB: ${details.tob}, Place: ${details.location}.
-    Current Date: ${getCurrentDate()}.
-    
-    CRITICAL: This is a professional-grade Life Analysis. DO NOT USE TOXIC POSITIVITY. You must provide truthful bad predictions, harsh realities, and exact warnings. You MUST include:
-    1. **K. P. System Profile**: Detailed Star Lord, Sub Lord, Nakshatra, and Moon Sign.
-    2. **Planetary Positions Table**: Degrees, Minutes, Rashi, Nakshatra, Star Lord, and Sub Lord for Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu.
-    3. **Complete Life Report (NOT limited to current year)**:
-       - **12 Bhava (House) Cusp Analysis**: Detailed impact of planets and their Sub Lords on each house for the entire life based on K. P. System.
-       - **Vimshottari Dasa/Bhukti/Antara (DBA) Timeline**: A structured list of major planetary periods.
-       - **Shani Saadesati Analysis**: A dedicated section precisely calculating the 7.5 year transit of Saturn over the natal moon, dictating its strict timeline and harsh upcoming periods.
-       - **Remedies & Gemstones**: Specific rituals and stones for lifetime benefit.
-    
-    You must return a valid JSON object matching this exact structure:
-    {
-      "report": "Professional Markdown string with bold headers and tables. Include harsh truths and Saadesati.",
-      "chart": { "1": ["Sun", "Moon"], "2": [], ... },
-      "lagnaSign": 1, 
-      "starLord": "string",
-      "subLord": "string",
-      "nakshatra": "string",
-      "moonSign": "string"
-    }
-    The 'chart' object must have 12 keys ("1" through "12"), each containing an array of planet strings based on Authentic Vedic Kundali calculation (Lahiri Ayanamsha/Sidereal). lagnaSign is 1-12.`;
+  // 2. Check English base cache
+  const baseKey = StorageService.getKeys.kundaliBase(details.name, details.dob);
+  let englishBase = StorageService.get<KundaliResponse>(baseKey);
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json"
-      }
+  // 3. Generate English base if missing
+  if (!englishBase) {
+    englishBase = await withRetry(async () => {
+      const text = await callAI(
+        `You are a professional Vedic astrologer (Parashari system, Lahiri Ayanamsha). Current Date: ${getCurrentDate()}.
+This is a high-precision Janma Kundali analysis. DO NOT use toxic positivity — provide truthful predictions and harsh realities when planetary math demands it. Respond in English only.`,
+        `Generate a complete Vedic Janma Kundali for:
+Name: ${details.name}
+DOB: ${details.dob}
+TOB: ${details.tob}
+Place: ${details.location}
+
+Include:
+1. Lagna, Moon Sign, Nakshatra, Pada, Nakshatra Lord
+2. Sidereal Planetary Positions Table (degrees, Rashi, Nakshatra, Lord, Dispositor)
+3. 12 Bhava (House) Analysis
+4. Vimshottari Dasha/Antardasha Timeline
+5. Shani Saadesati Analysis
+6. Vedic Remedies & Gemstones
+
+Return ONLY a valid JSON object (no markdown code fences):
+{
+  "report": "Professional Markdown string with bold headers and tables. Include Saadesati analysis.",
+  "chart": { "1": [], "2": [], "3": [], "4": [], "5": [], "6": [], "7": [], "8": [], "9": [], "10": [], "11": [], "12": [] },
+  "lagnaSign": 1,
+  "starLord": "string",
+  "subLord": "string",
+  "nakshatra": "string",
+  "moonSign": "string"
+}
+Chart keys must be "1" through "12" with planet name arrays. lagnaSign is 1-12.`,
+        true // jsonMode
+      );
+      return parseAIResponse(text) as KundaliResponse;
     });
-    
-    const parsed = parseAIResponse(response.text || "{}");
-    if (language !== 'English') {
-      if (parsed.report) parsed.report = await translateText(parsed.report, language);
-      if (parsed.starLord) parsed.starLord = await translateText(parsed.starLord, language);
-      if (parsed.subLord) parsed.subLord = await translateText(parsed.subLord, language);
-      if (parsed.nakshatra) parsed.nakshatra = await translateText(parsed.nakshatra, language);
-      if (parsed.moonSign) parsed.moonSign = await translateText(parsed.moonSign, language);
-      
-      if (parsed.chart) {
-        for (const house of Object.keys(parsed.chart)) {
-           if (Array.isArray(parsed.chart[house])) {
-             parsed.chart[house] = await Promise.all(parsed.chart[house].map((p: string) => translateText(p, language)));
-           }
-        }
-      }
-    }
-    return parsed;
-  });
 
-  StorageService.save(cacheKey, result, -1);
-  return result;
+    StorageService.save(baseKey, englishBase, -1);
+  }
+
+  // 4. If English, return directly
+  if (language === "English") {
+    StorageService.save(langKey, englishBase, -1);
+    return englishBase;
+  }
+
+  // 5. Translate from canonical English base
+  const translated: KundaliResponse = { ...englishBase };
+  if (translated.report) translated.report = await translateText(translated.report, language);
+  if (translated.starLord) translated.starLord = await translateText(translated.starLord, language);
+  if (translated.subLord) translated.subLord = await translateText(translated.subLord, language);
+  if (translated.nakshatra) translated.nakshatra = await translateText(translated.nakshatra, language);
+  if (translated.moonSign) translated.moonSign = await translateText(translated.moonSign, language);
+
+  StorageService.save(langKey, translated, -1);
+  return translated;
 };
 
-export const askKundaliQuestion = async (q: string, context: string, history: ChatMessage[], lang: Language) => {
+// ---------------------------------------------------------------------------
+// KUNDALI CHAT
+// ---------------------------------------------------------------------------
+export const askKundaliQuestion = async (
+  q: string,
+  context: string,
+  history: ChatMessage[],
+  lang: Language
+) => {
   return await withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-    
-    const contents: any[] = history.map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.text }]
-    }));
-    contents.push({ role: 'user', parts: [{ text: q }] });
+    const systemPrompt = `You are the user's personal Vedic Astrology Guide (Parashari system, Lahiri Ayanamsha).
+Kundali context: ${context}. Current Date: ${getCurrentDate()}.
+Provide life guidance based on authentic Vedic astrology. DO NOT use toxic positivity — give harsh truths when planetary math demands it. Respond in English only.`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents,
-      config: {
-        systemInstruction: `You are the User's Personal K. P. System Guide. Use the provided Kundali context: ${context}. Current Date: ${getCurrentDate()}. Focus on providing life-long guidance. DO NOT use toxic positivity, provide harsh truths and authentic bad predictions if necessary. Please provide your response entirely in English.`
-      }
-    });
-    
-    const result = response.text || "The cosmos is currently silent.";
+    const result = await callAIChat(systemPrompt, history, q);
     return await translateText(result, lang);
   });
 };
 
-export const askNumerologyQuestion = async (q: string, dob: string, mulank: number, bhagyank: number, loshu: any, history: ChatMessage[], lang: Language) => {
+// ---------------------------------------------------------------------------
+// NUMEROLOGY CHAT
+// ---------------------------------------------------------------------------
+export const askNumerologyQuestion = async (
+  q: string,
+  dob: string,
+  mulank: number,
+  bhagyank: number,
+  loshu: any,
+  history: ChatMessage[],
+  lang: Language
+) => {
   return await withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-    const context = `User DOB: ${dob}, Mulank: ${mulank}, Bhagyank: ${bhagyank}, Loshu Grid: ${JSON.stringify(loshu)}`;
-    
-    const contents: any[] = history.map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.text }]
-    }));
-    contents.push({ role: 'user', parts: [{ text: q }] });
+    const context = `DOB: ${dob}, Mulank: ${mulank}, Bhagyank: ${bhagyank}, Loshu Grid: ${JSON.stringify(loshu)}`;
+    const systemPrompt = `You are a Master Vedic Numerologist. Answer questions based on: ${context}. Respond in English only.`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents,
-      config: {
-        systemInstruction: `You are a Master Numerologist. Answer questions based on Mulank, Bhagyank and Loshu Grid context: ${context}. Please provide your response entirely in English.`
-      }
-    });
-    const result = response.text || "The numbers are currently unclear.";
+    const result = await callAIChat(systemPrompt, history, q);
     return await translateText(result, lang);
   });
 };
 
+// ---------------------------------------------------------------------------
+// MATCHMAKING
+// Strategy: Generate canonical English base once → cache → translate on demand
+// ---------------------------------------------------------------------------
 export const getMatchmaking = async (details: MatchmakingDetails, language: Language) => {
-  const cacheKey = StorageService.getKeys.match(details.boy.name, details.girl.name, language);
-  const cached = StorageService.get<string>(cacheKey);
-  if (cached) return cached;
+  // 1. Check translated cache
+  const langKey = StorageService.getKeys.match(details.boy.name, details.girl.name, language);
+  const cachedTranslation = StorageService.get<string>(langKey);
+  if (cachedTranslation) return cachedTranslation;
 
-  const result = await withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-    const prompt = `K. P. System Matchmaking compatibility report for ${details.boy.name} & ${details.girl.name}. 
-    Provide technical K. P. System scores & analysis looking at the 11th cusp sublord, 7th cusp sublord, ruling planets, DBA periods, and overall significators for marriage and relationship compatibility. 
-    DO NOT use toxic positivity. You MUST provide strict warnings, bad predictions, and genuine friction points if they exist.
-    Please write the entire report exclusively in English. Return as professional Markdown.`;
-    
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt
+  // 2. Check English base
+  const baseKey = StorageService.getKeys.matchBase(details.boy.name, details.girl.name);
+  let englishBase = StorageService.get<string>(baseKey);
+
+  // 3. Generate English base if missing
+  if (!englishBase) {
+    englishBase = await withRetry(async () => {
+      return await callAI(
+        `You are a master Vedic astrology matchmaking expert (Parashari, Lahiri Ayanamsha). DO NOT use toxic positivity — provide strict warnings and genuine risk factors. Respond in English only.`,
+        `Vedic Kundali Milan (Compatibility) for ${details.boy.name} & ${details.girl.name}.
+Perform classical Ashtakoot Gun Milan (36-point), plus:
+- Mangal Dosha analysis for both parties
+- Navamsa chart compatibility
+- 7th house lord analysis
+- Venus and Jupiter placement compatibility
+- Dasha period overlaps for marriage timing
+Return as professional Markdown.`
+      );
     });
-    
-    const resultText = response.text || "";
-    return await translateText(resultText, language);
-  });
 
-  StorageService.save(cacheKey, result, -1);
+    StorageService.save(baseKey, englishBase, -1);
+  }
+
+  // 4. Translate if needed
+  const result = await translateText(englishBase, language);
+  StorageService.save(langKey, result, -1);
   return result;
 };
 
+// ---------------------------------------------------------------------------
+// NUMEROLOGY ANALYSIS
+// Strategy: Generate canonical English base once → cache → translate on demand
+// ---------------------------------------------------------------------------
 export const getNumerologyAnalysis = async (dob: string, m: number, b: number, loshu: any, lang: Language) => {
-  const cacheKey = StorageService.getKeys.numerology(dob, lang);
-  const cached = StorageService.get<string>(cacheKey);
-  if (cached) return cached;
+  // 1. Check translated cache
+  const langKey = StorageService.getKeys.numerology(dob, lang);
+  const cachedTranslation = StorageService.get<string>(langKey);
+  if (cachedTranslation) return cachedTranslation;
 
-  const result = await withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-    const prompt = `Technical Numerology analysis for DOB: ${dob}. Mulank: ${m}, Bhagyank: ${b}. Interpret the Loshu grid: ${JSON.stringify(loshu)}. 
-    Please write the entire analysis exclusively in English. Return as Markdown.`;
-    
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt
+  // 2. Check English base
+  const baseKey = StorageService.getKeys.numerologyBase(dob);
+  let englishBase = StorageService.get<string>(baseKey);
+
+  // 3. Generate English base if missing
+  if (!englishBase) {
+    englishBase = await withRetry(async () => {
+      return await callAI(
+        `You are a Master Vedic Numerologist. Provide detailed, accurate analysis. Respond in English only.`,
+        `Vedic Numerology analysis for DOB: ${dob}.
+Mulank (Psychic Number): ${m}
+Bhagyank (Destiny Number): ${b}
+Loshu Grid: ${JSON.stringify(loshu)}
+
+Include:
+- Deep character and personality analysis (Mulank)
+- Life path and destiny analysis (Bhagyank)
+- Planes of expression from Loshu Grid (absent numbers and impacts)
+- Lucky numbers, colours, gemstones, and directions
+- Compatible and challenging periods
+- Name correction recommendations if applicable
+Return as structured Markdown.`
+      );
     });
-    
-    const resultText = response.text || "";
-    return await translateText(resultText, lang);
-  });
 
-  StorageService.save(cacheKey, result, -1);
+    StorageService.save(baseKey, englishBase, -1);
+  }
+
+  // 4. Translate if needed
+  const result = await translateText(englishBase, lang);
+  StorageService.save(langKey, result, -1);
   return result;
 };
 
+// ---------------------------------------------------------------------------
+// PALMISTRY
+// (Not cached — image-based, each upload is unique)
+// Gemini Flash is natively multimodal; OpenRouter used as fallback.
+// ---------------------------------------------------------------------------
 export const getPalmistryAnalysis = async (image: string, lang: Language) => {
   return await withRetry(async () => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-    
-    // Convert base64 data URL to standard base64 string
-    const base64Data = image.split(',')[1] || image;
-    const mediaType = image.split(';')[0]?.replace('data:', '') || 'image/jpeg';
-    
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { text: `Read this palm for personality, longevity, wealth, and career. Please write the entire response exclusively in English.` },
-            { inlineData: { mimeType: mediaType, data: base64Data } }
-          ]
-        }
-      ]
-    });
-    
-    const result = response.text || "";
+    const textPrompt = `Analyze this palm using classical Vedic palmistry principles. Provide a detailed reading covering:
+- Life Line (Jeevan Rekha): longevity and vitality
+- Head Line (Mastak Rekha): intellect and thinking style
+- Heart Line (Hriday Rekha): emotions and relationships
+- Fate Line (Bhagya Rekha): career and destiny
+- Mount analysis: Jupiter, Saturn, Apollo, Mercury, Venus, Moon
+- Special marks: crosses, stars, triangles, islands and their Vedic significance
+- Overall assessment: wealth potential, health warnings, spiritual development
+Write the ENTIRE response in English.`;
+
+    const result = await callAIVision(textPrompt, image);
     return await translateText(result, lang);
   });
 };

@@ -148,7 +148,7 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
       {loading && (
         <div className="flex flex-col items-center justify-center py-24 space-y-6">
           <div className="w-12 h-12 border-4 border-amber-500/10 border-t-amber-500 rounded-full animate-spin"></div>
-          <p className="text-slate-400 font-cinzel tracking-widest animate-pulse text-sm">Synchronizing with 2026 Transits...</p>
+          <p className="text-slate-400 font-cinzel tracking-widest animate-pulse text-sm">Consulting the Vedic Grahas...</p>
         </div>
       )}
 
@@ -192,7 +192,7 @@ const HoroscopeView: React.FC<HoroscopeViewProps> = ({ language }) => {
           <div className="mt-8 pt-8 border-t border-white/10 opacity-60">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2 text-center">Disclaimer regarding AI Generation</p>
             <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic text-center max-w-2xl mx-auto px-6">
-              This application utilizes Artificial Intelligence to analyze astrological data. The content is for informational, educational, and personal insight purposes only. AI interpretations may lack the nuance of a human astrologer. This should not be construed as professional medical, legal, or financial advice. The creators assume no liability for choices made based on this algorithmic analysis.
+              This application uses Artificial Intelligence to interpret classical Vedic (Parashari) astrology. The content is for informational, educational, and personal insight purposes only. AI interpretations may lack the nuance of a trained Jyotishi. This should not be construed as professional medical, legal, or financial advice. The creators assume no liability for choices made based on this algorithmic analysis.
             </p>
           </div>
         </div>
