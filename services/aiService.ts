@@ -7,7 +7,7 @@ import { StorageService } from "./storageService";
 // Primary:  Gemini Flash 2.0  (Google AI — 1,000,000 tokens/day FREE)
 // Fallback: OpenRouter        (google/gemma-4-31b-it:free — ~200 req/day)
 // ---------------------------------------------------------------------------
-const GEMINI_MODEL       = "gemini-2.0-flash";
+const GEMINI_MODEL       = "gemini-3.8-flash";
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL   = "google/gemma-4-31b-it:free";
 
