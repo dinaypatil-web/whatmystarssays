@@ -6,6 +6,7 @@ import KundaliView from './components/KundaliView';
 import MatchmakingView from './components/MatchmakingView';
 import NumerologyView from './components/NumerologyView';
 import PalmistryView from './components/PalmistryView';
+import AskAstrologerView from './components/AskAstrologerView';
 import { Language } from './types';
 import { StorageService } from './services/storageService';
 import { getHoroscope } from './services/aiService';
@@ -35,6 +36,8 @@ const App: React.FC = () => {
         return <HoroscopeView language={language} />;
       case 'kundali':
         return <KundaliView language={language} />;
+      case 'ask-astrologer':
+        return <AskAstrologerView language={language} />;
       case 'palmistry':
         return <PalmistryView language={language} />;
       case 'numerology':

@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { BirthDetails, MatchmakingDetails, Timeframe, Language, ChatMessage, KundaliResponse, KundaliSystem } from "../types";
+import { BirthDetails, MatchmakingDetails, Timeframe, Language, ChatMessage, KundaliResponse, KundaliSystem, PlanetaryTransitInfo } from "../types";
 import { StorageService } from "./storageService";
 
 // ---------------------------------------------------------------------------
@@ -459,6 +459,97 @@ DO NOT use toxic positivity — give harsh truths when planetary math demands it
 CRITICAL LANGUAGE REQUIREMENT: You MUST formulate your entire response in ${lang} (using native ${lang} script).`;
 
     return await callAIChat(systemPrompt, history, q);
+  });
+};
+
+// ---------------------------------------------------------------------------
+// ASK THE ASTROLOGER - MULTI-DIMENSIONAL SYNTHESIS CONSULTATION
+// ---------------------------------------------------------------------------
+export const askAstrologerConsultation = async (
+  query: string,
+  details: BirthDetails,
+  system: KundaliSystem,
+  history: ChatMessage[],
+  lang: Language,
+  kundaliData?: KundaliResponse | null,
+  numerologyData?: {
+    mulank: number;
+    bhagyank: number;
+    namaank?: number | null;
+    compound?: number | null;
+    presentNumbers?: number[];
+    missingNumbers?: number[];
+  } | null,
+  transits?: PlanetaryTransitInfo[]
+) => {
+  const config = KUNDALI_SYSTEM_PROMPTS[system] || KUNDALI_SYSTEM_PROMPTS.kp;
+
+  // Build structured transit context
+  const transitsSummary = transits && transits.length > 0
+    ? transits.map(t => `- ${t.planetSanskrit || t.planet} is currently in ${t.signSanskrit || t.sign}${t.isRetrograde ? ' (Retrograde / वक्री)' : ''}: ${t.transitInfluence}`).join('\n')
+    : 'Saturn transits Pisces, Jupiter transits Gemini, Rahu transits Aquarius, Ketu transits Leo.';
+
+  // Build Kundali context
+  let kundaliContext = 'Natal chart dynamically synthesized from birth details.';
+  if (kundaliData) {
+    const activeDasha = kundaliData.mahadashas?.find(m => m.isCurrent);
+    const activeSaadesati = kundaliData.saadesatiCycles?.find(s => s.status === 'active');
+    kundaliContext = `
+Lagna (Ascendant): Sign #${kundaliData.lagnaSign}
+Moon Sign (Rashi): ${kundaliData.moonSign || 'Derived from coordinates'}
+Nakshatra: ${kundaliData.nakshatra || 'Calculated'}
+Star Lord: ${kundaliData.starLord || 'N/A'}, Sub Lord: ${kundaliData.subLord || 'N/A'}
+Active Mahadasha: ${activeDasha ? `${activeDasha.planet} (${activeDasha.startYear} - ${activeDasha.endYear})` : 'Calculated'}
+Shani Saadesati: ${activeSaadesati ? `${activeSaadesati.phase} (${activeSaadesati.startYear} - ${activeSaadesati.endYear})` : 'Calculated'}`;
+  }
+
+  // Build Numerology context
+  let numerologyContext = 'Vedic & Chaldean Numerology calculated.';
+  if (numerologyData) {
+    numerologyContext = `
+Mulank (Psychic/Driver Number): ${numerologyData.mulank}
+Bhagyank (Destiny/Life Path Number): ${numerologyData.bhagyank}
+Namaank (Chaldean Single Digit): ${numerologyData.namaank ?? 'N/A'}
+Chaldean Compound Number: ${numerologyData.compound ?? 'N/A'}
+Loshu Grid Present Numbers: ${numerologyData.presentNumbers?.join(', ') || 'N/A'}
+Loshu Grid Missing Numbers: ${numerologyData.missingNumbers?.join(', ') || 'None'}`;
+  }
+
+  return await withRetry(async () => {
+    const systemPrompt = `You are 'Ask the Astrologer!!!', a world-revered Master Vedic Astrologer, Krishnamurti Paddhati (K.P.) Sub-Lord Authority, Classical Parashari Acharya, and Chaldean Numerology Sage.
+Current Date & Time: ${getCurrentDate()}.
+
+NATIVE'S VERIFIED PROFILE:
+- Full Name: ${details.name || 'Seeker'}
+- Date of Birth: ${details.dob}
+- Time of Birth: ${details.tob || '12:00 PM (Approximate)'}
+- Location: ${details.location || 'Not provided'}
+- Primary Astrological Tradition: ${config.name}
+
+SYNTHESIZED NATAL KUNDALI BLUEPRINT:
+${kundaliContext}
+
+SYNTHESIZED VEDIC & CHALDEAN NUMEROLOGY:
+${numerologyContext}
+
+REAL-TIME CURRENT PLANETARY TRANSITS (GOCHARA) AS OF ${getCurrentDate()}:
+${transitsSummary}
+
+CONSULTATION MANDATE:
+1. Provide a direct, authoritative, and profoundly personalized answer to the seeker's query.
+2. Cross-reference their specific Kundali house significations (e.g. 10th/6th for career, 7th/2nd/11th for marriage/relationships, 2nd/11th/5th/9th for wealth, 6th/8th/12th for health).
+3. Evaluate the timing using their active Mahadasha/Antardasha and Saturn Saadesati phase, pinpointing favorable vs challenging timeline periods.
+4. Integrate current real-time Gochara transits (especially Saturn, Jupiter, and Rahu-Ketu) to explain what cosmic energies are impacting them right now.
+5. Blend their Numerology (Mulank, Bhagyank, and Chaldean Name Number vibration) into the answer for multidimensional resonance.
+6. NO toxic positivity — if planetary combinations indicate struggle, delays, or karmic debts, speak the truth with compassionate guidance.
+7. Always provide actionable, authentic remedies: Vedic Mantras, Gemstone / Rudraksha recommendations, Daan (charity), Auspicious Colors & Directions, or Name vibration tweaks if appropriate.
+8. Structure your response using clean, beautiful Markdown with bold headings, neat bullet points, and highlight cards/tables where fitting.
+
+CRITICAL LANGUAGE REQUIREMENT:
+You MUST formulate your ENTIRE consultation response in ${lang} (using authentic native ${lang} script).
+Do not output in English unless the chosen language is English.`;
+
+    return await callAIChat(systemPrompt, history, query);
   });
 };
 

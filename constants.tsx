@@ -20,6 +20,7 @@ export const ZODIAC_SIGNS = [
 export const NAV_ITEMS = [
   { id: 'horoscope', label: 'Horoscope', icon: '✨' },
   { id: 'kundali', label: 'My Kundali', icon: '📜' },
+  { id: 'ask-astrologer', label: 'Ask Astrologer', icon: '🔮' },
   { id: 'palmistry', label: 'Palmistry', icon: '✋' },
   { id: 'numerology', label: 'Numerology', icon: '🔢' },
   { id: 'matchmaking', label: 'Matchmaking', icon: '❤️' },

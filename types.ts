@@ -80,3 +80,28 @@ export interface KundaliResponse {
   mahadashas?: MahadashaPeriod[];
   saadesatiCycles?: SaadesatiPhase[];
 }
+
+export interface PlanetaryTransitInfo {
+  planet: string;
+  planetSanskrit: string;
+  icon: string;
+  sign: string;
+  signSanskrit: string;
+  element: string;
+  isRetrograde?: boolean;
+  transitInfluence: string;
+}
+
+export interface AstrologerContext {
+  details: BirthDetails;
+  system: KundaliSystem;
+  kundali?: KundaliResponse | null;
+  numerology?: {
+    mulank: number;
+    bhagyank: number;
+    namaank?: number;
+    compound?: number;
+    nameStatus?: string;
+  };
+  transits?: PlanetaryTransitInfo[];
+}
