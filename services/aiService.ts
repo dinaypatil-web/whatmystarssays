@@ -56,88 +56,92 @@ export const KUNDALI_SYSTEM_PROMPTS: Record<KundaliSystem, {
   kp: {
     name: "K. P. System (Krishnamurti Paddhati)",
     role: "You are a master K. P. System Astrologer (Krishnamurti Paddhati, Placidus house division, KP Ayanamsha).",
-    specifics: `Apply authentic K. P. Astrology principles:
-1. **K. P. Profile**: Lagna, Moon Sign, Nakshatra, Pada, Star Lord, Sub Lord, and 4 Ruling Planets (Lagna Lord, Moon Star Lord, Moon Rashi Lord, Day Lord).
-2. **K. P. Planetary Table**: Sidereal planetary positions with Star Lord and Sub Lord for Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu.
+    specifics: `Apply authentic K. P. Astrology principles with exhaustive, deeply detailed analysis:
+1. **K. P. Profile & 4 Ruling Planets**: Lagna, Moon Sign, Nakshatra, Pada, Star Lord, Sub Lord, and 4 Ruling Planets (Lagna Lord, Moon Star Lord, Moon Rashi Lord, Day Lord) with deep psychological synthesis.
+2. **Complete K. P. Planetary Table**: Sidereal planetary positions with Star Lord and Sub Lord for Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu, detailing degrees, houses, and functional significations.
 3. **12 Cuspal Sub-Lords Table**: Degrees, Sign, Star Lord, and Cuspal Sub-Lord for Cusps 1 through 12 (Placidus system).
-4. **House Significations & Event Analysis**:
-   - 1st Cusp Sub-Lord (Health, Longevity, General Nature)
-   - 2nd & 11th Cusp Sub-Lords (Wealth, Financial Gains)
-   - 7th Cusp Sub-Lord (Marriage & Partnerships)
-   - 10th Cusp Sub-Lord (Career & Profession)
-5. **Vimshottari Mahadasha Lifelong Timeline Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for all 9 Mahadasha periods covering the full 120-year span starting from the native's birth date. Highlight the currently active Mahadasha and Antardasha.
-6. **Shani Saadesati Lifecycle Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for all 3 phases (1st Phase / Rising, 2nd Phase / Peak, 3rd Phase / Setting) of Saturn's transit over the natal Moon sign. State clearly whether the native is in a Past, Currently Active, or Upcoming Saadesati period.
-7. **K. P. Remedies & Gemstones** based on beneficial cuspal significators.`
+4. **House Significations & Life Domain Deep Dive**:
+   - 1st Cusp Sub-Lord: Health, longevity, vitality, and core temperament.
+   - 2nd & 11th Cusp Sub-Lords: Wealth accumulation, sources of income, financial expansion, and material gains.
+   - 6th & 10th Cusp Sub-Lords: Career, profession, business vs service, professional recognition, and peak success timing.
+   - 7th Cusp Sub-Lord: Marriage, spouse nature, partnership durability, and relationship harmony.
+   - 5th & 9th Cusps: Intellect, creative talents, higher learning, and spiritual fortune.
+5. **Vimshottari Mahadasha Lifelong Timeline Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for all 9 Mahadasha periods covering the full 120-year span starting from the native's birth date. Highlight the currently active Mahadasha and Antardasha with in-depth predictive guidance.
+6. **Shani Saadesati Exact Lifecycle Table (MANDATORY)**: Calculate exact calendar years and dates for all 3 phases (1st Phase / Rising, 2nd Phase / Peak, 3rd Phase / Setting) of Saturn's transit over the natal Moon sign (~2.5 years per phase).
+7. **Actionable K. P. Remedies & Gemstones**: Tailored to beneficial cuspal sub-lords (primary gemstone with metal and finger, Rudraksha mukhi, Vedic Beej mantras with counts, and charitable daan).`
   },
   parashari: {
     name: "Classical Vedic Parashari",
     role: "You are a venerable Vedic Astrologer grounded in classical Brihat Parashara Hora Shastra (Lahiri Ayanamsha).",
-    specifics: `Apply classical Parashari principles:
-1. **Panchanga & Birth Profile**: Lagna, Moon Sign (Rashi), Nakshatra, Pada, Nakshatra Lord, Tithi, Yoga, Karana.
-2. **Planetary Positions Table**: Sidereal degrees, Rashi, Nakshatra, Lord, Exaltation/Debilitation/Own Sign, Retrograde status, Combust status.
-3. **12 Bhava (House) In-Depth Analysis**: Detailed assessment of Kendras (1, 4, 7, 10), Trikonas (1, 5, 9), and Dusthanas (6, 8, 12).
-4. **Planetary Yogas**: Identify major Raja Yogas, Dhana Yogas, Pancha Mahapurusha Yogas, Gajakesari Yoga, Viparita Yogas, and Doshas (Mangal/Kalsarp).
-5. **Vimshottari Mahadasha Lifelong Timeline Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year, e.g., 1995 – 2015) for all 9 Mahadashas from birth date up to 120 years. State the currently active Mahadasha and Antardasha with predictive dates.
-6. **Shani Saadesati Lifecycle Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for all 3 phases (1st Phase / Rising, 2nd Phase / Peak, 3rd Phase / Setting). State clearly if Saadesati is Past, Currently Active, or Upcoming.
-7. **Classical Vedic Remedies**: Mantras, gemstones, fasts, and daan (charity).`
+    specifics: `Apply classical Parashari principles with exhaustive, deeply detailed analysis:
+1. **Panchanga & Birth Profile**: Lagna, Moon Sign (Rashi), Nakshatra, Pada, Nakshatra Lord, Tithi, Yoga, Karana, and elemental balance (Agni, Prithvi, Vayu, Jala).
+2. **Planetary Positions & Dignities Table**: Sidereal degrees, Rashi, Nakshatra, Lord, Exaltation/Debilitation/Own Sign, Retrograde status, Combust status, and Shadbala/strength assessment.
+3. **12 Bhava (House) In-Depth Analysis**: Detailed assessment of Kendras (1, 4, 7, 10), Trikonas (1, 5, 9), Panapharas (2, 5, 8, 11), Apoklimas (3, 6, 9, 12), and Dusthanas (6, 8, 12).
+4. **Career, Wealth & Marriage Deep Breakdown**: Comprehensive analysis of profession (10th house & D10 overview), financial accumulation (2nd & 11th houses), and marriage (7th house & spouse characteristics).
+5. **Planetary Yogas & Doshas**: Identify major Raja Yogas, Dhana Yogas, Pancha Mahapurusha Yogas, Gajakesari Yoga, Viparita Yogas, and Doshas (Mangal/Kalsarp) with specific cancellation rules (Parihara).
+6. **Vimshottari Mahadasha Lifelong Timeline Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for all 9 Mahadashas from birth date up to 120 years. Provide deep interpretation of the active Mahadasha and Antardasha.
+7. **Shani Saadesati Exact Lifecycle Table (MANDATORY)**: Provide exact dates and years for all 3 phases (Rising, Peak, Setting) with ~2.5 years duration per phase.
+8. **Classical Vedic Remedies**: Specific gemstone (carats, metal, finger, day), Rudraksha mukhi, Vedic mantras, fasts, and charitable daan.`
   },
   jaimini: {
     name: "Jaimini Astrology System",
     role: "You are an authority on Jaimini Upadesha Sutras and Maharishi Jaimini astrology.",
-    specifics: `Apply authentic Jaimini principles:
+    specifics: `Apply authentic Jaimini principles with exhaustive, deeply detailed analysis:
 1. **7 Chara Karakas Table**:
-   - Atmakaraka (AK - Soul Planet)
-   - Amatyakaraka (AmK - Career & Intellect)
-   - Bhratrikaraka (BK - Siblings & Gurus)
-   - Matrikaraka (MK - Mother & Property)
-   - Putrakaraka (PK - Children & Creativity)
-   - Gnatikaraka (GK - Obstacles & Enemies)
-   - Darakaraka (DK - Spouse & Partnerships)
-2. **Special Lagnas**: Lagna, Arudha Lagna (AL), Upapada Lagna (UL), Darapada (A7), and Karakamsa Lagna.
-3. **Jaimini Rashi Drishti**: Aspects between cardinal, fixed, and mutable signs.
-4. **Chara Dasha Timeline Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for each sign Dasha period and identify the current active Dasha.
-5. **Vimshottari Mahadasha & Shani Saadesati Years Table (MANDATORY)**: Provide the exact calendar year ranges for the native's Mahadashas and Saturn Saadesati transit cycles.
-6. **Soul Mission & Marriage Analysis** based on AK and UL.
-7. **Jaimini Remedies & Spiritual Alignments** tailored to the Atmakaraka.`
+   - Atmakaraka (AK - Soul Planet & spiritual purpose)
+   - Amatyakaraka (AmK - Career, intellect & status)
+   - Bhratrikaraka (BK - Siblings, courage & mentors)
+   - Matrikaraka (MK - Mother, happiness & domestic peace)
+   - Putrakaraka (PK - Children, education & creativity)
+   - Gnatikaraka (GK - Obstacles, health & competitors)
+   - Darakaraka (DK - Spouse, partnerships & mutual bond)
+2. **Special Lagnas**: Lagna, Arudha Lagna (AL - public persona), Upapada Lagna (UL - marital destiny), Darapada (A7), and Karakamsa Lagna.
+3. **Jaimini Rashi Drishti & Aspects**: Dynamic interactions between cardinal (Chara), fixed (Sthira), and mutable (Dwisvabhava) signs.
+4. **Chara Dasha Timeline Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for each sign Dasha period and identify the current active Dasha with predictive insights.
+5. **Vimshottari Mahadasha & Shani Saadesati Years Table (MANDATORY)**: Exact calendar years and dates for Mahadashas and Saturn Saadesati cycles (~2.5 years per phase).
+6. **Soul Mission, Career & Marriage Analysis**: In-depth interpretation of life purpose based on AK and UL.
+7. **Jaimini Remedies & Spiritual Alignments**: Tailored mantras, deities, and alignments based on the Atmakaraka.`
   },
   lalkitab: {
     name: "Lal Kitab System",
     role: "You are an expert Lal Kitab Farman and Arman practitioner.",
-    specifics: `Apply authentic Lal Kitab principles:
+    specifics: `Apply authentic Lal Kitab principles with exhaustive, deeply detailed analysis:
 1. **Kalpurush Kundali Mapping**: Interpret planetary placements with Aries fixed as House 1, Taurus as House 2, etc.
-2. **Grah Status**: Identify Pakka Ghar (permanent houses), Kismat Jagane Wale Grah (luck activators), and Soye Hue Grah/Ghar (sleeping planets/houses).
-3. **Pitra Rin & Ancestral Debts**: Diagnose ancestral debts (Pitri Rin, Matri Rin, Stri Rin, Swa-Rin) from planetary combinations.
-4. **Lal Kitab Grah Dasha & Vimshottari Timeline Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for major planetary dasha periods.
-5. **Shani Saadesati / Saturn Cycle Timeline Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for the 3 phases of Saturn's transit.
-6. **Authentic Lal Kitab Totkas (Remedies)**: Clear, practical, safe remedies (e.g. offerings in running water, silver square, caring for specific animals).`
+2. **Grah Status & House Dynamics**: Identify Pakka Ghar (permanent houses), Kismat Jagane Wale Grah (luck activators), and Soye Hue Grah/Ghar (sleeping planets/houses).
+3. **Pitra Rin & Ancestral Debts**: Diagnose ancestral debts (Pitri Rin, Matri Rin, Stri Rin, Swa-Rin) from planetary combinations and provide remedial rectification.
+4. **Career, Wealth & Life Trajectory**: Practical real-world manifestations of planetary combinations in daily life, business, and family.
+5. **Lal Kitab Grah Dasha & Vimshottari Timeline Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for major planetary dasha periods.
+6. **Shani Saadesati Lifecycle Table (MANDATORY)**: Calculate exact dates and years for the 3 phases of Saturn's transit (~2.5 years per phase).
+7. **Authentic Lal Kitab Totkas (Remedies)**: Clear, practical, safe remedies (e.g. offerings in running water, silver square, caring for specific animals, ethical conduct).`
   },
   nadi: {
     name: "Bhrigu Nandi Nadi",
     role: "You are an initiate in classical Bhrigu Nandi Nadi and Tamil Nadi astrology.",
-    specifics: `Apply authentic Nadi astrology principles:
+    specifics: `Apply authentic Nadi astrology principles with exhaustive, deeply detailed analysis:
 1. **Planetary Directional Connections**:
-   - Dharma Triad (1-5-9 signs / directions)
-   - Artha Triad (2-6-10 signs)
-   - Kama Triad (3-7-11 signs)
-   - Moksha Triad (4-8-12 signs)
-2. **Karakatwa Linkages**:
-   - Jeeva Karaka (Jupiter) & its relationships to other planets (Soul journey)
-   - Karma Karaka (Saturn) & professional karma
+   - Dharma Triad (1-5-9 signs / East)
+   - Artha Triad (2-6-10 signs / South)
+   - Kama Triad (3-7-11 signs / West)
+   - Moksha Triad (4-8-12 signs / North)
+2. **Karakatwa Linkages & Life Narrative**:
+   - Jeeva Karaka (Jupiter) & its relationships to other planets (Soul journey & vitality)
+   - Karma Karaka (Saturn) & professional karma, roadblocks, and breakthroughs
    - Budha (Education/Business) & Shukra (Wealth/Spouse) linkages
 3. **Vimshottari Dasha Timeline Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for all planetary dasha cycles from birth date.
-4. **Shani Saadesati & Double Transit Timeline (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for Saturn Saadesati phases (Rising, Peak, Setting) over natal Moon.
-5. **Karmic Blessings & Obstacles** with Nadi remedial guidance.`
+4. **Shani Saadesati Exact Timeline (MANDATORY)**: Calculate exact dates and calendar years for Saturn Saadesati phases (Rising, Peak, Setting) over natal Moon (~2.5 years per phase).
+5. **Karmic Blessings & Obstacles**: Deep past-life karmic impressions, blessings, and Nadi remedial guidance.`
   },
   western: {
     name: "Western Tropical Astrology",
     role: "You are a master psychological and Hellenistic Western Astrologer (Tropical Zodiac, Placidus Houses).",
-    specifics: `Apply Western Tropical astrology principles:
-1. **The Big Three & Angles**: Tropical Ascendant (Rising), Sun Sign, Moon Sign, Midheaven (MC), and IC.
+    specifics: `Apply Western Tropical astrology principles with exhaustive, deeply detailed analysis:
+1. **The Big Three & Angles**: Tropical Ascendant (Rising), Sun Sign, Moon Sign, Midheaven (MC), and IC with deep psychological synthesis.
 2. **Planetary Positions Table**: Sun through Pluto + Chiron degrees in Tropical signs and Placidus houses.
-3. **Major Aspect Matrix**: Conjunctions, Oppositions, Trines, Squares, and Sextiles with exact orbs.
-4. **Major Life Transits & Saturn Return Timeline Table (MANDATORY)**: Calculate exact calendar years (Start Year – End Year) for major Saturn transit cycles (Saturn Return at age 28-30 and 58-60) and Saturn over natal Moon.
-5. **Progressed Timeline / Dasha Equivalent Table (MANDATORY)**: Provide the year-by-year major planetary transit phases with exact calendar years.
-6. **Psychological & Life Path Profile**: Core archetype, Shadow work, relationships, and career trajectory.`
+3. **Major Aspect Matrix**: Conjunctions, Oppositions, Trines, Squares, and Sextiles with exact orbs and psychological dynamics.
+4. **Career, Romance & Psychological Growth**: In-depth analysis of vocation (MC & 10th house), relationships (7th house & Venus/Mars), and shadow work.
+5. **Major Life Transits & Saturn Return Timeline Table (MANDATORY)**: Exact calendar years (Start Year – End Year) for Saturn Return (ages 28-30 and 58-60) and major transits.
+6. **Progressed Timeline / Dasha Equivalent Table (MANDATORY)**: Year-by-year major planetary transit phases with exact calendar years.
+7. **Psychological & Life Path Profile**: Core archetype, inner child integration, relationships, and career trajectory.`
   }
 };
 
@@ -355,9 +359,14 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
   const result = await withRetry(async () => {
     const text = await callAI(
       `You are a Master Vedic Astrologer (Parashari system, Lahiri Ayanamsha). Current date: ${getCurrentDate()}.
-Provide a ${timeframe} horoscope for Moon Sign / Rashi: ${sign}.
-Analyze precise sidereal planetary transits (Career, Health, Relationships, Finance) using classical Vedic principles.
+Provide an EXHAUSTIVE, HIGHLY DETAILED ${timeframe} horoscope for Moon Sign / Rashi: ${sign}.
+Analyze precise sidereal planetary transits (Career, Health, Relationships, Finance, Spirituality) using classical Vedic principles.
 Provide a balanced, authentic, and constructive Vedic horoscope. Highlight favorable opportunities and positive momentum, while explaining any challenging transits with practical, dignified, and uplifting remedies.
+
+MANDATORY DEPTH REQUIREMENTS:
+- Each field must contain an extensive, multi-sentence paragraph (4 to 6 detailed sentences) providing concrete real-world astrological predictions rather than vague summaries.
+- Explain the underlying planetary transit reasons (e.g. Saturn in Pisces, Jupiter in Gemini, Sun's placement) and how they impact daily decisions.
+- Include specific guidance on what actions to pursue, what pitfalls to avoid, and auspicious timings.
 
 CRITICAL LANGUAGE REQUIREMENT:
 You MUST write all textual descriptions, predictions, and field values in ${language} (using authentic native ${language} script).
@@ -365,14 +374,14 @@ All 8 values in the JSON object must be written fluently in ${language}.
 The keys of the JSON object must remain in English as shown below.`,
       `Return a valid JSON object (no markdown code fences):
 {
-  "overview": "Detailed overview written in ${language}",
-  "career": "Career prediction written in ${language}",
-  "health": "Health prediction written in ${language}",
-  "relationships": "Relationships prediction written in ${language}",
-  "finance": "Finance prediction written in ${language}",
-  "spirituality": "Spirituality prediction written in ${language}",
-  "luckyColor": "Lucky color in ${language}",
-  "luckyNumber": "Lucky number string"
+  "overview": "Comprehensive, deeply detailed multi-sentence overview in ${language} synthesizing major planetary transit energies",
+  "career": "In-depth career, workplace and business prediction in ${language} with concrete guidance and opportunities",
+  "health": "Detailed physical and mental vitality prediction in ${language} with lifestyle and stamina advice",
+  "relationships": "Rich, multi-sentence love, family and marital harmony prediction in ${language}",
+  "finance": "Detailed financial foresight, wealth accumulation, investments and expense caution in ${language}",
+  "spirituality": "Deep spiritual evolution, mindfulness and karmic reflection prediction in ${language}",
+  "luckyColor": "Lucky color in ${language} with astrological reason",
+  "luckyNumber": "Lucky number string with vibrational explanation"
 }`,
       true // jsonMode
     );
@@ -418,15 +427,28 @@ CRITICAL: Do NOT add 7 years to any single phase! Each phase lasts approximately
   const result = await withRetry(async () => {
     const text = await callAI(
       `${config.role} Current Date: ${getCurrentDate()}.
-This is an authentic, high-precision Life Analysis using the ${config.name}. Maintain a balanced, insightful, and compassionate approach: clearly delineate strengths, yogas, and growth opportunities alongside genuine karmic challenges and remedies, without fatalism or harsh wording.
+This is an authentic, high-precision, EXHAUSTIVE Life Blueprint Analysis using the ${config.name}. Maintain a balanced, insightful, and compassionate approach: clearly delineate strengths, yogas, and growth opportunities alongside genuine karmic challenges and remedies, without fatalism or harsh wording.
 
 ${moonContext}
 ${saadesatiPromptContext}
 
+MANDATORY DEPTH & STRUCTURE REQUIREMENTS FOR THE REPORT:
+The "report" field must be an extensive, beautifully written multi-page Markdown document in ${language} featuring:
+1. **Panchanga & Birth Profile Summary Table**: Lagna, Moon Sign, Sun Sign, Nakshatra, Pada, Star Lord, Sub Lord, Deities, Elements.
+2. **Sidereal Planetary Positions & Dignities Table**: Complete table of all 9 planets with degrees, sign, nakshatra, house, and dignity status.
+3. **Comprehensive 12 Bhava (House) Deep Analysis**: Multi-paragraph evaluation covering Kendra houses (1, 4, 7, 10), Trikona houses (1, 5, 9), and wealth/growth houses.
+4. **Career, Profession & Financial Trajectory**: In-depth analysis of optimal career industries, job vs business suitability, financial accumulation capacity, and peak earning years.
+5. **Marriage, Love & Relationship Dynamics**: In-depth analysis of the 7th house, Venus/Jupiter placements, spouse characteristics, and long-term partnership harmony.
+6. **Health, Vitality & Preventive Astrology**: Physical constitution (Vata/Pitta/Kapha), sensitive bodily areas, and daily lifestyle practices.
+7. **Major Planetary Yogas, Doshas & Gochara Transits**: Raja Yogas, Dhana Yogas, Gajakesari Yoga, Manglik / Kalsarp analysis with mitigations.
+8. **Vimshottari Mahadasha Lifelong Timeline Table (120-Year)**: Complete 9-Mahadasha table with exact years, plus detailed interpretation of active Mahadasha and Antardasha.
+9. **Shani Saadesati Exact Timeline**: Exact start and end dates for all 3 phases (~2.5 years each) with real-time status and guidance.
+10. **Prescriptive Classical Vedic Remedies**: Primary gemstone (carats, metal, finger, day, ritual), Rudraksha mukhi, Vedic Beej mantras with counts, and charitable acts (Daan).
+
 CRITICAL LANGUAGE REQUIREMENT:
 You MUST write the entire "report" and all textual descriptions (starLord, subLord, nakshatra, moonSign) in ${language} (using native ${language} script).
 The JSON keys ("report", "chart", "lagnaSign", "starLord", "subLord", "nakshatra", "moonSign", "mahadashas", "saadesatiCycles") and house numbers ("1".."12") must remain in English.`,
-      `Generate a complete Janma Kundali Life Analysis in the ${config.name} for:
+      `Generate an exhaustive, highly detailed Janma Kundali Life Map Analysis in the ${config.name} for:
 Name: ${details.name}
 DOB: ${details.dob}
 TOB: ${details.tob}
@@ -436,7 +458,7 @@ ${config.specifics}
 
 Return ONLY a valid JSON object (no markdown code fences):
 {
-  "report": "Professional Markdown string in ${language} with bold headers and tables detailing the ${config.name} analysis. MUST include a prominent Vimshottari Mahadasha Table with exact start and end years (e.g. 1995-2015) and a Shani Saadesati Table with exact start and end dates for 1st, 2nd, and 3rd phases (~2.5 years each).",
+  "report": "Exhaustive, deeply detailed professional Markdown string in ${language} with bold headers and comprehensive tables detailing the complete ${config.name} analysis.",
   "chart": { "1": [], "2": [], "3": [], "4": [], "5": [], "6": [], "7": [], "8": [], "9": [], "10": [], "11": [], "12": [] },
   "lagnaSign": 1,
   "starLord": "string in ${language}",
@@ -454,7 +476,7 @@ Return ONLY a valid JSON object (no markdown code fences):
   ],
   "saadesatiCycles": [
     {
-      "phase": "1st Phase (Rising) / 2nd Phase (Peak) / 3rd Phase (Setting)",
+      "phase": "1st Phase (Rising)",
       "startDate": "${exactSaadesati[0]?.startDate}",
       "endDate": "${exactSaadesati[0]?.endDate}",
       "startYear": ${exactSaadesati[0]?.startYear},
@@ -682,41 +704,52 @@ AUTHENTIC VERDICT: ${milanCalc.verdict} (${milanCalc.verdictLabel})
     return await callAI(
       `You are a master Vedic astrology matchmaking expert (Classical Parashari & Ashtakoot Milan, Lahiri Ayanamsha).
 CRITICAL REPORTING GUIDELINES:
-1. BALANCED & HIGH-QUALITY ANALYSIS: Provide an authentic, comprehensive evaluation highlighting BOTH positive harmonies and areas for mutual understanding. An authentic reading celebrates emotional bonding, shared destiny, and partnership strengths while offering constructive insights on personal differences.
+1. BALANCED, DEEPLY DETAILED & EXHAUSTIVE ANALYSIS: Provide an authentic, comprehensive multi-section evaluation highlighting BOTH natural harmonies and areas for mutual growth. Provide substantial paragraphs packed with classical insights, psychological understanding, and practical wisdom.
 2. DIGNIFIED & COMPASSIONATE TONE: Strictly avoid harsh, alarming, terrifying, or fatalistic language. Never declare a match "ruined" or "condemned". If there are friction points (such as Nadi or Bhakoot differences, or Manglik placement), explain them respectfully and constructively as opportunities for conscious communication, personal maturity, and Vedic remedies (Parihara).
 3. EXACT MATHEMATICAL INTEGRITY: You MUST adhere to the provided deterministic Ashtakoot scores (${milanCalc ? milanCalc.totalScore : 'computed'} / 36) in the Ashtakoot table.
 4. ACTIONABLE REMEDIES & BLISS: Classical Shastras state that mutual devotion, maturity, and remedies enhance marital joy. Include practical remedies (Vedic mantras, auspicious colors, charitable acts, communication habits).
 CRITICAL LANGUAGE REQUIREMENT: Write the entire compatibility analysis and report exclusively in ${language} (using native ${language} script).`,
-      `Vedic Kundali Milan (Compatibility Analysis) for ${details.boy.name} & ${details.girl.name}.
+      `Generate an exhaustive, deeply detailed Vedic Kundali Milan (Compatibility Analysis) for ${details.boy.name} & ${details.girl.name}.
 Birth Information:
 - Groom (${details.boy.name}): DOB ${details.boy.dob}, TOB ${details.boy.tob || '12:00'}, Place: ${details.boy.location}
 - Bride (${details.girl.name}): DOB ${details.girl.dob}, TOB ${details.girl.tob || '12:00'}, Place: ${details.girl.location}
 
 ${milanFoundation}
 
-Generate a beautifully structured, comprehensive report in Markdown:
+Generate a comprehensive, beautifully structured report in Markdown featuring substantial depth in every section:
 # 💑 Vedic Kundali Milan Report: ${details.boy.name} & ${details.girl.name}
 
-## 1. 🌟 Ashtakoot Gun Milan Summary (अष्टकूट गुण मिलान)
-Present a clean Markdown table with columns:
+## 1. 🌟 Ashtakoot Gun Milan Summary Table (अष्टकूट गुण मिलान)
+Present a complete Markdown table with columns:
 | Koota (कूट) | Area (क्षेत्र) | Max Points | Obtained Points | Status & Classical Notes |
 Detail all 8 Kootas: Varna (1), Vashya (2), Tara (3), Yoni (4), Graha Maitri (5), Gana (6), Bhakoot (7), Nadi (8).
 Show the final Total Score: **${milanCalc ? milanCalc.totalScore : ''} / 36** with the official verdict.
+Provide an in-depth analytical explanation of what this overall score indicates for psychological compatibility, emotional bonding, and longevity of the relationship.
 
 ## 2. 💖 Pillars of Natural Harmony & Strengths (प्राकृतिक सामंजस्य व सबल पक्ष)
-Detailed exploration of mutual affection, emotional compatibility, shared life values, and mental understanding.
+Detailed multi-paragraph exploration of:
+- Emotional resonance and mental bonding (Graha Maitri & Moon sign interplay).
+- Sexual, biological and intimate harmony (Yoni Koota compatibility).
+- Shared spiritual purpose, mutual respect, and family values (Varna & Vashya alignment).
 
 ## 3. 🤝 Mindful Growth Areas & Compassionate Navigation (सचेत संवाद व सामंजस्य के बिंदु)
-Explain areas where differing temperaments or astrological placements call for conscious patience, communication, and emotional support. Express these constructively, never harshly.
+Explain areas where differing temperaments or astrological placements call for conscious patience, communication, and emotional support (e.g. Gana temperament differences or Bhakoot/Nadi considerations). Express these constructively with practical guidance, never harshly.
 
 ## 4. 🔥 Mangal Dosha & Navamsa Synthesis (मांगलिक विश्लेषण व नवांश सामंजस्य)
-Balanced assessment of Mars energy for both, noting traditional cancellations (e.g. mutual placements, beneficial aspects).
+- Balanced assessment of Mars (Mangal) energy for both charts (Houses 1, 2, 4, 7, 8, 12).
+- Detailed evaluation of classical cancellations (Parihara) such as mutual Mars placement, beneficial Jupiter/Venus aspect, or age maturity.
+- Navamsa (D9) chart overview for marital durability and soul compatibility.
 
 ## 5. 🪐 Planetary Placements & Marital Timing (7th House, Venus & Jupiter)
-Analysis of the 7th house, Venus (Shukra - Karaka of love), and Jupiter (Guru - Karaka of auspicious marital growth).
+- 7th House (Kalatra Bhava) analysis for both charts: lord placement, aspects, and relationship stamina.
+- Venus (Shukra - Karaka of love, romance, and sensual harmony) analysis.
+- Jupiter (Guru - Karaka of divine grace, marital wisdom, and family prosperity) analysis.
 
 ## 6. 🪔 Vedic Remedies & Rituals for Marital Bliss (वैवाहिक सुख हेतु शास्त्रीय उपाय)
-Practical, uplifting remedies: auspicious mantras (Maha Mrityunjaya / Gauri Shankar), daily habits, charitable acts (Daan), and gemstones/colors for mutual peace.
+Practical, uplifting remedies for daily life and mutual peace:
+- Auspicious Vedic mantras (Gauri Shankar Mantra, Maha Mrityunjaya Mantra) with recommended counts.
+- Favourable gemstones, auspicious colors, and charitable acts (Daan).
+- Daily communication habits and relationship mindfulness rituals.
 
 Return as professional Markdown in ${language}.`,
       false, // jsonMode
@@ -747,24 +780,26 @@ export const getNumerologyAnalysis = async (
   const result = await withRetry(async () => {
     return await callAI(
       `You are a Master Vedic and Chaldean Numerologist specializing in Astrological Name Correction, Namaank Alignment, and Destiny Rectification.
-Provide an authoritative, detailed numerology report with practical, highly auspicious name correction recommendations.
+Provide an exhaustive, deeply detailed numerology report with practical, highly auspicious name correction recommendations.
 CRITICAL LANGUAGE REQUIREMENT: Write the entire analysis exclusively in ${lang} (using native ${lang} script).`,
-      `Vedic & Chaldean Numerology analysis for:
+      `Generate an exhaustive, highly detailed Vedic & Chaldean Numerology analysis for:
 ${name ? `Person's Full Name: ${name}` : 'Name: Not provided'}
 Date of Birth: ${dob}
 Mulank (Psychic / Root Number): ${m}
 Bhagyank (Destiny / Life Path Number): ${b}
 Loshu Grid State: ${JSON.stringify(loshu)}
 
-You MUST include comprehensive sections:
-1. **Core Number Profile (मूलांक व भाग्यांक विश्लेषण)**:
-   - Mulank (${m}) - Ruling Planet, Personality Blueprint, Strengths & Pitfalls.
-   - Bhagyank (${b}) - Ruling Planet, Karmic Destiny, Life Purpose.
-   - Core Relationship: Synergy or friction between Mulank (${m}) and Bhagyank (${b}).
+You MUST include comprehensive, multi-paragraph sections:
+1. **Core Number Profile (मूलांक व भाग्यांक विस्तृत विश्लेषण)**:
+   - Mulank (${m}) - Ruling Planet, Psychological Blueprint, Subconscious Drivers, Strengths, Talents, and Potential Blindspots.
+   - Bhagyank (${b}) - Ruling Planet, Karmic Destiny, Life Purpose, Soul Mission, and Peak Achievement Timelines.
+   - Core Synergy: Detailed evaluation of compatibility or friction between Mulank (${m}) and Bhagyank (${b}) across career, finances, and relationships.
 
-2. **Loshu Grid Planes & Missing Numbers (रिक्त अंक व प्रभाव)**:
-   - Present numbers and dominant planes (Thought, Will, Action, Mental, Emotional, Practical).
-   - Missing numbers and their specific life voids (e.g. missing 5/6 affecting stability, luxury, or communication).
+2. **Loshu Grid Planes & Missing Numbers (लो-शू ग्रिड व रिक्त अंक विश्लेषण)**:
+   - Complete breakdown of the 8 Planes: Mental (4-9-2), Emotional (3-5-7), Practical (8-1-6), Thought (4-3-8), Will (9-5-1), Action (2-7-6), and Golden Raj Yogas (4-5-6 & 2-5-8).
+   - Specific analysis of present numbers and which planes are activated.
+   - Detailed breakdown of missing numbers and their specific life voids (e.g. missing 5 affecting stability/business, missing 6 affecting luxury/family, missing 8 affecting discipline/wealth).
+   - Concrete remedial measures for missing numbers (crystals, wristbands, Vastu directions, colors).
 
 3. **ASTROLOGICAL NAME CORRECTION & NAMAANK ALIGNMENT (नाम सुधार व नामांक विश्लेषण)**:
 ${name ? `
@@ -789,12 +824,13 @@ ${name ? `
    - Rules for selecting an auspicious business or personal name.
 `}
 
-4. **Remedies & Auspicious Timing (शुभ उपाय व दिशा)**:
-   - Lucky Numbers, Lucky Days, Lucky Colours, Favourable Directions.
-   - Gemstone & Rudraksha recommendations.
-   - Auspicious daily affirmations and planetary mantras.
+4. **Life Domain Predictions & Auspicious Matrix (जीवन भविष्यफल व शुभ तालिका)**:
+   - Career & Wealth: Best industries, job vs business suitability, and wealth retention capacity.
+   - Love & Relationships: Compatible partner numbers and relationship harmony tips.
+   - Auspicious Matrix: Lucky Numbers, Friendly Numbers, Unfriendly Numbers, Lucky Days, Lucky Colours, and Favourable Directions.
+   - Classical Remedies: Gemstones, Rudraksha mukhi, daily affirmations, and planetary Beej Mantras.
 
-Return as beautifully formatted Markdown with bold titles, clean tables, and bullet points in ${lang}.`
+Return as beautifully formatted, exhaustive Markdown with bold titles, clean tables, and bullet points in ${lang}.`
     );
   });
 
@@ -808,14 +844,25 @@ Return as beautifully formatted Markdown with bold titles, clean tables, and bul
 // ---------------------------------------------------------------------------
 export const getPalmistryAnalysis = async (image: string, lang: Language) => {
   return await withRetry(async () => {
-    const textPrompt = `Analyze this palm using classical Vedic palmistry principles. Provide a detailed reading covering:
-- Life Line (Jeevan Rekha): longevity and vitality
-- Head Line (Mastak Rekha): intellect and thinking style
-- Heart Line (Hriday Rekha): emotions and relationships
-- Fate Line (Bhagya Rekha): career and destiny
-- Mount analysis: Jupiter, Saturn, Apollo, Mercury, Venus, Moon
-- Special marks: crosses, stars, triangles, islands and their Vedic significance
-- Overall assessment: wealth potential, health warnings, spiritual development
+    const textPrompt = `Analyze this palm image with master-level Vedic Palmistry (Hasta Rekha Shastra) and Western chirology.
+Provide an EXHAUSTIVE, HIGHLY DETAILED analysis with clear headings and multiple paragraphs covering:
+1. **Palm Shape & Elemental Classification**: Earth, Air, Fire, or Water hand, skin texture, and finger proportions.
+2. **The 4 Major Lines (प्रमुख रेखाएँ)**:
+   - Life Line (Jeevan Rekha): Length, depth, curve, vitality, vitality markers, and longevity milestones.
+   - Head Line (Mastak Rekha): Intellect, mental focus, thinking style, creativity, and stress threshold.
+   - Heart Line (Hriday Rekha): Emotional depth, relationship expectations, empathy, and romantic nature.
+   - Fate Line (Bhagya Rekha): Career path, destiny milestones, turning points around ages 28, 35, and 45.
+3. **The Minor Lines & Success Indicators**:
+   - Sun Line (Surya Rekha / Apollo): Fame, creative recognition, and public status.
+   - Mercury Line (Health/Business Rekha): Commercial acumen, communication, and nervous vitality.
+   - Marriage & Relationship Lines: Emotional bonding timing and partnership patterns.
+4. **Mounts Analysis (पर्वत विश्लेषण)**:
+   - Mount of Jupiter (Guru), Saturn (Shani), Sun (Surya), Mercury (Budh), Venus (Shukra), and Moon (Chandra).
+5. **Special Sacred Marks (शुभ व विशेष चिन्ह)**:
+   - Triangles, fish signs (Matsya), stars, crosses, islands, and trident (Trishul) formations.
+6. **Overall Life Synthesis & Remedial Advice**:
+   - Wealth retention potential, career recommendations, and actionable spiritual remedies.
+
 CRITICAL LANGUAGE REQUIREMENT: Write the ENTIRE analysis exclusively in ${lang} (using native ${lang} script).`;
 
     return await callAIVision(textPrompt, image);
