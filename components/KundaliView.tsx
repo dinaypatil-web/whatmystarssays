@@ -704,7 +704,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                 <div className="mt-16 pt-8 border-t border-white/10 opacity-60">
                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2">Disclaimer regarding AI Generation</p>
                    <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic">
-                      This application translates celestial planetary transits and natal charts based on authentic {KUNDALI_SYSTEMS.find(s => s.id === system)?.name} principles. The Artificial Intelligence is instructed to deliver harsh life truths without filtering. No liability is assumed for choices, emotional impact, or distress caused by the generated algorithmic forecasts. They serve as personal insights, not verified life warranties.
+                      This application translates celestial planetary transits and natal charts based on authentic {KUNDALI_SYSTEMS.find(s => s.id === system)?.name} principles. The astrological insights provide balanced, authentic life guidance for self-reflection and spiritual growth. Consult a qualified Vedic astrologer for major life decisions.
                    </p>
                 </div>
               </div>

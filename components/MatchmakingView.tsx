@@ -240,7 +240,7 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
               <div className="mt-12 pt-8 border-t border-white/10 opacity-60 not-prose">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2 text-center">Disclaimer regarding AI Generation</p>
                 <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic text-center max-w-2xl mx-auto">
-                  This comparison is performed by Artificial Intelligence based on K. P. System astrological parameters. The results are for informational purposes only. AI analysis may lack human intuition and cultural depth. Consult a professional K. P. System astrologer for critical life decisions. The creators assume no liability for choices made based on this algorithmic analysis.
+                  This compatibility analysis is synthesized using authentic Vedic Ashtakoot Milan and astrological parameters. The insights are designed to support mutual understanding, emotional harmony, and conscious relationship planning.
                 </p>
               </div>
             </div>

@@ -13,14 +13,19 @@ interface CacheEntry<T> {
 export const StorageService = {
   /**
    * Saves data to local storage with a specific TTL
+   * ttlHours = -1 means infinite TTL (never expires)
    */
   save: <T>(key: string, data: T, ttlHours: number = 24) => {
     const entry: CacheEntry<T> = {
       data,
       timestamp: Date.now(),
-      expiry: ttlHours * 60 * 60 * 1000
+      expiry: ttlHours === -1 ? -1 : ttlHours * 60 * 60 * 1000
     };
-    localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(entry));
+    try {
+      localStorage.setItem(CACHE_PREFIX + key, JSON.stringify(entry));
+    } catch (e) {
+      console.warn("StorageService save failed (possibly quota exceeded)", e);
+    }
   },
 
   /**
@@ -32,9 +37,13 @@ export const StorageService = {
 
     try {
       const entry: CacheEntry<T> = JSON.parse(raw);
+      // -1 means infinite TTL, never expires
+      if (entry.expiry === -1) {
+        return entry.data;
+      }
       const isExpired = Date.now() - entry.timestamp > entry.expiry;
       
-      if (isExpired && entry.expiry !== -1) { // -1 means infinite TTL
+      if (isExpired) {
         localStorage.removeItem(CACHE_PREFIX + key);
         return null;
       }
@@ -49,9 +58,27 @@ export const StorageService = {
    */
   getKeys: {
     // Prediction cache keys — language-aware
-    horoscope: (sign: string, timeframe: string, lang: Language) => `horo_${sign}_${timeframe}_${lang}`,
-    kundali: (name: string, dob: string, lang: Language, system: KundaliSystem = 'kp') => `kundali_${name.trim().toLowerCase()}_${dob}_${lang}_${system}`,
-    match: (bName: string, gName: string, lang: Language) => `match_${bName.trim().toLowerCase()}_${gName.trim().toLowerCase()}_${lang}`,
+    horoscope: (sign: string, timeframe: string, lang: Language) => `horo_${sign.toLowerCase()}_${timeframe}_${lang}`,
+    kundali: (name: string, dob: string, tobOrLang: string | Language = '', langOrSys: Language | KundaliSystem = 'English', system: KundaliSystem = 'kp') => {
+      // Backwards compatible signature support:
+      // Old: (name, dob, lang, system)
+      // New: (name, dob, tob, lang, system)
+      if (typeof langOrSys === 'string' && ['kp', 'parashari', 'jaimini', 'lalkitab', 'nadi', 'western'].includes(langOrSys)) {
+        const lang = tobOrLang as Language;
+        const sys = langOrSys as KundaliSystem;
+        return `kundali_${name.trim().toLowerCase()}_${dob}_${lang}_${sys}`;
+      }
+      const tob = String(tobOrLang || '').trim();
+      const lang = (langOrSys || 'English') as Language;
+      return `kundali_${name.trim().toLowerCase()}_${dob}_${tob}_${lang}_${system}`;
+    },
+    match: (bName: string, gName: string, lang: Language = 'English', bDob: string = '', bTob: string = '', gDob: string = '', gTob: string = '') => {
+      const bStr = bName.trim().toLowerCase();
+      const gStr = gName.trim().toLowerCase();
+      const bD = bDob ? `_${bDob.trim()}_${(bTob || '').trim()}` : '';
+      const gD = gDob ? `_${gDob.trim()}_${(gTob || '').trim()}` : '';
+      return `match_${bStr}${bD}_${gStr}${gD}_${lang}`;
+    },
     numerology: (dob: string, lang: Language, name: string = '') => `num_${dob}_${lang}_${name.trim().toLowerCase().replace(/\s+/g, '_')}`,
     userSign: () => 'user_preferred_moonsign',
     profiles: () => 'user_saved_profiles'

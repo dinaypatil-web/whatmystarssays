@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { BirthDetails, MatchmakingDetails, Timeframe, Language, ChatMessage, KundaliResponse, KundaliSystem, PlanetaryTransitInfo } from "../types";
 import { StorageService } from "./storageService";
+import { calculateAshtakootMilan, calculateMoonDetails } from "./astrologyHelper";
 
 // ---------------------------------------------------------------------------
 // ACTIVE GEMINI MODELS & MULTI-KEY ROTATION
@@ -188,8 +189,8 @@ const executeWithGemini = async <T>(
   throw lastErr;
 };
 
-/** Text-only request with model failover and key rotation */
-const callAI = async (systemPrompt: string, userPrompt: string, jsonMode = false): Promise<string> => {
+/** Text-only request with model failover, key rotation, and low temperature for consistency */
+const callAI = async (systemPrompt: string, userPrompt: string, jsonMode = false, temperature = 0.2): Promise<string> => {
   return executeWithGemini(async (ai, model) => {
     const messages: GeminiMessage[] = [];
     if (systemPrompt) {
@@ -198,7 +199,11 @@ const callAI = async (systemPrompt: string, userPrompt: string, jsonMode = false
     }
     messages.push({ role: "user", parts: [{ text: userPrompt }] });
 
-    const chat = ai.chats.create({ model, history: messages.slice(0, -1) } as any);
+    const chat = ai.chats.create({
+      model,
+      config: { temperature },
+      history: messages.slice(0, -1)
+    } as any);
     const response = await chat.sendMessage({ message: messages[messages.length - 1].parts as any });
 
     let text = response.text ?? "";
@@ -209,7 +214,7 @@ const callAI = async (systemPrompt: string, userPrompt: string, jsonMode = false
 };
 
 /** Multi-turn chat with model failover and key rotation */
-const callAIChat = async (systemPrompt: string, history: ChatMessage[], userQuestion: string): Promise<string> => {
+const callAIChat = async (systemPrompt: string, history: ChatMessage[], userQuestion: string, temperature = 0.3): Promise<string> => {
   const trimmedHistory = history.slice(-MAX_HISTORY_MESSAGES);
   return executeWithGemini(async (ai, model) => {
     const messages: GeminiMessage[] = [];
@@ -222,7 +227,11 @@ const callAIChat = async (systemPrompt: string, history: ChatMessage[], userQues
     }
     messages.push({ role: "user", parts: [{ text: userQuestion }] });
 
-    const chat = ai.chats.create({ model, history: messages.slice(0, -1) } as any);
+    const chat = ai.chats.create({
+      model,
+      config: { temperature },
+      history: messages.slice(0, -1)
+    } as any);
     const response = await chat.sendMessage({ message: messages[messages.length - 1].parts as any });
 
     const text = response.text ?? "";
@@ -236,7 +245,11 @@ const callAIVision = async (textPrompt: string, imageDataUrl: string): Promise<s
   const mimeType = imageDataUrl.split(";")[0].replace("data:", "") || "image/jpeg";
   const base64Data = imageDataUrl.split(",")[1] || imageDataUrl;
   return executeWithGemini(async (ai, model) => {
-    const chat = ai.chats.create({ model, history: [] } as any);
+    const chat = ai.chats.create({
+      model,
+      config: { temperature: 0.2 },
+      history: []
+    } as any);
     const response = await chat.sendMessage({
       message: [
         { text: textPrompt },
@@ -344,7 +357,7 @@ export const getHoroscope = async (sign: string, timeframe: Timeframe, language:
       `You are a Master Vedic Astrologer (Parashari system, Lahiri Ayanamsha). Current date: ${getCurrentDate()}.
 Provide a ${timeframe} horoscope for Moon Sign / Rashi: ${sign}.
 Analyze precise sidereal planetary transits (Career, Health, Relationships, Finance) using classical Vedic principles.
-DO NOT use toxic positivity — provide harsh truths when planetary math dictates it.
+Provide a balanced, authentic, and constructive Vedic horoscope. Highlight favorable opportunities and positive momentum, while explaining any challenging transits with practical, dignified, and uplifting remedies.
 
 CRITICAL LANGUAGE REQUIREMENT:
 You MUST write all textual descriptions, predictions, and field values in ${language} (using authentic native ${language} script).
@@ -380,14 +393,22 @@ export const getKundaliAnalysis = async (
   system: KundaliSystem = 'kp'
 ): Promise<KundaliResponse> => {
   const config = KUNDALI_SYSTEM_PROMPTS[system] || KUNDALI_SYSTEM_PROMPTS.kp;
-  const langKey = StorageService.getKeys.kundali(details.name, details.dob, language, system);
+  const langKey = StorageService.getKeys.kundali(details.name, details.dob, details.tob, language, system);
   const cached = StorageService.get<KundaliResponse>(langKey);
   if (cached) return { ...cached, system };
+
+  // Calculate deterministic astronomical moon anchor to prevent hallucinations across re-runs
+  const moonCalc = calculateMoonDetails(details.dob, details.tob);
+  const moonContext = moonCalc
+    ? `Astronomical Moon Reference: Moon in ${moonCalc.rashi.name} (${moonCalc.rashi.sanskrit}), Nakshatra: ${moonCalc.nakshatra.name} (${moonCalc.nakshatra.sanskrit}), Pada ${moonCalc.pada}, Sidereal Longitude: ${moonCalc.siderealLongitude.toFixed(2)}°.`
+    : '';
 
   const result = await withRetry(async () => {
     const text = await callAI(
       `${config.role} Current Date: ${getCurrentDate()}.
-This is an authentic, high-precision Life Analysis using the ${config.name}. DO NOT use toxic positivity — provide truthful predictions and harsh realities when planetary math demands it.
+This is an authentic, high-precision Life Analysis using the ${config.name}. Maintain a balanced, insightful, and compassionate approach: clearly delineate strengths, yogas, and growth opportunities alongside genuine karmic challenges and remedies, without fatalism or harsh wording.
+
+${moonContext}
 
 CRITICAL LANGUAGE REQUIREMENT:
 You MUST write the entire "report" and all textual descriptions (starLord, subLord, nakshatra, moonSign) in ${language} (using native ${language} script).
@@ -455,7 +476,7 @@ export const askKundaliQuestion = async (
     const systemPrompt = `You are the user's personal Astrological Guide specializing in the ${config.name}.
 Kundali context: ${context}. Current Date: ${getCurrentDate()}.
 Answer the user's question using the specific tenets and techniques of ${config.name}.
-DO NOT use toxic positivity — give harsh truths when planetary math demands it.
+Address challenges candidly and constructively, pairing any friction with practical Vedic remedies and supportive guidance without harsh or alarming language.
 CRITICAL LANGUAGE REQUIREMENT: You MUST formulate your entire response in ${lang} (using native ${lang} script).`;
 
     return await callAIChat(systemPrompt, history, q);
@@ -541,7 +562,7 @@ CONSULTATION MANDATE:
 3. Evaluate the timing using their active Mahadasha/Antardasha and Saturn Saadesati phase, pinpointing favorable vs challenging timeline periods.
 4. Integrate current real-time Gochara transits (especially Saturn, Jupiter, and Rahu-Ketu) to explain what cosmic energies are impacting them right now.
 5. Blend their Numerology (Mulank, Bhagyank, and Chaldean Name Number vibration) into the answer for multidimensional resonance.
-6. NO toxic positivity — if planetary combinations indicate struggle, delays, or karmic debts, speak the truth with compassionate guidance.
+6. Balanced & Compassionate Counsel: Present strengths, blessings, and opportunities clearly alongside karmic challenges or delays. Never use harsh or alarming language; explain challenges constructively and provide clear, reassuring remedies.
 7. Always provide actionable, authentic remedies: Vedic Mantras, Gemstone / Rudraksha recommendations, Daan (charity), Auspicious Colors & Directions, or Name vibration tweaks if appropriate.
 8. Structure your response using clean, beautiful Markdown with bold headings, neat bullet points, and highlight cards/tables where fitting.
 
@@ -581,22 +602,82 @@ CRITICAL LANGUAGE REQUIREMENT: You MUST formulate your entire response in ${lang
 // Generates directly in target language in a single efficient call
 // ---------------------------------------------------------------------------
 export const getMatchmaking = async (details: MatchmakingDetails, language: Language) => {
-  const langKey = StorageService.getKeys.match(details.boy.name, details.girl.name, language);
+  const langKey = StorageService.getKeys.match(
+    details.boy.name,
+    details.girl.name,
+    language,
+    details.boy.dob,
+    details.boy.tob,
+    details.girl.dob,
+    details.girl.tob
+  );
   const cached = StorageService.get<string>(langKey);
   if (cached) return cached;
 
+  // Calculate deterministic Ashtakoot Milan and Moon parameters
+  const milanCalc = calculateAshtakootMilan(details.boy, details.girl);
+
+  const milanFoundation = milanCalc ? `
+DETERMINISTIC VEDIC ASHTAKOOT MILAN FOUNDATION:
+- Groom (${details.boy.name}): Moon in ${milanCalc.boyMoon?.rashi.name} (${milanCalc.boyMoon?.rashi.sanskrit}), Nakshatra: ${milanCalc.boyMoon?.nakshatra.name} (Pada ${milanCalc.boyMoon?.pada}), Lord: ${milanCalc.boyMoon?.rashi.lord}, Varna: ${milanCalc.boyMoon?.rashi.varna}, Nadi: ${milanCalc.boyMoon?.nakshatra.nadi}
+- Bride (${details.girl.name}): Moon in ${milanCalc.girlMoon?.rashi.name} (${milanCalc.girlMoon?.rashi.sanskrit}), Nakshatra: ${milanCalc.girlMoon?.nakshatra.name} (Pada ${milanCalc.girlMoon?.pada}), Lord: ${milanCalc.girlMoon?.rashi.lord}, Varna: ${milanCalc.girlMoon?.rashi.varna}, Nadi: ${milanCalc.girlMoon?.nakshatra.nadi}
+
+OFFICIAL ASHTAKOOT SCORES (TOTAL: ${milanCalc.totalScore} / 36):
+1. Varna Koota: ${milanCalc.kootas.varna.obtainedScore} / 1 (${milanCalc.kootas.varna.notes})
+2. Vashya Koota: ${milanCalc.kootas.vashya.obtainedScore} / 2 (${milanCalc.kootas.vashya.notes})
+3. Tara Koota: ${milanCalc.kootas.tara.obtainedScore} / 3 (${milanCalc.kootas.tara.notes})
+4. Yoni Koota: ${milanCalc.kootas.yoni.obtainedScore} / 4 (${milanCalc.kootas.yoni.notes})
+5. Graha Maitri: ${milanCalc.kootas.grahaMaitri.obtainedScore} / 5 (${milanCalc.kootas.grahaMaitri.notes})
+6. Gana Koota: ${milanCalc.kootas.gana.obtainedScore} / 6 (${milanCalc.kootas.gana.notes})
+7. Bhakoot Koota: ${milanCalc.kootas.bhakoot.obtainedScore} / 7 (${milanCalc.kootas.bhakoot.notes})
+8. Nadi Koota: ${milanCalc.kootas.nadi.obtainedScore} / 8 (${milanCalc.kootas.nadi.notes})
+
+AUTHENTIC VERDICT: ${milanCalc.verdict} (${milanCalc.verdictLabel})
+` : '';
+
   const result = await withRetry(async () => {
     return await callAI(
-      `You are a master Vedic astrology matchmaking expert (Parashari, Lahiri Ayanamsha). DO NOT use toxic positivity — provide strict warnings and genuine risk factors.
+      `You are a master Vedic astrology matchmaking expert (Classical Parashari & Ashtakoot Milan, Lahiri Ayanamsha).
+CRITICAL REPORTING GUIDELINES:
+1. BALANCED & HIGH-QUALITY ANALYSIS: Provide an authentic, comprehensive evaluation highlighting BOTH positive harmonies and areas for mutual understanding. An authentic reading celebrates emotional bonding, shared destiny, and partnership strengths while offering constructive insights on personal differences.
+2. DIGNIFIED & COMPASSIONATE TONE: Strictly avoid harsh, alarming, terrifying, or fatalistic language. Never declare a match "ruined" or "condemned". If there are friction points (such as Nadi or Bhakoot differences, or Manglik placement), explain them respectfully and constructively as opportunities for conscious communication, personal maturity, and Vedic remedies (Parihara).
+3. EXACT MATHEMATICAL INTEGRITY: You MUST adhere to the provided deterministic Ashtakoot scores (${milanCalc ? milanCalc.totalScore : 'computed'} / 36) in the Ashtakoot table.
+4. ACTIONABLE REMEDIES & BLISS: Classical Shastras state that mutual devotion, maturity, and remedies enhance marital joy. Include practical remedies (Vedic mantras, auspicious colors, charitable acts, communication habits).
 CRITICAL LANGUAGE REQUIREMENT: Write the entire compatibility analysis and report exclusively in ${language} (using native ${language} script).`,
-      `Vedic Kundali Milan (Compatibility) for ${details.boy.name} & ${details.girl.name}.
-Perform classical Ashtakoot Gun Milan (36-point), plus:
-- Mangal Dosha analysis for both parties
-- Navamsa chart compatibility
-- 7th house lord analysis
-- Venus and Jupiter placement compatibility
-- Dasha period overlaps for marriage timing
-Return as professional Markdown in ${language}.`
+      `Vedic Kundali Milan (Compatibility Analysis) for ${details.boy.name} & ${details.girl.name}.
+Birth Information:
+- Groom (${details.boy.name}): DOB ${details.boy.dob}, TOB ${details.boy.tob || '12:00'}, Place: ${details.boy.location}
+- Bride (${details.girl.name}): DOB ${details.girl.dob}, TOB ${details.girl.tob || '12:00'}, Place: ${details.girl.location}
+
+${milanFoundation}
+
+Generate a beautifully structured, comprehensive report in Markdown:
+# 💑 Vedic Kundali Milan Report: ${details.boy.name} & ${details.girl.name}
+
+## 1. 🌟 Ashtakoot Gun Milan Summary (अष्टकूट गुण मिलान)
+Present a clean Markdown table with columns:
+| Koota (कूट) | Area (क्षेत्र) | Max Points | Obtained Points | Status & Classical Notes |
+Detail all 8 Kootas: Varna (1), Vashya (2), Tara (3), Yoni (4), Graha Maitri (5), Gana (6), Bhakoot (7), Nadi (8).
+Show the final Total Score: **${milanCalc ? milanCalc.totalScore : ''} / 36** with the official verdict.
+
+## 2. 💖 Pillars of Natural Harmony & Strengths (प्राकृतिक सामंजस्य व सबल पक्ष)
+Detailed exploration of mutual affection, emotional compatibility, shared life values, and mental understanding.
+
+## 3. 🤝 Mindful Growth Areas & Compassionate Navigation (सचेत संवाद व सामंजस्य के बिंदु)
+Explain areas where differing temperaments or astrological placements call for conscious patience, communication, and emotional support. Express these constructively, never harshly.
+
+## 4. 🔥 Mangal Dosha & Navamsa Synthesis (मांगलिक विश्लेषण व नवांश सामंजस्य)
+Balanced assessment of Mars energy for both, noting traditional cancellations (e.g. mutual placements, beneficial aspects).
+
+## 5. 🪐 Planetary Placements & Marital Timing (7th House, Venus & Jupiter)
+Analysis of the 7th house, Venus (Shukra - Karaka of love), and Jupiter (Guru - Karaka of auspicious marital growth).
+
+## 6. 🪔 Vedic Remedies & Rituals for Marital Bliss (वैवाहिक सुख हेतु शास्त्रीय उपाय)
+Practical, uplifting remedies: auspicious mantras (Maha Mrityunjaya / Gauri Shankar), daily habits, charitable acts (Daan), and gemstones/colors for mutual peace.
+
+Return as professional Markdown in ${language}.`,
+      false, // jsonMode
+      0.2 // low temperature for consistent quality
     );
   });
 
