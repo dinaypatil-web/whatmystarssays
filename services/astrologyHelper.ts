@@ -1,4 +1,4 @@
-import { PlanetaryTransitInfo } from "../types";
+import { PlanetaryTransitInfo, SaadesatiPhase, Language } from "../types";
 
 export const CHALDEAN_MAP: Record<string, number> = {
   A: 1, I: 1, J: 1, Q: 1, Y: 1,
@@ -844,5 +844,201 @@ export const calculateAshtakootMilan = (
     growthInsights,
     remedialGuidance
   };
+};
+
+// ---------------------------------------------------------------------------
+// SHANI SAADESATI EXACT TIMELINE & 2.5-YEAR TRANSIT PHASES ENGINE
+// ---------------------------------------------------------------------------
+
+export const SATURN_TRANSIT_EPHEMERIS = [
+  { sign: 0, name: 'Aries', start: '1968-06-17', end: '1971-04-28' },
+  { sign: 1, name: 'Taurus', start: '1971-04-28', end: '1973-06-10' },
+  { sign: 2, name: 'Gemini', start: '1973-06-10', end: '1975-07-23' },
+  { sign: 3, name: 'Cancer', start: '1975-07-23', end: '1977-09-07' },
+  { sign: 4, name: 'Leo', start: '1977-09-07', end: '1979-11-04' },
+  { sign: 5, name: 'Virgo', start: '1979-11-04', end: '1982-10-06' },
+  { sign: 6, name: 'Libra', start: '1982-10-06', end: '1984-12-21' },
+  { sign: 7, name: 'Scorpio', start: '1984-12-21', end: '1987-12-17' },
+  { sign: 8, name: 'Sagittarius', start: '1987-12-17', end: '1990-12-15' },
+  { sign: 9, name: 'Capricorn', start: '1990-12-15', end: '1993-03-05' },
+  { sign: 10, name: 'Aquarius', start: '1993-03-05', end: '1995-06-02' },
+  { sign: 11, name: 'Pisces', start: '1995-06-02', end: '1998-04-17' },
+  { sign: 0, name: 'Aries', start: '1998-04-17', end: '2000-06-06' },
+  { sign: 1, name: 'Taurus', start: '2000-06-06', end: '2002-07-23' },
+  { sign: 2, name: 'Gemini', start: '2002-07-23', end: '2004-09-06' },
+  { sign: 3, name: 'Cancer', start: '2004-09-06', end: '2006-11-01' },
+  { sign: 4, name: 'Leo', start: '2006-11-01', end: '2009-09-10' },
+  { sign: 5, name: 'Virgo', start: '2009-09-10', end: '2011-11-15' },
+  { sign: 6, name: 'Libra', start: '2011-11-15', end: '2014-11-02' },
+  { sign: 7, name: 'Scorpio', start: '2014-11-02', end: '2017-01-26' },
+  { sign: 8, name: 'Sagittarius', start: '2017-01-26', end: '2020-01-24' },
+  { sign: 9, name: 'Capricorn', start: '2020-01-24', end: '2023-01-17' },
+  { sign: 10, name: 'Aquarius', start: '2023-01-17', end: '2025-03-29' },
+  { sign: 11, name: 'Pisces', start: '2025-03-29', end: '2028-02-23' },
+  { sign: 0, name: 'Aries', start: '2028-02-23', end: '2030-05-31' },
+  { sign: 1, name: 'Taurus', start: '2030-05-31', end: '2032-07-13' },
+  { sign: 2, name: 'Gemini', start: '2032-07-13', end: '2034-08-27' },
+  { sign: 3, name: 'Cancer', start: '2034-08-27', end: '2036-08-27' },
+  { sign: 4, name: 'Leo', start: '2036-08-27', end: '2039-10-22' },
+  { sign: 5, name: 'Virgo', start: '2039-10-22', end: '2042-01-02' },
+  { sign: 6, name: 'Libra', start: '2042-01-02', end: '2044-12-08' },
+  { sign: 7, name: 'Scorpio', start: '2044-12-08', end: '2047-11-29' },
+  { sign: 8, name: 'Sagittarius', start: '2047-11-29', end: '2049-12-28' },
+  { sign: 9, name: 'Capricorn', start: '2049-12-28', end: '2052-02-25' },
+  { sign: 10, name: 'Aquarius', start: '2052-02-25', end: '2054-05-14' },
+  { sign: 11, name: 'Pisces', start: '2054-05-14', end: '2057-04-07' },
+  { sign: 0, name: 'Aries', start: '2057-04-07', end: '2059-05-27' },
+  { sign: 1, name: 'Taurus', start: '2059-05-27', end: '2061-07-11' },
+  { sign: 2, name: 'Gemini', start: '2061-07-11', end: '2063-08-24' },
+  { sign: 3, name: 'Cancer', start: '2063-08-24', end: '2065-08-25' }
+];
+
+export const formatTransitDate = (dStr: string) => {
+  if (!dStr) return '';
+  const parts = dStr.split('-').map(Number);
+  if (parts.length < 3) return dStr;
+  const [y, m, d] = parts;
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${d} ${months[m - 1]} ${y}`;
+};
+
+export const parseRashiIndex = (moonSign: string | number): number => {
+  if (typeof moonSign === 'number' && moonSign >= 0 && moonSign <= 11) {
+    return moonSign;
+  }
+  const clean = String(moonSign || '').toLowerCase().trim();
+  const map: Record<string, number> = {
+    aries: 0, mesha: 0, 'मेष': 0,
+    taurus: 1, vrishabha: 1, 'वृषभ': 1,
+    gemini: 2, mithuna: 2, 'मिथुन': 2,
+    cancer: 3, karka: 3, 'कर्क': 3,
+    leo: 4, simha: 4, 'सिंह': 4,
+    virgo: 5, kanya: 5, 'कन्या': 5,
+    libra: 6, tula: 6, 'तुला': 6,
+    scorpio: 7, vrishchika: 7, 'वृश्चिक': 7,
+    sagittarius: 8, dhanu: 8, 'धनु': 8,
+    capricorn: 9, makara: 9, 'मकर': 9,
+    aquarius: 10, kumbha: 10, 'कुम्भ': 10,
+    pisces: 11, meena: 11, 'मीन': 11
+  };
+  for (const [key, idx] of Object.entries(map)) {
+    if (clean.includes(key)) return idx;
+  }
+  return 0; // fallback
+};
+
+export const calculateSaadesatiPhases = (
+  moonSign: string | number,
+  targetDate: Date = new Date(),
+  lang: Language = 'English'
+): SaadesatiPhase[] => {
+  const moonIdx = parseRashiIndex(moonSign);
+  const p1Sign = (moonIdx - 1 + 12) % 12;
+  const p2Sign = moonIdx;
+  const p3Sign = (moonIdx + 1) % 12;
+
+  // Find all consecutive 3-phase cycles
+  const candidateCycles: Array<[typeof SATURN_TRANSIT_EPHEMERIS[0], typeof SATURN_TRANSIT_EPHEMERIS[0], typeof SATURN_TRANSIT_EPHEMERIS[0]]> = [];
+  for (let i = 0; i <= SATURN_TRANSIT_EPHEMERIS.length - 3; i++) {
+    if (
+      SATURN_TRANSIT_EPHEMERIS[i].sign === p1Sign &&
+      SATURN_TRANSIT_EPHEMERIS[i + 1].sign === p2Sign &&
+      SATURN_TRANSIT_EPHEMERIS[i + 2].sign === p3Sign
+    ) {
+      candidateCycles.push([
+        SATURN_TRANSIT_EPHEMERIS[i],
+        SATURN_TRANSIT_EPHEMERIS[i + 1],
+        SATURN_TRANSIT_EPHEMERIS[i + 2]
+      ]);
+    }
+  }
+
+  if (candidateCycles.length === 0) return [];
+
+  // Pick cycle active now, or nearest to targetDate
+  const nowMs = targetDate.getTime();
+  let chosenCycle = candidateCycles[0];
+  let minDistance = Infinity;
+
+  for (const cycle of candidateCycles) {
+    const cycleStartMs = new Date(cycle[0].start).getTime();
+    const cycleEndMs = new Date(cycle[2].end).getTime();
+
+    // Check if targetDate falls inside this 7.5 year cycle
+    if (nowMs >= cycleStartMs && nowMs <= cycleEndMs) {
+      chosenCycle = cycle;
+      break;
+    }
+
+    const dist = Math.min(Math.abs(nowMs - cycleStartMs), Math.abs(nowMs - cycleEndMs));
+    if (dist < minDistance) {
+      minDistance = dist;
+      chosenCycle = cycle;
+    }
+  }
+
+  const phaseMeta = [
+    {
+      code: 'rising',
+      nameEn: '1st Phase (Rising)',
+      nameMr: '१ ला टप्पा (उदय / Rising)',
+      nameHi: 'प्रथम चरण (उदय / Rising)',
+      descEn: `Saturn transits the 12th house (${chosenCycle[0].name}) from natal Moon. Demands careful budgeting, patience, and lifestyle discipline.`,
+      descMr: `१२ व्या भावातून (${chosenCycle[0].name}) शनीचे भ्रमण. आर्थिक नियोजन, संयम, नवीन जबाबदाऱ्या आणि शिस्तीची गरज.`,
+      descHi: `जन्म राशि से १२वें भाव (${chosenCycle[0].name}) में शनि गोचर। धैर्य, विवेकपूर्ण वित्तीय नियोजन और अनुशासन की आवश्यकता।`,
+    },
+    {
+      code: 'peak',
+      nameEn: '2nd Phase (Peak)',
+      nameMr: '२ रा टप्पा (शिखर / Peak)',
+      nameHi: 'द्वितीय चरण (शिखर / Peak)',
+      descEn: `Saturn transits directly over natal Moon (${chosenCycle[1].name}). Enhances emotional endurance, core life responsibilities, and spiritual maturity.`,
+      descMr: `जन्म चंद्रावरून (${chosenCycle[1].name}) शनीचे भ्रमण. मानसिक एकाग्रता, जीवनातील महत्त्वाचे निर्णय व आत्मिक परिपक्वता.`,
+      descHi: `जन्म चंद्र (${chosenCycle[1].name}) के ऊपर शनि गोचर। मानसिक परिपक्वता, दायित्वों का निर्वहन और कर्म शुद्धि।`,
+    },
+    {
+      code: 'setting',
+      nameEn: '3rd Phase (Setting)',
+      nameMr: '३ रा टप्पा (अस्त / Setting)',
+      nameHi: 'तृतीय चरण (अस्त / Setting)',
+      descEn: `Saturn transits the 2nd house (${chosenCycle[2].name}) from natal Moon. Brings gradual relief, resolution of lingering hurdles, and domestic stability.`,
+      descMr: `दुसऱ्या भावातून (${chosenCycle[2].name}) शनीचे भ्रमण. मानसिक स्थैर्य, जुन्या अडचणींचे निराकरण व आर्थिक-कौटुंबिक स्थैर्य.`,
+      descHi: `जन्म राशि से दूसरे भाव (${chosenCycle[2].name}) में शनि गोचर। मानसिक शांति, पुरानी समस्याओं का समाधान और पारिवारिक स्थिरता।`,
+    }
+  ];
+
+  return chosenCycle.map((transit, idx) => {
+    const meta = phaseMeta[idx];
+    const startMs = new Date(transit.start).getTime();
+    const endMs = new Date(transit.end).getTime();
+
+    let status: 'past' | 'active' | 'upcoming' = 'past';
+    if (nowMs < startMs) status = 'upcoming';
+    else if (nowMs >= startMs && nowMs <= endMs) status = 'active';
+
+    const startYear = parseInt(transit.start.split('-')[0], 10);
+    const endYear = parseInt(transit.end.split('-')[0], 10);
+
+    let phaseTitle = meta.nameEn;
+    let description = meta.descEn;
+    if (lang === 'Marathi') {
+      phaseTitle = meta.nameMr;
+      description = meta.descMr;
+    } else if (lang === 'Hindi') {
+      phaseTitle = meta.nameHi;
+      description = meta.descHi;
+    }
+
+    return {
+      phase: phaseTitle,
+      startYear,
+      endYear,
+      startDate: formatTransitDate(transit.start),
+      endDate: formatTransitDate(transit.end),
+      duration: '~2.5 Years',
+      status,
+      description
+    };
+  });
 };
 

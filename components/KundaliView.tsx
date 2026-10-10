@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { BirthDetails, Language, ChatMessage, KundaliResponse, KundaliSystem, MahadashaPeriod, SaadesatiPhase } from '../types';
 import { getCoordinates, getKundaliAnalysis, askKundaliQuestion } from '../services/aiService';
 import { StorageService } from '../services/storageService';
+import { calculateMoonDetails, calculateSaadesatiPhases } from '../services/astrologyHelper';
 import { KUNDALI_SYSTEMS } from '../constants';
 import KundaliChart from './KundaliChart';
 import ReactMarkdown from 'react-markdown';
@@ -49,14 +50,26 @@ const isDashaActive = (dasha: MahadashaPeriod): boolean => {
 };
 
 const getSaadesatiBadge = (cycle: SaadesatiPhase) => {
-  const currentYear = new Date().getFullYear();
-  const start = parseInt(String(cycle.startYear), 10);
-  const end = parseInt(String(cycle.endYear), 10);
+  const now = Date.now();
   let status = cycle.status?.toLowerCase();
-  if (!status && !isNaN(start) && !isNaN(end)) {
-    if (currentYear < start) status = 'upcoming';
-    else if (currentYear > end) status = 'past';
-    else status = 'active';
+  
+  if (cycle.startDate && cycle.endDate) {
+    const startMs = new Date(cycle.startDate).getTime();
+    const endMs = new Date(cycle.endDate).getTime();
+    if (!isNaN(startMs) && !isNaN(endMs)) {
+      if (now < startMs) status = 'upcoming';
+      else if (now > endMs) status = 'past';
+      else status = 'active';
+    }
+  } else {
+    const currentYear = new Date().getFullYear();
+    const start = parseInt(String(cycle.startYear), 10);
+    const end = parseInt(String(cycle.endYear), 10);
+    if (!status && !isNaN(start) && !isNaN(end)) {
+      if (currentYear < start) status = 'upcoming';
+      else if (currentYear > end) status = 'past';
+      else status = 'active';
+    }
   }
 
   if (status === 'active') {
@@ -213,9 +226,32 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
 
   const displaySaadesati = useMemo(() => {
     if (!analysis) return [];
-    if (analysis.saadesatiCycles && analysis.saadesatiCycles.length > 0) return analysis.saadesatiCycles;
+
+    // Derive Moon Sign reference to compute or verify exact 2.5-year phases
+    const moonSign = analysis.moonSign || (details.dob ? calculateMoonDetails(details.dob, details.tob)?.rashi.name : '');
+    const calculatedPhases = moonSign ? calculateSaadesatiPhases(moonSign, new Date(), language) : [];
+
+    if (analysis.saadesatiCycles && analysis.saadesatiCycles.length > 0) {
+      // Detect if years were corrupted by AI hallucination (e.g. single phase having > 4 year span)
+      const hasCorruptedSpan = analysis.saadesatiCycles.some(c => {
+        const diff = Math.abs(Number(c.endYear) - Number(c.startYear));
+        return diff > 4 || diff === 0 || isNaN(diff);
+      });
+
+      if (hasCorruptedSpan || !analysis.saadesatiCycles[0]?.startDate) {
+        if (calculatedPhases.length > 0) {
+          return calculatedPhases.map((calc, idx) => ({
+            ...calc,
+            description: analysis.saadesatiCycles?.[idx]?.description || calc.description
+          }));
+        }
+      }
+      return analysis.saadesatiCycles;
+    }
+
+    if (calculatedPhases.length > 0) return calculatedPhases;
     return extractSaadesatiFromReport(analysis.report);
-  }, [analysis]);
+  }, [analysis, details, language]);
 
   useEffect(() => {
     scrollToBottom();
@@ -626,8 +662,8 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                                 <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${statusBadge.classes}`}>
                                   {statusBadge.label}
                                 </span>
-                                <span className="font-mono font-bold text-sm text-amber-300">
-                                  {cycle.startYear} – {cycle.endYear}
+                                <span className="font-mono font-bold text-xs sm:text-sm text-amber-300">
+                                  {cycle.startDate && cycle.endDate ? `${cycle.startDate} – ${cycle.endDate}` : `${cycle.startYear} – ${cycle.endYear}`}
                                 </span>
                               </div>
                               <h4 className="font-cinzel font-bold text-base text-slate-100 mb-1">
@@ -641,7 +677,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                             </div>
                             <div className="mt-4 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                               <span>Transit Duration</span>
-                              <span className="text-slate-300">~2.5 Years</span>
+                              <span className="text-slate-300 font-semibold">{cycle.duration || '~2.5 Years'}</span>
                             </div>
                           </div>
                         );

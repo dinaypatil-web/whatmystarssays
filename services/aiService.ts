@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { BirthDetails, MatchmakingDetails, Timeframe, Language, ChatMessage, KundaliResponse, KundaliSystem, PlanetaryTransitInfo } from "../types";
 import { StorageService } from "./storageService";
-import { calculateAshtakootMilan, calculateMoonDetails } from "./astrologyHelper";
+import { calculateAshtakootMilan, calculateMoonDetails, calculateSaadesatiPhases } from "./astrologyHelper";
 
 // ---------------------------------------------------------------------------
 // ACTIVE GEMINI MODELS & MULTI-KEY ROTATION
@@ -403,12 +403,25 @@ export const getKundaliAnalysis = async (
     ? `Astronomical Moon Reference: Moon in ${moonCalc.rashi.name} (${moonCalc.rashi.sanskrit}), Nakshatra: ${moonCalc.nakshatra.name} (${moonCalc.nakshatra.sanskrit}), Pada ${moonCalc.pada}, Sidereal Longitude: ${moonCalc.siderealLongitude.toFixed(2)}°.`
     : '';
 
+  // Calculate deterministic Saadesati phases (each phase is ~2.5 years / 30 months, NOT 7 years!)
+  const exactSaadesati = moonCalc
+    ? calculateSaadesatiPhases(moonCalc.rashiIndex, new Date(), language)
+    : calculateSaadesatiPhases(0, new Date(), language);
+
+  const saadesatiPromptContext = `
+MANDATORY SHANI SAADESATI TIMELINE (EACH PHASE LASTS ~2.5 YEARS / 30 MONTHS):
+- 1st Phase (Rising): ${exactSaadesati[0]?.startDate} – ${exactSaadesati[0]?.endDate} (${exactSaadesati[0]?.startYear} – ${exactSaadesati[0]?.endYear}, Status: ${exactSaadesati[0]?.status})
+- 2nd Phase (Peak): ${exactSaadesati[1]?.startDate} – ${exactSaadesati[1]?.endDate} (${exactSaadesati[1]?.startYear} – ${exactSaadesati[1]?.endYear}, Status: ${exactSaadesati[1]?.status})
+- 3rd Phase (Setting): ${exactSaadesati[2]?.startDate} – ${exactSaadesati[2]?.endDate} (${exactSaadesati[2]?.startYear} – ${exactSaadesati[2]?.endYear}, Status: ${exactSaadesati[2]?.status})
+CRITICAL: Do NOT add 7 years to any single phase! Each phase lasts approximately 2.5 years. The 3 phases combined equal 7.5 years.`;
+
   const result = await withRetry(async () => {
     const text = await callAI(
       `${config.role} Current Date: ${getCurrentDate()}.
 This is an authentic, high-precision Life Analysis using the ${config.name}. Maintain a balanced, insightful, and compassionate approach: clearly delineate strengths, yogas, and growth opportunities alongside genuine karmic challenges and remedies, without fatalism or harsh wording.
 
 ${moonContext}
+${saadesatiPromptContext}
 
 CRITICAL LANGUAGE REQUIREMENT:
 You MUST write the entire "report" and all textual descriptions (starLord, subLord, nakshatra, moonSign) in ${language} (using native ${language} script).
@@ -423,7 +436,7 @@ ${config.specifics}
 
 Return ONLY a valid JSON object (no markdown code fences):
 {
-  "report": "Professional Markdown string in ${language} with bold headers and tables detailing the ${config.name} analysis. MUST include a prominent Vimshottari Mahadasha Table with exact start and end years (e.g. 1995-2015) and a Shani Saadesati Table with exact years for 1st, 2nd, and 3rd phases.",
+  "report": "Professional Markdown string in ${language} with bold headers and tables detailing the ${config.name} analysis. MUST include a prominent Vimshottari Mahadasha Table with exact start and end years (e.g. 1995-2015) and a Shani Saadesati Table with exact start and end dates for 1st, 2nd, and 3rd phases (~2.5 years each).",
   "chart": { "1": [], "2": [], "3": [], "4": [], "5": [], "6": [], "7": [], "8": [], "9": [], "10": [], "11": [], "12": [] },
   "lagnaSign": 1,
   "starLord": "string in ${language}",
@@ -442,9 +455,32 @@ Return ONLY a valid JSON object (no markdown code fences):
   "saadesatiCycles": [
     {
       "phase": "1st Phase (Rising) / 2nd Phase (Peak) / 3rd Phase (Setting)",
-      "startYear": "YYYY",
-      "endYear": "YYYY",
-      "status": "past",
+      "startDate": "${exactSaadesati[0]?.startDate}",
+      "endDate": "${exactSaadesati[0]?.endDate}",
+      "startYear": ${exactSaadesati[0]?.startYear},
+      "endYear": ${exactSaadesati[0]?.endYear},
+      "duration": "~2.5 Years",
+      "status": "${exactSaadesati[0]?.status}",
+      "description": "Short explanation in ${language}"
+    },
+    {
+      "phase": "2nd Phase (Peak)",
+      "startDate": "${exactSaadesati[1]?.startDate}",
+      "endDate": "${exactSaadesati[1]?.endDate}",
+      "startYear": ${exactSaadesati[1]?.startYear},
+      "endYear": ${exactSaadesati[1]?.endYear},
+      "duration": "~2.5 Years",
+      "status": "${exactSaadesati[1]?.status}",
+      "description": "Short explanation in ${language}"
+    },
+    {
+      "phase": "3rd Phase (Setting)",
+      "startDate": "${exactSaadesati[2]?.startDate}",
+      "endDate": "${exactSaadesati[2]?.endDate}",
+      "startYear": ${exactSaadesati[2]?.startYear},
+      "endYear": ${exactSaadesati[2]?.endYear},
+      "duration": "~2.5 Years",
+      "status": "${exactSaadesati[2]?.status}",
       "description": "Short explanation in ${language}"
     }
   ]
@@ -454,6 +490,13 @@ Chart keys must be "1" through "12" with planet name arrays. lagnaSign is 1-12.`
     );
     const parsed = parseAIResponse(text) as KundaliResponse;
     parsed.system = system;
+
+    // Anchor saadesatiCycles to exact mathematical dates and ~2.5 year durations
+    parsed.saadesatiCycles = exactSaadesati.map((exact, idx) => ({
+      ...exact,
+      description: parsed.saadesatiCycles?.[idx]?.description || exact.description
+    }));
+
     return parsed;
   });
 

@@ -64,6 +64,9 @@ export interface SaadesatiPhase {
   phase: string;
   startYear: number | string;
   endYear: number | string;
+  startDate?: string;
+  endDate?: string;
+  duration?: string;
   status: 'past' | 'active' | 'upcoming';
   description?: string;
 }
