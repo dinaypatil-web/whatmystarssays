@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NAV_ITEMS, LANGUAGES } from '../constants';
 import { Language } from '../types';
+import { StorageService } from '../services/storageService';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,33 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, language, setLanguage }) => {
+  const [showClearCacheModal, setShowClearCacheModal] = useState(false);
+  const [storageStats, setStorageStats] = useState({ cachedResultsCount: 0, savedProfilesCount: 0 });
+  const [clearedFeedback, setClearedFeedback] = useState<string | null>(null);
+
+  // Sync storage statistics whenever modal is opened
+  const refreshStats = () => {
+    setStorageStats(StorageService.getStorageStats());
+    setClearedFeedback(null);
+  };
+
+  useEffect(() => {
+    refreshStats();
+  }, [activeTab]);
+
+  const handleOpenClearModal = () => {
+    refreshStats();
+    setShowClearCacheModal(true);
+  };
+
+  const handleClearCache = () => {
+    const cleared = StorageService.clearCache();
+    const newStats = StorageService.getStorageStats();
+    setStorageStats(newStats);
+    setClearedFeedback(`Cleared ${cleared} cached reading(s). Your ${newStats.savedProfilesCount} saved profile(s) remain completely safe.`);
+    window.dispatchEvent(new Event('jyotish_cache_cleared'));
+  };
+
   return (
     <div className="min-h-screen flex flex-col max-w-7xl mx-auto px-4 md:px-8">
       <header className="py-6 md:py-10 flex flex-col items-center gap-8 sticky top-0 bg-[#010409]/90 backdrop-blur-3xl z-50 border-b border-white/5">
@@ -54,12 +82,13 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, lang
             ))}
           </nav>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="relative group w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            {/* Language Selector */}
+            <div className="relative group flex-grow sm:flex-grow-0">
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value as Language)}
-                className="w-full bg-white/5 border border-white/10 text-slate-300 text-xs px-5 py-2.5 rounded-xl focus:ring-1 focus:ring-amber-500 outline-none appearance-none pr-10 cursor-pointer hover:bg-white/10 transition-all backdrop-blur-md font-bold uppercase tracking-widest"
+                className="w-full bg-white/5 border border-white/10 text-slate-300 text-xs px-4 py-2.5 rounded-xl focus:ring-1 focus:ring-amber-500 outline-none appearance-none pr-9 cursor-pointer hover:bg-white/10 transition-all backdrop-blur-md font-bold uppercase tracking-widest"
               >
                 {LANGUAGES.map((lang) => (
                   <option key={lang.value} value={lang.value} className="bg-slate-900">
@@ -67,10 +96,20 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, lang
                   </option>
                 ))}
               </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-xs text-amber-500">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-xs text-amber-500">
                 🌐
               </div>
             </div>
+
+            {/* Clear Cache Option Button */}
+            <button
+              onClick={handleOpenClearModal}
+              className="px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-amber-300 border border-white/10 hover:border-amber-500/40 transition-all text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 active:scale-95 whitespace-nowrap shadow-sm"
+              title="Clear cached astrological readings (preserves saved profiles)"
+            >
+              <span>🧹</span>
+              <span className="hidden sm:inline">Clear Cache</span>
+            </button>
           </div>
         </div>
       </header>
@@ -84,8 +123,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, lang
         </div>
       </main>
 
-      <footer className="py-12 border-t border-white/5 text-center bg-black/20 backdrop-blur-lg">
-        <div className="flex justify-center flex-wrap gap-4 mb-8 text-[10px] uppercase tracking-[0.3em] font-black text-slate-600">
+      <footer className="py-12 border-t border-white/5 text-center bg-black/20 backdrop-blur-lg space-y-6">
+        <div className="flex justify-center flex-wrap gap-4 text-[10px] uppercase tracking-[0.3em] font-black text-slate-600">
           {['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'].map((s, i) => (
             <React.Fragment key={s}>
               <span className="hover:text-amber-500 transition-all cursor-default hover:scale-110">{s}</span>
@@ -93,12 +132,27 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, lang
             </React.Fragment>
           ))}
         </div>
-        <div className="max-w-3xl mx-auto mb-10 px-4">
+
+        <div className="max-w-3xl mx-auto px-4">
           <p className="text-[9px] leading-relaxed text-slate-500 font-medium italic">
             Disclaimer regarding AI Generation: This application utilizes Artificial Intelligence to analyze birth data based on K. P. System astrological principles. The resulting content is intended for informational, educational, and personal insight purposes only. Please be aware that AI-generated interpretations may lack the nuance of a human astrologer and may occasionally produce inconsistent results. The information provided herein should not be construed as professional advice (medical, legal, or financial) or factual prophecy. The creators assume no liability for choices made based on this algorithmic analysis.
           </p>
         </div>
-        <div className="space-y-2">
+
+        {/* Cache Storage Management Link */}
+        <div className="flex flex-wrap items-center justify-center gap-3 text-[11px] text-slate-500">
+          <span>Memory Storage: <strong className="text-slate-400">{storageStats.cachedResultsCount}</strong> cached reading(s)</span>
+          <span>•</span>
+          <button
+            onClick={handleOpenClearModal}
+            className="text-amber-400 hover:text-amber-300 underline font-semibold transition-colors flex items-center gap-1"
+          >
+            <span>🧹</span>
+            <span>Clear Cached Results (Preserves Profiles)</span>
+          </button>
+        </div>
+
+        <div className="space-y-2 pt-2">
           <p className="text-[10px] uppercase tracking-[0.5em] font-black text-amber-500/40">
             WHAT MY STARS SAYS!!!
           </p>
@@ -107,6 +161,85 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, lang
           </p>
         </div>
       </footer>
+
+      {/* =========================================================================
+          CLEAR CACHE MODAL (PRESERVES SAVED PROFILES)
+      ========================================================================== */}
+      {showClearCacheModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+          <div className="relative w-full max-w-md p-6 md:p-8 rounded-3xl bg-[#090d16] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] space-y-6 text-left">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-xl">
+                  🧹
+                </div>
+                <div>
+                  <h3 className="text-lg font-cinzel font-bold text-amber-300">
+                    Clear Cached Results
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-medium">
+                    Refresh astrological reading memory
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowClearCacheModal(false)}
+                className="text-slate-500 hover:text-white transition-colors p-1 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed font-normal">
+              Clearing the cache deletes stored horoscopes, Kundali reports, Matchmaking scores, and Numerology readings so new queries generate completely fresh forecasts.
+            </p>
+
+            {/* Profile preservation guarantee callout */}
+            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-200 text-xs space-y-1.5">
+              <div className="flex items-center gap-2 font-bold text-emerald-300">
+                <span>🛡️</span>
+                <span>Saved Profiles are 100% Preserved</span>
+              </div>
+              <p className="text-[11px] text-emerald-200/80 leading-relaxed">
+                Your <strong>{storageStats.savedProfilesCount} saved native profile(s)</strong> (names, birth dates, birth times, locations) and home preferences will <strong>NOT</strong> be deleted.
+              </p>
+            </div>
+
+            {/* Storage count status */}
+            <div className="flex items-center justify-between text-xs py-2 px-3 rounded-xl bg-white/5 border border-white/5 text-slate-400">
+              <span>Cached readings in storage:</span>
+              <span className="font-bold text-amber-300 font-mono text-sm">{storageStats.cachedResultsCount}</span>
+            </div>
+
+            {/* Cleared Success Feedback */}
+            {clearedFeedback && (
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2.5 animate-fadeIn">
+                <span>✓</span>
+                <span className="font-medium">{clearedFeedback}</span>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                onClick={() => setShowClearCacheModal(false)}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 transition-all"
+              >
+                {clearedFeedback ? 'Close' : 'Cancel'}
+              </button>
+
+              <button
+                onClick={handleClearCache}
+                disabled={storageStats.cachedResultsCount === 0 && !clearedFeedback}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 active:scale-95 disabled:opacity-40 disabled:pointer-events-none flex items-center gap-2"
+              >
+                <span>Clear Cache Now</span>
+                <span>🧹</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -327,36 +327,143 @@ const AskAstrologerView: React.FC<AskAstrologerViewProps> = ({ language }) => {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Export consultation to PDF
+  // Export consultation to PDF with black font & white background
   const downloadPDF = async () => {
-    const element = printAreaRef.current;
+    const elementId = 'astrologer-consultation-area';
+    const element = document.getElementById(elementId) || printAreaRef.current;
     if (!element || exporting) return;
 
     setExporting(true);
     try {
       const canvas = await html2canvas(element, {
         scale: 2,
-        backgroundColor: '#0a0d14',
+        backgroundColor: '#ffffff',
         useCORS: true,
         windowWidth: 1024,
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.getElementById(elementId);
+          if (clonedElement) {
+            clonedElement.style.width = '1024px';
+            clonedElement.style.backgroundColor = '#ffffff';
+            clonedElement.style.color = '#000000';
+            clonedElement.style.padding = '40px';
+            clonedElement.style.borderRadius = '0px';
+            clonedElement.style.border = 'none';
+            clonedElement.style.boxShadow = 'none';
+
+            // Hide non-printable elements
+            const noPrintElements = clonedDoc.querySelectorAll('.no-print');
+            noPrintElements.forEach((el: any) => {
+              el.style.display = 'none';
+            });
+
+            // Set all elements to have black font and transparent backgrounds over the white canvas
+            const allElements = clonedElement.querySelectorAll('*');
+            allElements.forEach((el: any) => {
+              el.style.backgroundColor = 'transparent';
+              el.style.setProperty('color', '#000000', 'important');
+              el.style.backgroundImage = 'none';
+              el.style.borderColor = '#cccccc';
+              el.style.boxShadow = 'none';
+              el.style.textShadow = 'none';
+
+              if (el.classList.contains('prose-invert')) {
+                el.classList.remove('prose-invert');
+              }
+            });
+
+            // Clean styling for message bubbles
+            const userBubbles = clonedElement.querySelectorAll('.rounded-tr-sm');
+            userBubbles.forEach((b: any) => {
+              b.style.backgroundColor = '#f8fafc';
+              b.style.borderColor = '#cbd5e1';
+              b.style.borderWidth = '1px';
+              b.style.borderStyle = 'solid';
+            });
+
+            const astrologerBubbles = clonedElement.querySelectorAll('.rounded-tl-sm');
+            astrologerBubbles.forEach((b: any) => {
+              b.style.backgroundColor = '#ffffff';
+              b.style.borderColor = '#e2e8f0';
+              b.style.borderWidth = '1px';
+              b.style.borderStyle = 'solid';
+            });
+
+            // Markdown tables in PDF
+            const tables = clonedElement.querySelectorAll('table');
+            tables.forEach((t: any) => {
+              t.style.borderCollapse = 'collapse';
+              t.style.width = '100%';
+              t.style.margin = '12px 0';
+            });
+            const ths = clonedElement.querySelectorAll('th');
+            ths.forEach((th: any) => {
+              th.style.backgroundColor = '#f1f5f9';
+              th.style.borderColor = '#cccccc';
+              th.style.border = '1px solid #cccccc';
+              th.style.padding = '8px';
+              th.style.setProperty('color', '#000000', 'important');
+              th.style.fontWeight = 'bold';
+            });
+            const tds = clonedElement.querySelectorAll('td');
+            tds.forEach((td: any) => {
+              td.style.borderColor = '#cccccc';
+              td.style.border = '1px solid #cccccc';
+              td.style.padding = '8px';
+              td.style.setProperty('color', '#000000', 'important');
+            });
+
+            // Pre/Code blocks
+            const codeBlocks = clonedElement.querySelectorAll('pre, code, blockquote');
+            codeBlocks.forEach((c: any) => {
+              c.style.backgroundColor = '#f8fafc';
+              c.style.borderColor = '#e2e8f0';
+              c.style.setProperty('color', '#000000', 'important');
+            });
+
+            // Avatars in PDF
+            const avatars = clonedElement.querySelectorAll('.rounded-2xl');
+            avatars.forEach((a: any) => {
+              a.style.backgroundColor = '#f1f5f9';
+              a.style.borderColor = '#e2e8f0';
+              a.style.border = '1px solid #e2e8f0';
+            });
+
+            // SVG elements handling
+            const svgs = clonedElement.querySelectorAll('svg');
+            svgs.forEach((svg: any) => {
+              svg.style.filter = 'none';
+              const parts = svg.querySelectorAll('line, rect, text, path, circle');
+              parts.forEach((part: any) => {
+                part.setAttribute('stroke', '#000000');
+                if (part.tagName.toLowerCase() === 'text' || part.tagName.toLowerCase() === 'path') {
+                  part.setAttribute('fill', '#000000');
+                  part.style.fill = '#000000';
+                }
+                part.style.stroke = '#000000';
+              });
+            });
+          }
+        },
       });
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      let heightLeft = pdfHeight;
-      let position = 0;
+      const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      let heightLeft = imgHeight;
+      let position = 0;
 
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
       while (heightLeft > 0) {
-        position = heightLeft - pdfHeight;
+        position -= pageHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
 
@@ -769,6 +876,33 @@ const AskAstrologerView: React.FC<AskAstrologerViewProps> = ({ language }) => {
         id="astrologer-consultation-area"
         className="mirror-card rounded-3xl p-6 md:p-8 border border-white/10 shadow-2xl space-y-8 min-h-[420px] flex flex-col justify-between"
       >
+        {/* Consultation Report Header */}
+        {chatHistory.length > 0 && (
+          <div className="pb-6 border-b border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <span className="text-2xl">🔮</span>
+                <h2 className="text-xl md:text-2xl font-cinzel font-bold text-amber-300">
+                  Ask Astrologer Consultation
+                </h2>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase">
+                  {system.toUpperCase()} System
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400 font-medium">
+                <span><strong>Seeker:</strong> {details.name || 'Seeker'}</span>
+                {details.dob && <span>• <strong>DOB:</strong> {details.dob}</span>}
+                {details.tob && <span>• <strong>TOB:</strong> {details.tob}</span>}
+                {details.location && <span>• <strong>Location:</strong> {details.location}</span>}
+              </div>
+            </div>
+            <div className="text-[11px] text-slate-400 text-left sm:text-right font-medium">
+              <div>Date: {new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</div>
+              <div className="text-amber-400/80 font-semibold">What My Stars Says Oracle</div>
+            </div>
+          </div>
+        )}
+
         {/* Welcome Empty State */}
         {chatHistory.length === 0 && !consultationLoading && (
           <div className="py-16 text-center space-y-6 max-w-lg mx-auto">

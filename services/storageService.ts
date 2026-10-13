@@ -122,5 +122,69 @@ export const StorageService = {
   deleteProfile: (name: string) => {
     const profiles = StorageService.getProfiles().filter(p => p.name.toLowerCase() !== name.toLowerCase());
     localStorage.setItem(CACHE_PREFIX + 'user_profiles', JSON.stringify(profiles));
+  },
+
+  /**
+   * Clears all cached prediction, calculation, and transit results.
+   * STRICTLY PRESERVES all saved user profiles and preferred home sign settings.
+   */
+  clearCache: (): number => {
+    const preservedKeyPatterns = [
+      'user_profiles',
+      'pref_sign',
+    ];
+
+    let clearedCount = 0;
+    const keysToRemove: string[] = [];
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+
+      const isAppKey = key.startsWith(CACHE_PREFIX) || key.startsWith(LEGACY_CACHE_PREFIX);
+      if (isAppKey) {
+        const isPreserved = preservedKeyPatterns.some(pattern => key.includes(pattern));
+        if (!isPreserved) {
+          keysToRemove.push(key);
+        }
+      }
+    }
+
+    keysToRemove.forEach(k => {
+      localStorage.removeItem(k);
+      clearedCount++;
+    });
+
+    return clearedCount;
+  },
+
+  /**
+   * Returns storage statistics: count of cached results and saved profiles
+   */
+  getStorageStats: (): { cachedResultsCount: number; savedProfilesCount: number } => {
+    const preservedKeyPatterns = [
+      'user_profiles',
+      'pref_sign',
+    ];
+
+    let cachedResultsCount = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+
+      const isAppKey = key.startsWith(CACHE_PREFIX) || key.startsWith(LEGACY_CACHE_PREFIX);
+      if (isAppKey) {
+        const isPreserved = preservedKeyPatterns.some(pattern => key.includes(pattern));
+        if (!isPreserved) {
+          cachedResultsCount++;
+        }
+      }
+    }
+
+    const profiles = StorageService.getProfiles();
+    return {
+      cachedResultsCount,
+      savedProfilesCount: profiles.length
+    };
   }
 };

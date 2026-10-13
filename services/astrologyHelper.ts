@@ -135,8 +135,8 @@ export const checkNameCompatibility = (namaank: number, mulank: number, bhagyank
     return {
       status: 'conflict' as const,
       label: '⚠️ Vibration Friction',
-      badgeClass: 'bg-red-500/20 text-red-300 border-red-500/40',
-      description: 'Your current name frequency clashes with birth energies, which can attract unnecessary delays or resistance. Name correction is strongly recommended.',
+      badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+      description: 'Your current name frequency experiences some energetic friction with birth numbers, which can cause delays or extra effort. This can be smoothly harmonized through auspicious letter adjustments, lucky colors, or daily mantra chanting.',
     };
   }
 
