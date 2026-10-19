@@ -3,9 +3,12 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { BirthDetails, Language, ChatMessage, KundaliResponse, KundaliSystem, MahadashaPeriod, SaadesatiPhase } from '../types';
 import { getCoordinates, getKundaliAnalysis, askKundaliQuestion } from '../services/aiService';
 import { StorageService } from '../services/storageService';
-import { calculateMoonDetails, calculateSaadesatiPhases } from '../services/astrologyHelper';
+import { calculateMoonDetails, calculateSaadesatiPhases, calculateAvakahadaDetails, calculatePlanetaryPositions } from '../services/astrologyHelper';
 import { KUNDALI_SYSTEMS } from '../constants';
 import KundaliChart from './KundaliChart';
+import AvakahadaInfographic from './AvakahadaInfographic';
+import PlanetaryInfographicMatrix from './PlanetaryInfographicMatrix';
+import InfographicReportViewer from './InfographicReportViewer';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import jsPDF from 'jspdf';
@@ -252,6 +255,28 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
     if (calculatedPhases.length > 0) return calculatedPhases;
     return extractSaadesatiFromReport(analysis.report);
   }, [analysis, details, language]);
+
+  const avakahadaData = useMemo(() => {
+    if (!analysis) return null;
+    if (analysis.avakahada) return analysis.avakahada;
+    return calculateAvakahadaDetails(
+      details.dob,
+      details.tob || '12:00',
+      analysis.lagnaSign || 1,
+      analysis.chart
+    );
+  }, [analysis, details]);
+
+  const planetaryPositionsData = useMemo(() => {
+    if (!analysis) return [];
+    if (analysis.planetaryPositions && analysis.planetaryPositions.length > 0) {
+      return analysis.planetaryPositions;
+    }
+    return calculatePlanetaryPositions(
+      analysis.chart,
+      analysis.lagnaSign || 1
+    );
+  }, [analysis]);
 
   useEffect(() => {
     scrollToBottom();
@@ -688,6 +713,23 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
               </div>
             )}
 
+            {/* Avakahada Chakra Infographic Dashboard (Gana, Nadi, Yoni, Varna, Paya, Tatva, Manglik, Lucky Matrix) */}
+            {avakahadaData && (
+              <div className="p-6 md:p-10 border-b border-white/10">
+                <AvakahadaInfographic avakahada={avakahadaData} nativeName={details.name} />
+              </div>
+            )}
+
+            {/* Navagraha Planetary Matrix & 4 Purushartha Life Pillars */}
+            {planetaryPositionsData.length > 0 && (
+              <div className="p-6 md:p-10 border-b border-white/10">
+                <PlanetaryInfographicMatrix
+                  planetaryPositions={planetaryPositionsData}
+                  chartData={analysis.chart}
+                />
+              </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 p-6 md:p-12">
               <div className="lg:col-span-5 space-y-8">
                 <KundaliChart data={analysis.chart} lagnaSign={analysis.lagnaSign} />
@@ -716,8 +758,11 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                    </div>
                 </div>
               </div>
-              <div className="lg:col-span-7 prose prose-invert prose-amber max-w-none prose-h1:font-cinzel prose-h2:font-cinzel prose-h2:text-amber-400 prose-h3:text-amber-200 prose-p:text-slate-300 leading-relaxed text-sm md:text-base">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{typeof analysis.report === 'string' ? analysis.report : JSON.stringify(analysis.report)}</ReactMarkdown>
+              <div className="lg:col-span-7">
+                <InfographicReportViewer 
+                  reportText={typeof analysis.report === 'string' ? analysis.report : JSON.stringify(analysis.report)} 
+                  title={`Life Map: ${details.name}`} 
+                />
                 
                 {chatHistory.length > 0 && (
                   <div className="mt-16 pt-8 border-t border-white/10">

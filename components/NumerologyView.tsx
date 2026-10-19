@@ -8,6 +8,8 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { StorageService } from '../services/storageService';
 import { BirthDetails } from '../types';
+import InfographicReportViewer from './InfographicReportViewer';
+import { calculateLoshuPlanes, LOSHU_MISSING_REMEDIES } from '../services/astrologyHelper';
 
 const CHALDEAN_MAP: Record<string, number> = {
   A: 1, I: 1, J: 1, Q: 1, Y: 1,
@@ -129,6 +131,8 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
     mulank: number;
     bhagyank: number;
     loshu: (number | null)[][];
+    presentNumbers: number[];
+    missingNumbers: number[];
   } | null>(null);
 
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -144,6 +148,11 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
     if (!nameData || !numerologyData) return null;
     return checkNameCompatibility(nameData.single, numerologyData.mulank, numerologyData.bhagyank);
   }, [nameData, numerologyData]);
+
+  const loshuPlanes = useMemo(() => {
+    if (!numerologyData?.presentNumbers) return [];
+    return calculateLoshuPlanes(numerologyData.presentNumbers);
+  }, [numerologyData]);
 
   const handleProfileSelect = (profileName: string) => {
     const profile = profiles.find(p => p.name === profileName);
@@ -164,6 +173,7 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
   const calculateNumerology = (dateStr: string) => {
     if (!dateStr) return null;
     const parts = dateStr.split('-');
+    if (parts.length < 3) return null;
     const day = parts[2];
 
     const sumDigits = (num: number): number => {
@@ -171,8 +181,8 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
       return sum > 9 ? sumDigits(sum) : sum;
     };
 
-    const mulank = sumDigits(parseInt(day));
-    const fullSum = dateStr.replace(/-/g, '').split('').reduce((acc, digit) => acc + parseInt(digit), 0);
+    const mulank = sumDigits(parseInt(day, 10));
+    const fullSum = dateStr.replace(/-/g, '').split('').reduce((acc, digit) => acc + parseInt(digit, 10), 0);
     const bhagyank = sumDigits(fullSum);
 
     const digits = dateStr.replace(/-/g, '').split('').map(Number);
@@ -186,7 +196,11 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
       row.map(num => digits.includes(num) ? num : null)
     );
 
-    return { mulank, bhagyank, loshu };
+    const allNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    const presentNumbers = Array.from(new Set(digits.filter(n => n >= 1 && n <= 9))).sort();
+    const missingNumbers = allNumbers.filter(n => !presentNumbers.includes(n));
+
+    return { mulank, bhagyank, loshu, presentNumbers, missingNumbers };
   };
 
   useEffect(() => {
@@ -551,43 +565,224 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-              <div className="p-6 bg-slate-900/40 rounded-3xl border border-white/5 flex flex-col items-center">
-                <h3 className="text-lg font-cinzel text-amber-400 mb-6 text-center">Loshu Grid Analysis</h3>
-                <div className="grid grid-cols-[auto_repeat(3,minmax(0,1fr))] gap-3 w-full max-w-[320px]">
-                  <div></div>
-                  <div className="text-[10px] text-slate-500 text-center uppercase font-bold tracking-tight">Thought</div>
-                  <div className="text-[10px] text-slate-500 text-center uppercase font-bold tracking-tight">Will</div>
-                  <div className="text-[10px] text-slate-500 text-center uppercase font-bold tracking-tight">Action</div>
-                  {['Mental', 'Emotional', 'Practical'].map((plane, rowIndex) => (
-                    <React.Fragment key={plane}>
-                      <div className="text-[10px] text-slate-500 flex items-center justify-end uppercase font-bold pr-3 leading-tight text-right">{plane}</div>
-                      {numerologyData?.loshu[rowIndex].map((num, colIndex) => (
-                        <div key={`${rowIndex}-${colIndex}`} className={`aspect-square flex items-center justify-center text-3xl font-black rounded-xl border-2 ${num ? 'bg-amber-500/30 border-amber-500 text-amber-100' : 'bg-slate-900/80 border-slate-800/50 text-slate-800 opacity-20'}`}>
-                          {num || ''}
-                        </div>
-                      ))}
-                    </React.Fragment>
-                  ))}
+            {/* 1. Psychic (Mulank) & Destiny (Bhagyank) Infographic Cosmic Dials */}
+            {numerologyData && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Mulank Dial */}
+                <div className="p-6 rounded-3xl bg-gradient-to-br from-amber-500/15 via-white/[0.02] to-transparent border border-amber-500/30 flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-400">
+                      Psychic Number • Mulank (मूलांक)
+                    </span>
+                    <h4 className="text-base font-cinzel font-bold text-white">
+                      {PLANET_NUMBER_DATA[numerologyData.mulank]?.planet || 'Cosmic Archetype'}
+                    </h4>
+                    <p className="text-xs text-slate-300 leading-relaxed max-w-sm">
+                      {PLANET_NUMBER_DATA[numerologyData.mulank]?.traits || 'Core mental frequency & instinctual strengths.'}
+                    </p>
+                    <div className="pt-2 text-[10px] text-amber-300/80 font-mono">
+                      Calculated from day of birth
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0 w-24 h-24 rounded-2xl bg-amber-500/10 border-2 border-amber-500/40 flex flex-col items-center justify-center shadow-[0_0_25px_rgba(245,158,11,0.2)]">
+                    <span className="text-4xl font-black font-cinzel text-amber-200">
+                      {numerologyData.mulank}
+                    </span>
+                    <span className="text-xs">{PLANET_NUMBER_DATA[numerologyData.mulank]?.icon}</span>
+                  </div>
+                </div>
+
+                {/* Bhagyank Dial */}
+                <div className="p-6 rounded-3xl bg-gradient-to-br from-orange-500/15 via-white/[0.02] to-transparent border border-orange-500/30 flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-[0.25em] text-orange-400">
+                      Destiny Number • Bhagyank (भाग्यांक)
+                    </span>
+                    <h4 className="text-base font-cinzel font-bold text-white">
+                      {PLANET_NUMBER_DATA[numerologyData.bhagyank]?.planet || 'Destiny Archetype'}
+                    </h4>
+                    <p className="text-xs text-slate-300 leading-relaxed max-w-sm">
+                      {PLANET_NUMBER_DATA[numerologyData.bhagyank]?.traits || 'Soul purpose, peak milestones & long-term dharma.'}
+                    </p>
+                    <div className="pt-2 text-[10px] text-orange-300/80 font-mono">
+                      Calculated from full birth date
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0 w-24 h-24 rounded-2xl bg-orange-500/10 border-2 border-orange-500/40 flex flex-col items-center justify-center shadow-[0_0_25px_rgba(249,115,22,0.2)]">
+                    <span className="text-4xl font-black font-cinzel text-orange-200">
+                      {numerologyData.bhagyank}
+                    </span>
+                    <span className="text-xs">{PLANET_NUMBER_DATA[numerologyData.bhagyank]?.icon}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 2. Interactive Loshu Grid 3x3 & 8-Planes Power Matrix */}
+            <div className="p-6 md:p-8 bg-white/[0.02] border border-white/10 rounded-[36px] space-y-8">
+              <div className="border-b border-white/10 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-lg md:text-xl font-cinzel font-bold text-amber-300 flex items-center gap-2">
+                    <span>🔢</span> Loshu Grid & 8-Planes Power Matrix
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Chinese & Vedic magic square evaluating mental, emotional, practical, and yogic planes
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-bold uppercase">
+                    {numerologyData?.presentNumbers?.length || 0} Present • {numerologyData?.missingNumbers?.length || 0} Missing
+                  </span>
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl text-center">
-                    <p className="text-[10px] uppercase font-black text-amber-500 mb-1">Mulank (Psychic)</p>
-                    <p className="text-4xl font-black text-white">{numerologyData?.mulank}</p>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                {/* 3x3 Magic Square */}
+                <div className="lg:col-span-5 p-6 bg-slate-900/60 rounded-3xl border border-white/10 flex flex-col items-center justify-center">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400 mb-6">
+                    3x3 Energy Alignment Square
+                  </span>
+                  <div className="grid grid-cols-[auto_repeat(3,minmax(0,1fr))] gap-2.5 w-full max-w-[300px]">
+                    <div></div>
+                    <div className="text-[10px] text-slate-400 text-center uppercase font-black">Thought</div>
+                    <div className="text-[10px] text-slate-400 text-center uppercase font-black">Will</div>
+                    <div className="text-[10px] text-slate-400 text-center uppercase font-black">Action</div>
+                    {['Mental', 'Emotional', 'Practical'].map((plane, rowIndex) => (
+                      <React.Fragment key={plane}>
+                        <div className="text-[10px] text-slate-400 flex items-center justify-end uppercase font-black pr-2.5 text-right">{plane}</div>
+                        {numerologyData?.loshu[rowIndex].map((num, colIndex) => (
+                          <div
+                            key={`${rowIndex}-${colIndex}`}
+                            className={`aspect-square flex items-center justify-center text-2xl md:text-3xl font-black rounded-2xl border-2 transition-all ${
+                              num
+                                ? 'bg-gradient-to-br from-amber-500/30 to-amber-600/15 border-amber-500 text-amber-100 shadow-[0_0_15px_rgba(245,158,11,0.3)] scale-100'
+                                : 'bg-slate-900/80 border-slate-800 text-slate-800 opacity-25'
+                            }`}
+                          >
+                            {num || ''}
+                          </div>
+                        ))}
+                      </React.Fragment>
+                    ))}
                   </div>
-                  <div className="p-4 bg-orange-500/5 border border-orange-500/20 rounded-2xl text-center">
-                    <p className="text-[10px] uppercase font-black text-orange-500 mb-1">Bhagyank (Destiny)</p>
-                    <p className="text-4xl font-black text-white">{numerologyData?.bhagyank}</p>
+                </div>
+
+                {/* 8 Planes Power Progress Gauges */}
+                <div className="lg:col-span-7 space-y-3">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400 block mb-2">
+                    8 Life Planes Activation
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {loshuPlanes.map((plane) => (
+                      <div
+                        key={plane.name}
+                        className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-amber-500/30 transition-all flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <span className="font-cinzel font-bold text-xs text-white truncate">
+                              {plane.name.split(' (')[0]}
+                            </span>
+                            <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${plane.statusColor}`}>
+                              {plane.percentage}%
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate">
+                            Numbers: {plane.numbers.join(' • ')} ({plane.lifeDomain})
+                          </div>
+                        </div>
+
+                        <div className="mt-2.5 pt-2 border-t border-white/10">
+                          <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full transition-all duration-700 rounded-full ${
+                                plane.percentage === 100
+                                  ? 'bg-amber-400'
+                                  : plane.percentage >= 66
+                                  ? 'bg-emerald-400'
+                                  : plane.percentage >= 33
+                                  ? 'bg-sky-400'
+                                  : 'bg-slate-700'
+                              }`}
+                              style={{ width: `${Math.max(plane.percentage, 4)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="prose prose-invert prose-amber max-w-none prose-h3:font-cinzel prose-h3:text-amber-400 p-6 rounded-2xl bg-white/5 border border-white/5">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysis}</ReactMarkdown>
+            {/* 3. Missing Numbers Remedial Infographic Cards */}
+            {numerologyData && numerologyData.missingNumbers && numerologyData.missingNumbers.length > 0 && (
+              <div className="p-6 md:p-8 bg-gradient-to-r from-purple-500/[0.06] via-transparent to-amber-500/[0.06] border border-purple-500/20 rounded-[36px] space-y-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
+                  <div>
+                    <h3 className="text-lg md:text-xl font-cinzel font-bold text-purple-300 flex items-center gap-2">
+                      <span>💎</span> Missing Numbers Remedial Showcase
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Classical gemstones, crystals, Vastu directions & daily disciplines to harmonize absent vibrations
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 font-bold uppercase">
+                    {numerologyData.missingNumbers.length} Number Voids Balanced
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {numerologyData.missingNumbers.map((num) => {
+                    const remedy = LOSHU_MISSING_REMEDIES[num];
+                    if (!remedy) return null;
+
+                    return (
+                      <div
+                        key={num}
+                        className="p-4 rounded-2xl bg-white/[0.03] border border-purple-500/20 hover:border-purple-500/40 transition-all flex flex-col justify-between space-y-3"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-2xl">{remedy.icon}</span>
+                            <span className="text-xs font-mono font-black px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-200 border border-purple-500/30">
+                              Missing #{num}
+                            </span>
+                          </div>
+                          <h4 className="font-cinzel font-bold text-sm text-white">{remedy.title}</h4>
+                          <div className="text-[10px] text-amber-300/90 font-medium mt-0.5">
+                            Ruler: {remedy.rulingPlanet}
+                          </div>
+                          <p className="text-[11px] text-slate-300 mt-2 leading-relaxed">
+                            {remedy.voidEffect}
+                          </p>
+                        </div>
+
+                        <div className="pt-3 border-t border-white/10 space-y-1.5 text-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-400 text-[10px] font-bold uppercase">Crystal / Gem:</span>
+                            <span className="font-bold text-purple-300 text-[11px]">{remedy.crystal}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-400 text-[10px] font-bold uppercase">Vastu Direction:</span>
+                            <span className="font-bold text-sky-300 text-[11px]">{remedy.direction}</span>
+                          </div>
+                          <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-[10px] text-slate-200 mt-2 leading-tight">
+                            ✨ {remedy.remedyAction}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 4. Infographic Report Viewer Component */}
+            <InfographicReportViewer 
+              reportText={analysis} 
+              title="Vedic & Chaldean Numerology Synthesis" 
+            />
               
               {chatHistory.length > 0 && (
                 <div className="mt-16 pt-8 border-t border-white/10">
@@ -614,7 +809,6 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
                 </p>
               </div>
             </div>
-          </div>
 
           <section className="mirror-card rounded-[40px] p-8 md:p-12 space-y-8 no-print shadow-2xl">
             <div className="flex items-center gap-4">

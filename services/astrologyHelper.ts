@@ -1,4 +1,4 @@
-import { PlanetaryTransitInfo, SaadesatiPhase, Language } from "../types";
+import { PlanetaryTransitInfo, SaadesatiPhase, Language, AvakahadaDetails, PlanetaryPositionDetail, KundaliChartData } from "../types";
 
 export const CHALDEAN_MAP: Record<string, number> = {
   A: 1, I: 1, J: 1, Q: 1, Y: 1,
@@ -1041,4 +1041,626 @@ export const calculateSaadesatiPhases = (
     };
   });
 };
+
+// ---------------------------------------------------------------------------
+// AUTHENTIC AVAKAHADA CHAKRA & COMPLETE JYOTISH PARAMETERS ENGINE
+// ---------------------------------------------------------------------------
+
+export const PANCHANGA_YOGAS = [
+  'Vishkumbha (विष्कम्भ)', 'Priti (प्रीति)', 'Ayushman (आयुष्मान)', 'Saubhagya (सौभाग्य)',
+  'Shobhana (शोभन)', 'Atiganda (अतिगण्ड)', 'Sukarma (सुकर्मा)', 'Dhriti (धृति)',
+  'Shula (शूल)', 'Ganda (गण्ड)', 'Vriddhi (वृद्धि)', 'Dhruva (ध्रुव)',
+  'Vyaghata (व्याघात)', 'Harshana (हर्षण)', 'Vajra (वज्र)', 'Siddhi (सिद्धि)',
+  'Vyatipata (व्यतीपात)', 'Variyan (वरीयान)', 'Parigha (परिघ)', 'Shiva (शिव)',
+  'Siddha (सिद्ध)', 'Sadhya (साध्य)', 'Shubha (शुभ)', 'Shukla (शुक्ल)',
+  'Brahma (ब्रह्म)', 'Indra (इन्द्र)', 'Vaidhriti (वैधृति)'
+];
+
+export const PANCHANGA_KARANAS = [
+  'Bava (बव)', 'Balava (बालव)', 'Kaulava (कौलव)', 'Taitila (तैतिल)',
+  'Gara (गर)', 'Vanija (वणिज)', 'Vishti / Bhadra (विष्टि/भद्रा)',
+  'Shakuni (शकुनि)', 'Chatushpada (चतुष्पद)', 'Naga (नाग)', 'Kintughna (किंस्तुघ्न)'
+];
+
+export const TITHI_NAMES = [
+  'Pratipada (प्रतिपदा)', 'Dwitiya (द्वितीया)', 'Tritiya (तृतीया)', 'Chaturthi (चतुर्थी)',
+  'Panchami (पंचमी)', 'Shasthi (षष्ठी)', 'Saptami (सप्तमी)', 'Ashtami (अष्टमी)',
+  'Navami (नवमी)', 'Dashami (दशमी)', 'Ekadashi (एकादशी)', 'Dwadashi (द्वादशी)',
+  'Trayodashi (त्रयोदशी)', 'Chaturdashi (चतुर्दशी)', 'Purnima / Amavasya (पूर्णिमा/अमावस्या)'
+];
+
+export const SIGN_ELEMENTS: Record<number, 'Fire' | 'Earth' | 'Air' | 'Water'> = {
+  0: 'Fire', 1: 'Earth', 2: 'Air', 3: 'Water',
+  4: 'Fire', 5: 'Earth', 6: 'Air', 7: 'Water',
+  8: 'Fire', 9: 'Earth', 10: 'Air', 11: 'Water'
+};
+
+export const SIGN_LORDS = [
+  'Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury',
+  'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter'
+];
+
+export const RASHI_NAMES_EN = [
+  'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+  'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
+];
+
+export const RASHI_NAMES_SANSKRIT = [
+  'मेष (Mesha)', 'वृषभ (Vrishabha)', 'मिथुन (Mithuna)', 'कर्क (Karka)',
+  'सिंह (Simha)', 'कन्या (Kanya)', 'तुला (Tula)', 'वृश्चिक (Vrishchika)',
+  'धनु (Dhanu)', 'मकर (Makara)', 'कुम्भ (Kumbha)', 'मीन (Meena)'
+];
+
+export const YONI_ANIMALS: Record<string, string> = {
+  Horse: 'Horse (अश्व) - Swift, high vitality & unwavering loyalty',
+  Elephant: 'Elephant (गज) - Regal, patient, magnanimous & deeply protective',
+  Sheep: 'Sheep/Ram (मेष) - Gentle, collaborative, humble & peace-loving',
+  Serpent: 'Serpent (सर्प) - Intuitive, strategic, enigmatic & magnetic charisma',
+  Dog: 'Dog (श्वान) - Loyal, steadfast, vigilant & fiercely devoted friend',
+  Cat: 'Cat (मार्जार) - Agile, self-reliant, observant & graceful discernment',
+  Rat: 'Rat (मूषक) - Resourceful, detail-oriented, thrifty & quick intellect',
+  Cow: 'Cow (गौ) - Generous, sacred, nurturing & boundless patience',
+  Buffalo: 'Buffalo (महिष) - Indomitable willpower, heavy endurance & grounding',
+  Tiger: 'Tiger (व्याघ्र) - Dominant, courageous, majestic & fearless courage',
+  Hare: 'Hare/Deer (मृग) - Sensitive, aesthetic, peaceful & nimble mind',
+  Monkey: 'Monkey (वानर) - Inquisitive, versatile, playful & quick-witted',
+  Mongoose: 'Mongoose (नकुल) - Fearless warrior, agile & high resilience',
+  Lion: 'Lion (सिंह) - Regal, heroic, generous guardian & natural monarch'
+};
+
+export const GANA_DESCRIPTIONS = {
+  Deva: 'Deva Gana (दैव प्रकृति): Endowed with satvik grace, peaceful temperament, compassion, and natural inclination toward wisdom, higher ethics, and spiritual harmony.',
+  Manushya: 'Manushya Gana (मनुष्य प्रकृति): Driven by rajasik ambition, practical real-world execution, perseverance, social responsibility, and family values.',
+  Rakshasa: 'Rakshasa Gana (राक्षस प्रकृति): Characterized by fearless courage, razor-sharp sixth sense, fierce independence, commanding authority, and unshakeable willpower in the face of adversity.'
+};
+
+export const NADI_AYURVEDA_MAP: Record<string, { dosha: 'Vata' | 'Pitta' | 'Kapha'; desc: string }> = {
+  Adi: {
+    dosha: 'Vata',
+    desc: 'Adi Nadi represents the Vata (Wind) element governing the nervous system, agility, and cognitive speed. Thrives on warm grounding foods, steady routines, and restorative sleep.'
+  },
+  Madhya: {
+    dosha: 'Pitta',
+    desc: 'Madhya Nadi represents the Pitta (Fire) element governing digestion, metabolic drive, courage, and focused ambition. Thrives on cooling foods, moderation, and regular hydration.'
+  },
+  Antya: {
+    dosha: 'Kapha',
+    desc: 'Antya Nadi represents the Kapha (Earth & Water) element governing bodily stamina, emotional endurance, and loyalty. Thrives on cardiovascular movement, variety, and uplifting social circles.'
+  }
+};
+
+/**
+ * Calculates complete Avakahada Chakra & Jyotish parameters deterministically.
+ */
+export const calculateAvakahadaDetails = (
+  dob: string,
+  tob: string = '12:00',
+  lagnaSignNumber: number = 1,
+  chartData?: KundaliChartData
+): AvakahadaDetails => {
+  const moon = calculateMoonDetails(dob, tob) || {
+    siderealLongitude: 0,
+    rashiIndex: 0,
+    rashi: VEDIC_RASHIS[0],
+    nakshatraIndex: 0,
+    nakshatra: VEDIC_NAKSHATRAS[0],
+    pada: 1,
+    degreesInSign: '0.00'
+  };
+
+  // 1. Calculate Sidereal Sun Longitude for Tithi, Yoga, Karana
+  const parts = (dob || '2000-01-01').split('-').map(Number);
+  const [y, m, d] = parts.length >= 3 ? parts : [2000, 1, 1];
+  const [hh, mm] = (tob || '12:00').split(':').map(Number);
+  const hour = isNaN(hh) ? 12 : hh;
+  const minute = isNaN(mm) ? 0 : mm;
+
+  const utcDate = new Date(Date.UTC(y, m - 1, d, hour - 5, minute - 30));
+  const jd = 2440587.5 + utcDate.getTime() / 86400000;
+  const T = (jd - 2451545.0) / 36525;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+
+  // Mean Sun
+  const L0 = 280.46646 + 36000.76983 * T;
+  const M_sun = 357.52911 + 35999.05029 * T;
+  const C_sun = (1.914602 - 0.004817 * T) * Math.sin(toRad(M_sun)) + 0.019993 * Math.sin(toRad(2 * M_sun));
+  const tropicalSunLong = ((L0 + C_sun) % 360 + 360) % 360;
+  const ayanamsha = 23.856 + 0.01397 * ((utcDate.getTime() - Date.UTC(2000, 0, 1)) / (365.25 * 86400000));
+  const siderealSunLong = ((tropicalSunLong - ayanamsha) % 360 + 360) % 360;
+  const sunRashiIndex = Math.floor(siderealSunLong / 30);
+
+  // 2. Tithi & Paksha Calculation (12° per Tithi)
+  const diffAngle = ((moon.siderealLongitude - siderealSunLong + 360) % 360);
+  const tithiIndex = Math.floor(diffAngle / 12); // 0 to 29
+  const isShukla = tithiIndex < 15;
+  const tithiInPaksha = (tithiIndex % 15);
+  const tithiName = `${TITHI_NAMES[tithiInPaksha]} (${isShukla ? 'शुक्ल पक्ष / Shukla Paksha' : 'कृष्ण पक्ष / Krishna Paksha'})`;
+
+  // 3. Nitya Yoga (13° 20' per Yoga = 360 / 27)
+  const sumAngle = ((moon.siderealLongitude + siderealSunLong) % 360);
+  const yogaIndex = Math.floor(sumAngle / (360 / 27)) % 27;
+  const yogaName = PANCHANGA_YOGAS[yogaIndex] || PANCHANGA_YOGAS[0];
+
+  // 4. Karana (6° per Karana = half-tithi)
+  const karanaNum = Math.floor(diffAngle / 6); // 0 to 59
+  let karanaName = '';
+  if (karanaNum === 0) karanaName = 'Kintughna (किंस्तुघ्न - Fixed)';
+  else if (karanaNum >= 57) {
+    if (karanaNum === 57) karanaName = 'Shakuni (शकुनि - Fixed)';
+    else if (karanaNum === 58) karanaName = 'Chatushpada (चतुष्पद - Fixed)';
+    else karanaName = 'Naga (नाग - Fixed)';
+  } else {
+    const cycleIndex = (karanaNum - 1) % 7;
+    karanaName = PANCHANGA_KARANAS[cycleIndex];
+  }
+
+  // 5. Lagna Ascendant Details
+  const lagnaIdx = Math.max(0, Math.min(11, (lagnaSignNumber || 1) - 1));
+  const lagnaSignName = RASHI_NAMES_EN[lagnaIdx];
+  const lagnaSignSanskrit = RASHI_NAMES_SANSKRIT[lagnaIdx];
+  const lagnaLord = SIGN_LORDS[lagnaIdx];
+  const lagnaElement = SIGN_ELEMENTS[lagnaIdx] || 'Fire';
+
+  // 6. Paya (पाया) Calculation from Lagna to Moon
+  const moonHouse = ((moon.rashiIndex - lagnaIdx + 12) % 12) + 1;
+  let paya: 'Rajata (Silver)' | 'Tamra (Copper)' | 'Suvarna (Gold)' | 'Lauha (Iron)' = 'Rajata (Silver)';
+  let payaDescription = '';
+
+  if ([2, 5, 9].includes(moonHouse)) {
+    paya = 'Rajata (Silver)';
+    payaDescription = 'Silver (Rajata) Paya is the most auspicious cosmic footing. It bestows emotional peace, financial prosperity, family respect, and steady life elevation.';
+  } else if ([3, 7, 10].includes(moonHouse)) {
+    paya = 'Tamra (Copper)';
+    payaDescription = 'Copper (Tamra) Paya confers vital energy, heroic courage, authoritative status, and continuous triumphs in professional and public ventures.';
+  } else if ([1, 6, 11].includes(moonHouse)) {
+    paya = 'Suvarna (Gold)';
+    payaDescription = 'Gold (Suvarna) Paya brings intellectual brilliance, spiritual intuition, and philosophical pursuits. It rewards disciplined budgeting and daily grounding.';
+  } else {
+    paya = 'Lauha (Iron)';
+    payaDescription = 'Iron (Lauha) Paya builds indomitable mental fortitude, patience, and karmic resilience. It turns hardships into mastery and long-term triumph.';
+  }
+
+  // 7. Gana, Nadi, Yoni, Varna, Vashya
+  const gana = moon.nakshatra.gana;
+  const ganaDescription = GANA_DESCRIPTIONS[gana] || GANA_DESCRIPTIONS.Manushya;
+
+  const nadi = moon.nakshatra.nadi;
+  const nadiInfo = NADI_AYURVEDA_MAP[nadi] || NADI_AYURVEDA_MAP.Madhya;
+
+  const yoniAnimal = YONI_ANIMALS[moon.nakshatra.yoni] || `${moon.nakshatra.yoni} Archetype`;
+
+  const tatvaMap: Record<string, 'Agni (Fire)' | 'Prithvi (Earth)' | 'Vayu (Air)' | 'Jala (Water)'> = {
+    Fire: 'Agni (Fire)', Earth: 'Prithvi (Earth)', Air: 'Vayu (Air)', Water: 'Jala (Water)'
+  };
+  const moonTatva = tatvaMap[SIGN_ELEMENTS[moon.rashiIndex]] || 'Agni (Fire)';
+
+  // 8. Manglik (Kuja) Dosha Assessment
+  let marsHouse: number | null = null;
+  let isManglik = false;
+  let hasParihara = false;
+  let pariharaReason = '';
+
+  if (chartData) {
+    for (const [houseStr, planets] of Object.entries(chartData)) {
+      const hNum = parseInt(houseStr, 10);
+      if (Array.isArray(planets)) {
+        for (const p of planets) {
+          const cleanP = String(p).toLowerCase();
+          if (cleanP.includes('mars') || cleanP.includes('mangal') || cleanP === 'ma') {
+            marsHouse = hNum;
+            break;
+          }
+        }
+      }
+      if (marsHouse !== null) break;
+    }
+  }
+
+  // Classical Manglik houses: 1, 2, 4, 7, 8, 12
+  if (marsHouse !== null && [1, 2, 4, 7, 8, 12].includes(marsHouse)) {
+    isManglik = true;
+    // Check classical cancellation rules
+    const signOfMars = ((lagnaIdx + marsHouse - 1) % 12); // 0-11
+    if (
+      (marsHouse === 1 && signOfMars === 0) || // Mars in Aries 1st
+      (marsHouse === 4 && signOfMars === 7) || // Mars in Scorpio 4th
+      (marsHouse === 7 && signOfMars === 9) || // Mars in Capricorn 7th (Exalted)
+      (marsHouse === 8 && signOfMars === 4) || // Mars in Leo 8th
+      (marsHouse === 12 && signOfMars === 8)   // Mars in Sagittarius 12th
+    ) {
+      hasParihara = true;
+      pariharaReason = 'Special sign cancellation (Parihara): Mars in own/exalted or Mitra sign neutralizes aggressive edge.';
+    } else {
+      // General softening
+      const birthYear = y || 2000;
+      const currentYear = new Date().getFullYear();
+      if (currentYear - birthYear >= 28) {
+        hasParihara = true;
+        pariharaReason = 'Maturity Parihara: Classical Shastras affirm Manglik intensity naturally transmutes into disciplined leadership after age 28.';
+      }
+    }
+  }
+
+  // 9. Lucky Matrix for Lagna & Moon
+  const GEMSTONE_MAP: Record<string, { gem: string; metal: string; finger: string; deity: string; day: string }> = {
+    Mars: { gem: 'Red Coral (रक्त मूँगा - Moonga)', metal: 'Copper or Gold', finger: 'Ring Finger', deity: 'Lord Hanuman & Kartikeya', day: 'Tuesday' },
+    Venus: { gem: 'Diamond / White Zircon (हीरा / जरकन)', metal: 'Silver or Platinum', finger: 'Middle or Little Finger', deity: 'Goddess Lakshmi', day: 'Friday' },
+    Mercury: { gem: 'Emerald (पन्ना - Panna)', metal: 'Gold or Silver', finger: 'Little Finger', deity: 'Lord Ganesha & Vishnu', day: 'Wednesday' },
+    Moon: { gem: 'Natural Pearl (सच्चा मोती - Moti)', metal: 'Pure Silver', finger: 'Little Finger', deity: 'Lord Shiva & Parvati', day: 'Monday' },
+    Sun: { gem: 'Ruby (माणिक्य - Manikya)', metal: 'Gold or Copper', finger: 'Ring Finger', deity: 'Surya Deva & Gayatri', day: 'Sunday' },
+    Jupiter: { gem: 'Yellow Sapphire (पुखराज - Pukhraj)', metal: 'Gold or Brass', finger: 'Index Finger', deity: 'Lord Brihaspati & Vishnu', day: 'Thursday' },
+    Saturn: { gem: 'Blue Sapphire / Amethyst (नीलम / जमुनिया)', metal: 'Silver or Panchadhatu', finger: 'Middle Finger', deity: 'Lord Shani & Hanuman', day: 'Saturday' }
+  };
+
+  const primaryLord = lagnaLord;
+  const gemInfo = GEMSTONE_MAP[primaryLord] || GEMSTONE_MAP.Jupiter;
+
+  const LUCKY_COLORS: Record<string, string> = {
+    Mars: 'Crimson Red, Coral & Saffron',
+    Venus: 'Silvery White, Cream & Rose Pink',
+    Mercury: 'Emerald Green, Mint & Jade',
+    Moon: 'Pearl White, Cream & Silver',
+    Sun: 'Golden Yellow, Orange & Copper',
+    Jupiter: 'Auspicious Yellow, Haldi & Saffron',
+    Saturn: 'Deep Navy Blue, Royal Charcoal & Violet'
+  };
+
+  const LUCKY_DIRECTIONS: Record<string, string> = {
+    Fire: 'East & North-East',
+    Earth: 'South & South-West',
+    Air: 'West & North-West',
+    Water: 'North & North-East'
+  };
+
+  const LUCKY_NUMBERS: Record<string, number> = {
+    Sun: 1, Moon: 2, Jupiter: 3, Rahu: 4, Mercury: 5, Venus: 6, Ketu: 7, Saturn: 8, Mars: 9
+  };
+
+  return {
+    lagnaSign: lagnaSignName,
+    lagnaSignSanskrit,
+    lagnaLord,
+    lagnaNumber: lagnaSignNumber,
+    lagnaElement,
+    moonSign: moon.rashi.name,
+    moonSignSanskrit: moon.rashi.sanskrit,
+    moonLord: moon.rashi.lord,
+    sunSign: RASHI_NAMES_EN[sunRashiIndex] || 'Aries',
+    sunSignSanskrit: RASHI_NAMES_SANSKRIT[sunRashiIndex] || 'मेष (Mesha)',
+    nakshatra: moon.nakshatra.name,
+    nakshatraSanskrit: moon.nakshatra.sanskrit,
+    nakshatraLord: moon.nakshatra.lord,
+    pada: moon.pada,
+    gana,
+    ganaDescription,
+    nadi,
+    nadiAyurveda: nadiInfo.dosha,
+    nadiDescription: nadiInfo.desc,
+    yoni: moon.nakshatra.yoni,
+    yoniAnimal,
+    varna: moon.rashi.varna,
+    vashya: moon.rashi.vashya,
+    tatva: moonTatva,
+    paya,
+    payaDescription,
+    tithi: tithiName,
+    paksha: isShukla ? 'Shukla' : 'Krishna',
+    yoga: yogaName,
+    karana: karanaName,
+    luckyColor: LUCKY_COLORS[primaryLord] || 'Auspicious Yellow & Cream',
+    luckyNumber: LUCKY_NUMBERS[primaryLord] || 3,
+    luckyGem: `${gemInfo.gem} worn in ${gemInfo.metal} on the ${gemInfo.finger}`,
+    luckyMetal: gemInfo.metal,
+    luckyDay: gemInfo.day,
+    luckyDirection: LUCKY_DIRECTIONS[lagnaElement] || 'East & North-East',
+    luckyDeity: gemInfo.deity,
+    manglikStatus: {
+      isManglik,
+      severity: !isManglik ? 'None' : hasParihara ? 'Anshik (Mild)' : 'Active',
+      marsHouse,
+      hasParihara,
+      pariharaReason: hasParihara
+        ? pariharaReason
+        : isManglik
+        ? `Mars resides in House ${marsHouse}. Chanting Hanuman Chalisa and wearing copper balances this drive.`
+        : 'Mars is placed in an auspicious supportive house, creating no Manglik friction.'
+    }
+  };
+};
+
+/**
+ * Calculates planetary positions and authentic Vedic dignities for all 9 Grahas.
+ */
+export const calculatePlanetaryPositions = (
+  chartData: KundaliChartData = {},
+  lagnaSignNumber: number = 1
+): PlanetaryPositionDetail[] => {
+  const PLANET_META: Record<string, { sanskrit: string; icon: string; exalted: number; own: number[]; debilitated: number }> = {
+    Sun: { sanskrit: 'Surya (सूर्य)', icon: '☀️', exalted: 0, own: [4], debilitated: 6 },
+    Moon: { sanskrit: 'Chandra (चन्द्र)', icon: '🌙', exalted: 1, own: [3], debilitated: 7 },
+    Mars: { sanskrit: 'Mangal (मंगल)', icon: '♂️', exalted: 9, own: [0, 7], debilitated: 3 },
+    Mercury: { sanskrit: 'Budh (बुध)', icon: '☿', exalted: 5, own: [2, 5], debilitated: 11 },
+    Jupiter: { sanskrit: 'Guru (गुरु)', icon: '♃', exalted: 3, own: [8, 11], debilitated: 9 },
+    Venus: { sanskrit: 'Shukra (शुक्र)', icon: '♀', exalted: 11, own: [1, 6], debilitated: 5 },
+    Saturn: { sanskrit: 'Shani (शनि)', icon: '🪐', exalted: 6, own: [9, 10], debilitated: 0 },
+    Rahu: { sanskrit: 'Rahu (राहु)', icon: '☊', exalted: 1, own: [10], debilitated: 7 },
+    Ketu: { sanskrit: 'Ketu (केतु)', icon: '☋', exalted: 7, own: [8], debilitated: 1 }
+  };
+
+  const results: PlanetaryPositionDetail[] = [];
+
+  for (const [planetName, meta] of Object.entries(PLANET_META)) {
+    let house = 1;
+    let found = false;
+
+    // Scan chartData houses 1-12
+    for (const [hStr, planets] of Object.entries(chartData)) {
+      const hNum = parseInt(hStr, 10);
+      if (Array.isArray(planets)) {
+        for (const p of planets) {
+          const cleanP = String(p).toLowerCase();
+          const target = planetName.toLowerCase();
+          if (cleanP === target || cleanP.startsWith(target.slice(0, 2)) || cleanP.includes(target)) {
+            house = hNum;
+            found = true;
+            break;
+          }
+        }
+      }
+      if (found) break;
+    }
+
+    // Determine sign in this house
+    const lagnaIdx = Math.max(0, Math.min(11, (lagnaSignNumber || 1) - 1));
+    const signIdx = (lagnaIdx + house - 1) % 12; // 0-11
+    const signName = RASHI_NAMES_EN[signIdx];
+    const signSanskrit = RASHI_NAMES_SANSKRIT[signIdx];
+
+    // Determine dignity
+    let dignity: PlanetaryPositionDetail['dignity'] = 'Friendly (मित्र)';
+    let dignityColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
+
+    if (signIdx === meta.exalted) {
+      dignity = 'Exalted (उच्च)';
+      dignityColor = 'text-amber-300 bg-amber-500/20 border-amber-500/40 shadow-[0_0_12px_rgba(251,191,36,0.25)]';
+    } else if (meta.own.includes(signIdx)) {
+      dignity = signIdx === meta.own[0] ? 'Moolatrikona (मूलत्रिकोण)' : 'Own Sign (स्वराशि)';
+      dignityColor = 'text-sky-300 bg-sky-500/15 border-sky-500/35';
+    } else if (signIdx === meta.debilitated) {
+      dignity = 'Debilitated (नीच)';
+      dignityColor = 'text-rose-400 bg-rose-500/10 border-rose-500/30';
+    } else {
+      dignity = 'Friendly (मित्र)';
+      dignityColor = 'text-emerald-300 bg-emerald-500/10 border-emerald-500/25';
+    }
+
+    results.push({
+      planet: planetName,
+      planetSanskrit: meta.sanskrit,
+      icon: meta.icon,
+      sign: signName,
+      signSanskrit,
+      house,
+      dignity,
+      dignityColor
+    });
+  }
+
+  return results;
+};
+
+// ---------------------------------------------------------------------------
+// LOSHU GRID 8-PLANES & MISSING NUMBERS INFOGRAPHIC ENGINE
+// ---------------------------------------------------------------------------
+
+export interface LoshuPlaneInfo {
+  name: string;
+  nameHindi: string;
+  numbers: number[];
+  presentCount: number;
+  percentage: number;
+  status: 'Full (100%)' | 'Strong (66%)' | 'Partial (33%)' | 'Inactive (0%)';
+  statusColor: string;
+  lifeDomain: string;
+  meaning: string;
+}
+
+export const LOSHU_MISSING_REMEDIES: Record<number, {
+  title: string;
+  rulingPlanet: string;
+  icon: string;
+  voidEffect: string;
+  crystal: string;
+  direction: string;
+  color: string;
+  remedyAction: string;
+}> = {
+  1: {
+    title: 'Number 1 (Water / North)',
+    rulingPlanet: 'Sun (Surya)',
+    icon: '☀️',
+    voidEffect: 'Difficulty expressing inner voice, hesitation in stepping into leadership, or indecisiveness.',
+    crystal: 'Red Jasper or Sunstone',
+    direction: 'North',
+    color: 'Royal Blue or Deep Crimson',
+    remedyAction: 'Place a small indoor water fountain in the North; offer morning water to the Sun (Surya Arghya).'
+  },
+  2: {
+    title: 'Number 2 (Earth / South-West)',
+    rulingPlanet: 'Moon (Chandra)',
+    icon: '🌙',
+    voidEffect: 'Emotional impatience, trust hesitation, or relationship overthinking.',
+    crystal: 'Moonstone or Rose Quartz',
+    direction: 'South-West',
+    color: 'Pearl White or Soft Cream',
+    remedyAction: 'Keep crystals or paired clay artifacts in the South-West; drink water from silver vessel.'
+  },
+  3: {
+    title: 'Number 3 (Wood / East)',
+    rulingPlanet: 'Jupiter (Guru)',
+    icon: '♃',
+    voidEffect: 'Scattered creative vision, procrastination in higher studies, or lack of steady mentorship.',
+    crystal: 'Amethyst or Yellow Citrine',
+    direction: 'East',
+    color: 'Bright Yellow or Forest Green',
+    remedyAction: 'Place lush indoor plants (Bamboo/Money Plant) in the East; apply daily yellow sandalwood/haldi tilak.'
+  },
+  4: {
+    title: 'Number 4 (Wood / South-East)',
+    rulingPlanet: 'Rahu',
+    icon: '☊',
+    voidEffect: 'Lack of practical organization, impatience with paperwork, or financial leakages.',
+    crystal: 'Tiger Eye or Green Aventurine',
+    direction: 'South-East',
+    color: 'Green or Woody Earth',
+    remedyAction: 'Keep a clean wooden desktop accessory; maintain organized financial logs; wear green wristband.'
+  },
+  5: {
+    title: 'Number 5 (Earth / Central Brahmasthan)',
+    rulingPlanet: 'Mercury (Budh)',
+    icon: '☿',
+    voidEffect: 'Restlessness, fluctuating career focus, hesitation in networking, or commercial delays.',
+    crystal: 'Green Jade, Emerald or Peridot',
+    direction: 'Center (Brahmasthan)',
+    color: 'Vibrant Emerald Green',
+    remedyAction: 'Keep central home space clutter-free; place a pyramid or crystal lotus in the center; feed green grass to cows.'
+  },
+  6: {
+    title: 'Number 6 (Metal / North-West)',
+    rulingPlanet: 'Venus (Shukra)',
+    icon: '♀',
+    voidEffect: 'Difficulty enjoying luxury, domestic strain, or lack of supportive friends and mentors.',
+    crystal: 'Clear Quartz or Pyrite',
+    direction: 'North-West',
+    color: 'Gleaming Silver, Golden White or Platinum',
+    remedyAction: 'Hang a 6-pipe metallic wind chime in the North-West; donate white fragrant items on Fridays.'
+  },
+  7: {
+    title: 'Number 7 (Metal / West)',
+    rulingPlanet: 'Ketu',
+    icon: '☋',
+    voidEffect: 'Skeptical detachment, difficulty completing creative projects, or scattered research drive.',
+    crystal: 'Smoky Quartz or Cats Eye',
+    direction: 'West',
+    color: 'Silver Grey or Charcoal',
+    remedyAction: 'Keep metal bowls or round white pebbles in the West; practice daily 10-minute silent meditation.'
+  },
+  8: {
+    title: 'Number 8 (Earth / North-East)',
+    rulingPlanet: 'Saturn (Shani)',
+    icon: '🪐',
+    voidEffect: 'Lack of long-term patience, struggling with structured discipline, or impulsive career shifts.',
+    crystal: 'Black Obsidian or Hematite',
+    direction: 'North-East',
+    color: 'Deep Navy, Indigo or Earthy Ochre',
+    remedyAction: 'Keep North-East zone pristine and spiritually consecrated; light a mustard oil lamp on Saturdays.'
+  },
+  9: {
+    title: 'Number 9 (Fire / South)',
+    rulingPlanet: 'Mars (Mangal)',
+    icon: '♂️',
+    voidEffect: 'Low motivation, hesitation to take bold initiative, or delayed social recognition.',
+    crystal: 'Carnelian or Red Agate',
+    direction: 'South',
+    color: 'Vermilion, Fiery Orange or Red',
+    remedyAction: 'Place bright warm lighting or red artwork in the South; recite Hanuman Chalisa for energy.'
+  }
+};
+
+/**
+ * Calculates completion status for all 8 Loshu Planes.
+ */
+export const calculateLoshuPlanes = (presentNumbers: number[]): LoshuPlaneInfo[] => {
+  const planes = [
+    {
+      name: 'Mental Plane (मस्तिष्क तल)',
+      nameHindi: 'विचार व बौद्धिक क्षमता',
+      numbers: [4, 9, 2],
+      lifeDomain: 'Intellect, Memory & Strategic Vision',
+      meaning: 'Governs sharp analytical reasoning, memory retention, and abstract conceptual design.'
+    },
+    {
+      name: 'Emotional Plane (भावनात्मक तल)',
+      nameHindi: 'हृदय व अंतःकरण',
+      numbers: [3, 5, 7],
+      lifeDomain: 'Empathy, Intuition & Spiritual Heart',
+      meaning: 'Governs emotional depth, gut instinct, artistic sensitivity, and genuine interpersonal bonding.'
+    },
+    {
+      name: 'Practical Plane (व्यावहारिक तल)',
+      nameHindi: 'कर्म व क्रियान्वयन',
+      numbers: [8, 1, 6],
+      lifeDomain: 'Execution, Wealth & Material Reality',
+      meaning: 'Governs physical stamina, commercial pragmatism, financial accumulation, and methodical discipline.'
+    },
+    {
+      name: 'Thought Plane (योजना तल)',
+      nameHindi: 'दूरदर्शिता व विचार',
+      numbers: [4, 3, 8],
+      lifeDomain: 'Planning, Vision & System Design',
+      meaning: 'Ability to conceptualize grand blueprints and architect long-term foundations before taking action.'
+    },
+    {
+      name: 'Will Plane (इच्छाशक्ति तल)',
+      nameHindi: 'दृढ़ संकल्प व एकाग्रता',
+      numbers: [9, 5, 1],
+      lifeDomain: 'Resilience, Determination & Tenacity',
+      meaning: 'Supreme unshakeable persistence; turns ideas into reality despite obstacles and delays.'
+    },
+    {
+      name: 'Action Plane (कर्म तल)',
+      nameHindi: 'त्वरित निर्णय व गति',
+      numbers: [2, 7, 6],
+      lifeDomain: 'Execution Velocity, Charisma & Speed',
+      meaning: 'Quick responsiveness, practical charisma, closing deals, and tangible real-world manifestation.'
+    },
+    {
+      name: 'Golden Raj Yoga (स्वर्ण राजयोग)',
+      nameHindi: 'समृद्धि व सफलता रेखा',
+      numbers: [4, 5, 6],
+      lifeDomain: 'Prosperity, Global Fame & Success',
+      meaning: 'The elite diagonal of luxury and high accomplishment; creates wealth, authority, and public respect.'
+    },
+    {
+      name: 'Silver Raj Yoga (रजत राजयोग / संपदा)',
+      nameHindi: 'स्थिर संपदा व भूमि लाभ',
+      numbers: [2, 5, 8],
+      lifeDomain: 'Real Estate, Assets & Earth Grounding',
+      meaning: 'The stabilizing diagonal of property, physical asset accumulation, emotional serenity, and endurance.'
+    }
+  ];
+
+  return planes.map((p) => {
+    const presentInPlane = p.numbers.filter(num => presentNumbers.includes(num));
+    const count = presentInPlane.length;
+    const percentage = Math.round((count / p.numbers.length) * 100);
+
+    let status: LoshuPlaneInfo['status'] = 'Inactive (0%)';
+    let statusColor = 'text-slate-500 bg-white/5 border-white/5';
+
+    if (percentage === 100) {
+      status = 'Full (100%)';
+      statusColor = 'text-amber-300 bg-amber-500/20 border-amber-500/40 shadow-[0_0_12px_rgba(251,191,36,0.2)]';
+    } else if (percentage >= 66) {
+      status = 'Strong (66%)';
+      statusColor = 'text-emerald-300 bg-emerald-500/15 border-emerald-500/35';
+    } else if (percentage >= 33) {
+      status = 'Partial (33%)';
+      statusColor = 'text-sky-300 bg-sky-500/10 border-sky-500/25';
+    }
+
+    return {
+      name: p.name,
+      nameHindi: p.nameHindi,
+      numbers: p.numbers,
+      presentCount: count,
+      percentage,
+      status,
+      statusColor,
+      lifeDomain: p.lifeDomain,
+      meaning: p.meaning
+    };
+  });
+};
+
 

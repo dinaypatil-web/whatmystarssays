@@ -71,6 +71,67 @@ export interface SaadesatiPhase {
   description?: string;
 }
 
+export interface AvakahadaDetails {
+  lagnaSign: string;
+  lagnaSignSanskrit: string;
+  lagnaLord: string;
+  lagnaNumber: number;
+  lagnaElement: 'Fire' | 'Earth' | 'Air' | 'Water';
+  moonSign: string;
+  moonSignSanskrit: string;
+  moonLord: string;
+  sunSign: string;
+  sunSignSanskrit: string;
+  nakshatra: string;
+  nakshatraSanskrit: string;
+  nakshatraLord: string;
+  pada: number;
+  gana: 'Deva' | 'Manushya' | 'Rakshasa';
+  ganaDescription: string;
+  nadi: 'Adi' | 'Madhya' | 'Antya';
+  nadiAyurveda: 'Vata' | 'Pitta' | 'Kapha';
+  nadiDescription: string;
+  yoni: string;
+  yoniAnimal: string;
+  varna: 'Brahmin' | 'Kshatriya' | 'Vaishya' | 'Shudra';
+  vashya: string;
+  tatva: 'Agni (Fire)' | 'Prithvi (Earth)' | 'Vayu (Air)' | 'Jala (Water)';
+  paya: 'Rajata (Silver)' | 'Tamra (Copper)' | 'Suvarna (Gold)' | 'Lauha (Iron)';
+  payaDescription: string;
+  tithi: string;
+  paksha: 'Shukla' | 'Krishna';
+  yoga: string;
+  karana: string;
+  luckyColor: string;
+  luckyNumber: number;
+  luckyGem: string;
+  luckyMetal: string;
+  luckyDay: string;
+  luckyDirection: string;
+  luckyDeity: string;
+  manglikStatus: {
+    isManglik: boolean;
+    severity: 'None' | 'Anshik (Mild)' | 'Active' | 'Strong';
+    marsHouse: number | null;
+    hasParihara: boolean;
+    pariharaReason: string;
+  };
+}
+
+export interface PlanetaryPositionDetail {
+  planet: string;
+  planetSanskrit: string;
+  icon: string;
+  sign: string;
+  signSanskrit: string;
+  house: number;
+  dignity: 'Exalted (उच्च)' | 'Moolatrikona (मूलत्रिकोण)' | 'Own Sign (स्वराशि)' | 'Friendly (मित्र)' | 'Neutral (सम)' | 'Enemy (शत्रु)' | 'Debilitated (नीच)';
+  dignityColor: string;
+  isRetrograde?: boolean;
+  isCombust?: boolean;
+  degree?: string;
+}
+
 export interface KundaliResponse {
   report: string;
   chart: KundaliChartData;
@@ -82,6 +143,8 @@ export interface KundaliResponse {
   system?: KundaliSystem;
   mahadashas?: MahadashaPeriod[];
   saadesatiCycles?: SaadesatiPhase[];
+  avakahada?: AvakahadaDetails;
+  planetaryPositions?: PlanetaryPositionDetail[];
 }
 
 export interface PlanetaryTransitInfo {

@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { BirthDetails, MatchmakingDetails, Timeframe, Language, ChatMessage, KundaliResponse, KundaliSystem, PlanetaryTransitInfo } from "../types";
 import { StorageService } from "./storageService";
-import { calculateAshtakootMilan, calculateMoonDetails, calculateSaadesatiPhases } from "./astrologyHelper";
+import { calculateAshtakootMilan, calculateMoonDetails, calculateSaadesatiPhases, calculateAvakahadaDetails, calculatePlanetaryPositions } from "./astrologyHelper";
 
 // ---------------------------------------------------------------------------
 // ACTIVE GEMINI MODELS & MULTI-KEY ROTATION
@@ -537,6 +537,19 @@ Chart keys must be "1" through "12" with planet name arrays. lagnaSign is 1-12.`
       ...exact,
       description: parsed.saadesatiCycles?.[idx]?.description || exact.description
     }));
+
+    // Deterministically compute complete authentic Avakahada Chakra and Planetary Dignities
+    parsed.avakahada = calculateAvakahadaDetails(
+      details.dob,
+      details.tob || '12:00',
+      parsed.lagnaSign || 1,
+      parsed.chart
+    );
+
+    parsed.planetaryPositions = calculatePlanetaryPositions(
+      parsed.chart,
+      parsed.lagnaSign || 1
+    );
 
     return parsed;
   });

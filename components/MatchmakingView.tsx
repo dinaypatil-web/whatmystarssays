@@ -1,7 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { BirthDetails, MatchmakingDetails, Language } from '../types';
 import { getMatchmaking, getCoordinates } from '../services/aiService';
+import { calculateAshtakootMilan } from '../services/astrologyHelper';
+import InfographicReportViewer from './InfographicReportViewer';
 import ReactMarkdown from 'react-markdown';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -22,6 +24,11 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
   const [exporting, setExporting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<BirthDetails[]>(StorageService.getProfiles());
+
+  const milanData = useMemo(() => {
+    if (!details.boy.dob || !details.girl.dob) return null;
+    return calculateAshtakootMilan(details.boy, details.girl);
+  }, [details.boy, details.girl]);
 
   const handleProfileSelect = (side: 'boy' | 'girl', name: string) => {
     const profile = profiles.find(p => p.name === name);
@@ -211,38 +218,148 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
       )}
 
       {result && !loading && (
-        <div className="max-w-4xl mx-auto space-y-6 animate-in zoom-in-95 duration-500">
-          <div id="matchmaking-report-area" className="bg-[#010204] rounded-3xl border border-white/5 space-y-12 overflow-hidden">
-            <div className="bg-slate-800/20 p-8 rounded-3xl prose prose-invert prose-rose max-w-none shadow-2xl relative">
-              <div className="flex justify-between items-start mb-8 not-prose no-print">
-                <div className="flex items-center gap-6">
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center text-3xl mb-2">♂️</div>
-                    <p className="font-cinzel text-blue-400 text-sm">{details.boy.name}</p>
+        <div className="max-w-5xl mx-auto space-y-8 animate-in zoom-in-95 duration-500">
+          <div id="matchmaking-report-area" className="bg-[#010204] rounded-3xl border border-white/5 space-y-8 overflow-hidden p-6 md:p-10">
+            {/* Top Couple Banner */}
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-6 border-b border-white/10 pb-6">
+              <div className="flex items-center gap-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-blue-500/20 border border-blue-500/30 rounded-2xl flex items-center justify-center text-3xl mb-2 shadow-lg">♂️</div>
+                  <p className="font-cinzel text-blue-300 text-sm font-bold">{details.boy.name}</p>
+                  <p className="text-[10px] text-slate-400 font-mono">Groom • वर</p>
+                </div>
+                <div className="text-3xl text-pink-500 animate-pulse">❤️</div>
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-pink-500/20 border border-pink-500/30 rounded-2xl flex items-center justify-center text-3xl mb-2 shadow-lg">♀️</div>
+                  <p className="font-cinzel text-pink-300 text-sm font-bold">{details.girl.name}</p>
+                  <p className="text-[10px] text-slate-400 font-mono">Bride • कन्या</p>
+                </div>
+              </div>
+              <button 
+                onClick={downloadPDF}
+                disabled={exporting}
+                className="bg-white/10 hover:bg-white/20 text-white text-xs px-6 py-2.5 rounded-full font-bold uppercase transition-colors border border-white/10 no-print"
+              >
+                {exporting ? 'Processing...' : 'Save Full Report'}
+              </button>
+            </div>
+
+            {/* 1. Ashtakoot Milan 36-Point Infographic Speedometer & Verdict */}
+            {milanData && (
+              <div className="p-6 md:p-8 bg-gradient-to-r from-pink-500/10 via-purple-500/5 to-pink-500/10 border border-pink-500/20 rounded-[32px] space-y-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-[0.25em] text-pink-400 block mb-1">
+                      Ashtakoot Gun Milan (36-Point Vedic Score)
+                    </span>
+                    <h3 className="text-xl md:text-2xl font-cinzel font-bold text-white">
+                      {milanData.verdictLabel}
+                    </h3>
+                    <p className="text-xs text-slate-300 mt-1">
+                      Calculated from authentic sidereal Moon positions, Nakshatra Padas, and classical Parihara rules
+                    </p>
                   </div>
-                  <div className="text-3xl text-pink-500 animate-pulse">❤️</div>
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-pink-500/20 rounded-full flex items-center justify-center text-3xl mb-2">♀️</div>
-                    <p className="font-cinzel text-pink-400 text-sm">{details.girl.name}</p>
+
+                  {/* Circular Score Gauge */}
+                  <div className="flex items-center gap-4 flex-shrink-0">
+                    <div className="w-24 h-24 rounded-2xl bg-black/50 border-2 border-pink-500/40 flex flex-col items-center justify-center shadow-[0_0_25px_rgba(244,63,94,0.25)]">
+                      <span className="text-3xl font-black font-cinzel text-pink-200">
+                        {milanData.totalScore}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Out of 36</span>
+                    </div>
                   </div>
                 </div>
-                <button 
-                  onClick={downloadPDF}
-                  disabled={exporting}
-                  className="bg-slate-700 hover:bg-slate-600 text-white text-xs px-4 py-2 rounded-lg flex items-center gap-2 transition-colors border border-slate-600 no-print"
-                >
-                  {exporting ? 'Processing...' : 'Save Full Report'}
-                </button>
-              </div>
 
-              <ReactMarkdown>{result}</ReactMarkdown>
+                {/* 2. 8 Kootas Visual Progress Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
+                  {Object.entries(milanData.kootas).map(([key, koota]) => {
+                    const pct = Math.round((koota.obtainedScore / koota.maxScore) * 100);
+                    const isFull = pct === 100;
 
-              <div className="mt-12 pt-8 border-t border-white/10 opacity-60 not-prose">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2 text-center">Disclaimer regarding AI Generation</p>
-                <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic text-center max-w-2xl mx-auto">
-                  This compatibility analysis is synthesized using authentic Vedic Ashtakoot Milan and astrological parameters. The insights are designed to support mutual understanding, emotional harmony, and conscious relationship planning.
-                </p>
+                    return (
+                      <div
+                        key={key}
+                        className={`p-3 rounded-2xl border transition-all flex flex-col justify-between ${
+                          isFull
+                            ? 'bg-emerald-500/10 border-emerald-500/30'
+                            : koota.pariharaApplied
+                            ? 'bg-amber-500/10 border-amber-500/30'
+                            : 'bg-white/[0.03] border-white/10'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase truncate">
+                              {koota.name.split(' ')[0]}
+                            </span>
+                            {koota.pariharaApplied && (
+                              <span className="text-[8px] font-bold px-1 rounded bg-amber-500/20 text-amber-300">
+                                Parihara
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm font-black font-cinzel text-white">
+                            {koota.obtainedScore} <span className="text-[10px] text-slate-400 font-normal">/ {koota.maxScore}</span>
+                          </div>
+                        </div>
+
+                        <div className="mt-2 pt-1.5 border-t border-white/10">
+                          <div className="w-full h-1 bg-black/40 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${
+                                isFull ? 'bg-emerald-400' : koota.pariharaApplied ? 'bg-amber-400' : 'bg-pink-400'
+                              }`}
+                              style={{ width: `${Math.max(pct, 10)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 3. Groom vs Bride Avakahada Comparison Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                  <div className="p-4 rounded-2xl bg-black/40 border border-blue-500/25 space-y-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-blue-400 block">
+                      Groom ({details.boy.name}) Celestial Identity
+                    </span>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div><span className="text-slate-400">Moon Sign:</span> <span className="font-bold text-white">{milanData.boyMoon?.rashi.name}</span></div>
+                      <div><span className="text-slate-400">Nakshatra:</span> <span className="font-bold text-white">{milanData.boyMoon?.nakshatra.name}</span></div>
+                      <div><span className="text-slate-400">Gana:</span> <span className="font-bold text-amber-300">{milanData.boyMoon?.nakshatra.gana}</span></div>
+                      <div><span className="text-slate-400">Nadi:</span> <span className="font-bold text-sky-300">{milanData.boyMoon?.nakshatra.nadi}</span></div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-black/40 border border-pink-500/25 space-y-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-pink-400 block">
+                      Bride ({details.girl.name}) Celestial Identity
+                    </span>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div><span className="text-slate-400">Moon Sign:</span> <span className="font-bold text-white">{milanData.girlMoon?.rashi.name}</span></div>
+                      <div><span className="text-slate-400">Nakshatra:</span> <span className="font-bold text-white">{milanData.girlMoon?.nakshatra.name}</span></div>
+                      <div><span className="text-slate-400">Gana:</span> <span className="font-bold text-amber-300">{milanData.girlMoon?.nakshatra.gana}</span></div>
+                      <div><span className="text-slate-400">Nadi:</span> <span className="font-bold text-sky-300">{milanData.girlMoon?.nakshatra.nadi}</span></div>
+                    </div>
+                  </div>
+                </div>
               </div>
+            )}
+
+            {/* 4. Infographic Report Viewer for Compatibility Report */}
+            <InfographicReportViewer 
+              reportText={result} 
+              title={`Kundali Milan Synthesis: ${details.boy.name} & ${details.girl.name}`} 
+              accentColor="rose"
+            />
+
+            <div className="mt-8 pt-6 border-t border-white/10 opacity-60 not-prose">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 mb-2 text-center">Disclaimer regarding AI Generation</p>
+              <p className="text-[10px] leading-relaxed text-slate-500 font-medium italic text-center max-w-2xl mx-auto">
+                This compatibility analysis is synthesized using authentic Vedic Ashtakoot Milan and astrological parameters. The insights are designed to support mutual understanding, emotional harmony, and conscious relationship planning.
+              </p>
             </div>
           </div>
           
