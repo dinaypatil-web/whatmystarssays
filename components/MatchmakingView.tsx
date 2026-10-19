@@ -103,39 +103,61 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
     if (!element || exporting) return;
 
     setExporting(true);
+    // Crucial: wait for React to re-render in exportMode so all chapters and sections are mounted into the DOM
+    await new Promise(resolve => setTimeout(resolve, 350));
+
+    const prevScrollX = window.scrollX;
+    const prevScrollY = window.scrollY;
+
     try {
+      // Temporarily scroll to top so html2canvas captures without scroll offset clipping
+      window.scrollTo(0, 0);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       const canvas = await html2canvas(element, {
         scale: 2,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#07090e',
         useCORS: true,
-        // Force desktop layout during capture
-        windowWidth: 1024,
+        allowTaint: true,
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0,
+        windowWidth: 1200,
+        windowHeight: element.scrollHeight + 500,
         onclone: (clonedDoc) => {
           const clonedElement = clonedDoc.getElementById(elementId);
           if (clonedElement) {
-            clonedElement.style.width = '1024px';
-            clonedElement.style.backgroundColor = 'white';
-            clonedElement.style.color = 'black';
-            clonedElement.style.padding = '40px';
-            clonedElement.style.borderRadius = '0px';
+            clonedElement.style.width = '1200px';
+            clonedElement.style.maxWidth = '1200px';
+            clonedElement.style.height = 'auto';
+            clonedElement.style.maxHeight = 'none';
+            clonedElement.style.overflow = 'visible';
 
-            const allElements = clonedElement.querySelectorAll('*');
-            allElements.forEach((el: any) => {
-              el.style.backgroundColor = 'transparent';
-              el.style.color = 'black';
-              el.style.backgroundImage = 'none';
-              el.style.borderColor = '#dddddd';
-              el.style.boxShadow = 'none';
-              el.style.textShadow = 'none';
-              if (el.classList.contains('prose-invert')) {
-                el.classList.remove('prose-invert');
+            // Hide UI buttons and interactive chrome
+            const noPrint = clonedElement.querySelectorAll('.no-print, button, form');
+            noPrint.forEach((el: any) => {
+              el.style.display = 'none';
+            });
+
+            // Expand all scrollable containers
+            const scrollables = clonedElement.querySelectorAll('*');
+            scrollables.forEach((el: any) => {
+              const style = window.getComputedStyle(el);
+              if (style.overflow === 'hidden' || style.overflowY === 'auto' || style.overflowX === 'auto') {
+                el.style.overflow = 'visible';
+                el.style.maxHeight = 'none';
               }
             });
           }
         }
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      // Restore user's previous scroll position
+      window.scrollTo(prevScrollX, prevScrollY);
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
@@ -145,19 +167,24 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
       let heightLeft = imgHeight;
       let position = 0;
 
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      // Add Page 1
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
+      // Add remaining pages sequentially
       while (heightLeft > 0) {
         position -= pageHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`Matchmaking_Report_${details.boy.name}_${details.girl.name}.pdf`);
+      const safeBoy = (details.boy.name || 'Groom').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+      const safeGirl = (details.girl.name || 'Bride').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+      pdf.save(`Matchmaking_Report_${safeBoy}_${safeGirl}.pdf`);
     } catch (err) {
       console.error("PDF Export failed", err);
+      window.scrollTo(prevScrollX, prevScrollY);
     } finally {
       setExporting(false);
     }
@@ -235,13 +262,24 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
                   <p className="text-[10px] text-slate-400 font-mono">Bride • कन्या</p>
                 </div>
               </div>
-              <button 
-                onClick={downloadPDF}
-                disabled={exporting}
-                className="bg-white/10 hover:bg-white/20 text-white text-xs px-6 py-2.5 rounded-full font-bold uppercase transition-colors border border-white/10 no-print"
-              >
-                {exporting ? 'Processing...' : 'Save Full Report'}
-              </button>
+              <div className="flex items-center gap-3 flex-wrap">
+                <button
+                  onClick={() => window.print()}
+                  className="bg-white/5 hover:bg-white/10 text-slate-300 text-xs px-5 py-2.5 rounded-full border border-white/10 no-print transition-all font-bold uppercase tracking-wider flex items-center gap-1.5"
+                  title="Print or Save via Browser (Ctrl+P)"
+                >
+                  <span>🖨️</span>
+                  <span>Print / PDF</span>
+                </button>
+                <button 
+                  onClick={downloadPDF}
+                  disabled={exporting}
+                  className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white text-xs px-6 py-2.5 rounded-full font-black uppercase transition-all shadow-lg flex items-center gap-1.5 no-print"
+                >
+                  <span>{exporting ? '⏳' : '📥'}</span>
+                  <span>{exporting ? 'Generating Full PDF...' : 'Download Full PDF'}</span>
+                </button>
+              </div>
             </div>
 
             {/* 1. Ashtakoot Milan 36-Point Infographic Speedometer & Verdict */}
@@ -353,6 +391,7 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
               reportText={result} 
               title={`Kundali Milan Synthesis: ${details.boy.name} & ${details.girl.name}`} 
               accentColor="rose"
+              exportMode={exporting}
             />
 
             <div className="mt-8 pt-6 border-t border-white/10 opacity-60 not-prose">

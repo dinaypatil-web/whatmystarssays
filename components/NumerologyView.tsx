@@ -283,38 +283,61 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
     if (!element || exporting) return;
 
     setExporting(true);
+    // Crucial: wait for React to re-render in exportMode so all sections and chapters are mounted into the DOM
+    await new Promise(resolve => setTimeout(resolve, 350));
+
+    const prevScrollX = window.scrollX;
+    const prevScrollY = window.scrollY;
+
     try {
+      // Temporarily scroll to top so html2canvas captures without scroll offset clipping
+      window.scrollTo(0, 0);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       const canvas = await html2canvas(element, {
         scale: 2,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#07090e',
         useCORS: true,
-        windowWidth: 1024,
+        allowTaint: true,
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0,
+        windowWidth: 1200,
+        windowHeight: element.scrollHeight + 500,
         onclone: (clonedDoc) => {
           const clonedElement = clonedDoc.getElementById(elementId);
           if (clonedElement) {
-            clonedElement.style.width = '1024px';
-            clonedElement.style.backgroundColor = 'white';
-            clonedElement.style.color = 'black';
-            clonedElement.style.padding = '40px';
-            clonedElement.style.borderRadius = '0px';
+            clonedElement.style.width = '1200px';
+            clonedElement.style.maxWidth = '1200px';
+            clonedElement.style.height = 'auto';
+            clonedElement.style.maxHeight = 'none';
+            clonedElement.style.overflow = 'visible';
 
-            const allElements = clonedElement.querySelectorAll('*');
-            allElements.forEach((el: any) => {
-              el.style.backgroundColor = 'transparent';
-              el.style.color = 'black';
-              el.style.backgroundImage = 'none';
-              el.style.borderColor = '#dddddd';
-              el.style.boxShadow = 'none';
-              el.style.textShadow = 'none';
-              if (el.classList.contains('prose-invert')) {
-                el.classList.remove('prose-invert');
+            // Hide UI buttons and interactive chrome
+            const noPrint = clonedElement.querySelectorAll('.no-print, button, form');
+            noPrint.forEach((el: any) => {
+              el.style.display = 'none';
+            });
+
+            // Expand all scrollable containers
+            const scrollables = clonedElement.querySelectorAll('*');
+            scrollables.forEach((el: any) => {
+              const style = window.getComputedStyle(el);
+              if (style.overflow === 'hidden' || style.overflowY === 'auto' || style.overflowX === 'auto') {
+                el.style.overflow = 'visible';
+                el.style.maxHeight = 'none';
               }
             });
           }
         }
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      // Restore user's previous scroll position
+      window.scrollTo(prevScrollX, prevScrollY);
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
@@ -324,19 +347,22 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
       let heightLeft = imgHeight;
       let position = 0;
 
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      // Add Page 1
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
+      // Add remaining pages sequentially
       while (heightLeft > 0) {
         position -= pageHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`Full_Numerology_Report_${name ? name.trim().replace(/\s+/g, '_') + '_' : ''}${dob}.pdf`);
+      pdf.save(`Full_Numerology_Report_${name ? name.trim().replace(/[^a-zA-Z0-9_-]/g, '_') + '_' : ''}${dob}.pdf`);
     } catch (err) {
       console.error("PDF Export failed", err);
+      window.scrollTo(prevScrollX, prevScrollY);
     } finally {
       setExporting(false);
     }
@@ -465,9 +491,24 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
                   </p>
                 )}
               </div>
-              <button onClick={downloadPDF} disabled={exporting} className="bg-amber-500 hover:bg-amber-400 text-slate-900 text-[10px] px-6 py-2.5 rounded-full font-black uppercase no-print transition-all tracking-wider shadow-lg">
-                {exporting ? 'Processing...' : 'Save Full Report'}
-              </button>
+              <div className="flex items-center gap-3 flex-wrap">
+                <button
+                  onClick={() => window.print()}
+                  className="bg-white/5 hover:bg-white/10 text-slate-300 text-[10px] px-5 py-2.5 rounded-full border border-white/10 no-print transition-all font-bold uppercase tracking-wider flex items-center gap-1.5"
+                  title="Print or Save via Browser (Ctrl+P)"
+                >
+                  <span>🖨️</span>
+                  <span>Print / PDF</span>
+                </button>
+                <button
+                  onClick={downloadPDF}
+                  disabled={exporting}
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-900 text-[10px] px-6 py-2.5 rounded-full font-black uppercase no-print transition-all tracking-wider shadow-lg flex items-center gap-1.5"
+                >
+                  <span>{exporting ? '⏳' : '📥'}</span>
+                  <span>{exporting ? 'Generating Full PDF...' : 'Download Full PDF'}</span>
+                </button>
+              </div>
             </div>
 
             {/* Name Correction & Vibration Center */}
@@ -782,6 +823,7 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
             <InfographicReportViewer 
               reportText={analysis} 
               title="Vedic & Chaldean Numerology Synthesis" 
+              exportMode={exporting}
             />
               
               {chatHistory.length > 0 && (

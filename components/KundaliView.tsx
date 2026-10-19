@@ -365,53 +365,61 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
     if (!element || exporting) return;
 
     setExporting(true);
+    // Crucial: wait for React to re-render in exportMode so all sections, tabs, and chapters are mounted into the DOM
+    await new Promise(resolve => setTimeout(resolve, 350));
+
+    const prevScrollX = window.scrollX;
+    const prevScrollY = window.scrollY;
+
     try {
+      // Temporarily scroll to top so html2canvas captures from (0,0) without scroll clipping
+      window.scrollTo(0, 0);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       const canvas = await html2canvas(element, {
         scale: 2,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#07090e',
         useCORS: true,
-        windowWidth: 1024,
+        allowTaint: true,
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0,
+        windowWidth: 1200,
+        windowHeight: element.scrollHeight + 500,
         onclone: (clonedDoc) => {
           const clonedElement = clonedDoc.getElementById(elementId);
           if (clonedElement) {
-            clonedElement.style.width = '1024px';
-            clonedElement.style.backgroundColor = 'white';
-            clonedElement.style.color = 'black';
-            clonedElement.style.padding = '40px';
-            clonedElement.style.borderRadius = '0px';
-            clonedElement.style.border = 'none';
+            clonedElement.style.width = '1200px';
+            clonedElement.style.maxWidth = '1200px';
+            clonedElement.style.height = 'auto';
+            clonedElement.style.maxHeight = 'none';
+            clonedElement.style.overflow = 'visible';
 
-            const allElements = clonedElement.querySelectorAll('*');
-            allElements.forEach((el: any) => {
-              el.style.backgroundColor = 'transparent';
-              el.style.color = 'black';
-              el.style.backgroundImage = 'none';
-              el.style.borderColor = '#dddddd';
-              el.style.boxShadow = 'none';
-              el.style.textShadow = 'none';
-              
-              if (el.classList.contains('prose-invert')) {
-                el.classList.remove('prose-invert');
-              }
+            // Hide UI buttons and interactive chrome
+            const noPrint = clonedElement.querySelectorAll('.no-print, button, form');
+            noPrint.forEach((el: any) => {
+              el.style.display = 'none';
+            });
 
-              if (el.tagName.toLowerCase() === 'svg') {
-                el.style.filter = 'none';
-                const svgParts = el.querySelectorAll('line, rect, text, path');
-                svgParts.forEach((part: any) => {
-                  part.setAttribute('stroke', 'black');
-                  if (part.tagName.toLowerCase() === 'text' || part.tagName.toLowerCase() === 'path') {
-                    part.setAttribute('fill', 'black');
-                    part.style.fill = 'black';
-                  }
-                  part.style.stroke = 'black';
-                });
+            // Expand all scrollable containers
+            const scrollables = clonedElement.querySelectorAll('*');
+            scrollables.forEach((el: any) => {
+              const style = window.getComputedStyle(el);
+              if (style.overflow === 'hidden' || style.overflowY === 'auto' || style.overflowX === 'auto') {
+                el.style.overflow = 'visible';
+                el.style.maxHeight = 'none';
               }
             });
           }
         }
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      // Restore user's previous scroll position
+      window.scrollTo(prevScrollX, prevScrollY);
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
@@ -421,19 +429,23 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
       let heightLeft = imgHeight;
       let position = 0;
 
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      // Add Page 1
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
+      // Add remaining pages sequentially
       while (heightLeft > 0) {
         position -= pageHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
 
-      pdf.save(`Full_Life_Report_${details.name}.pdf`);
+      const safeName = (details.name || 'Kundali').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+      pdf.save(`Full_Kundali_Life_Map_${safeName}.pdf`);
     } catch (err) {
       console.error("PDF generation failed", err);
+      window.scrollTo(prevScrollX, prevScrollY);
     } finally {
       setExporting(false);
     }
@@ -581,9 +593,24 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
                   <span className="flex items-center gap-1">📍 {details.location}</span>
                 </div>
               </div>
-              <button onClick={downloadPDF} disabled={exporting} className="bg-white/10 hover:bg-white/20 text-white text-[10px] px-8 py-3 rounded-full border border-white/10 no-print transition-all font-black uppercase tracking-widest">
-                {exporting ? 'Processing...' : 'Save Full Life Report'}
-              </button>
+              <div className="flex items-center gap-3 flex-wrap">
+                <button
+                  onClick={() => window.print()}
+                  className="bg-white/5 hover:bg-white/10 text-slate-300 text-[10px] px-5 py-3 rounded-full border border-white/10 no-print transition-all font-bold uppercase tracking-wider flex items-center gap-1.5"
+                  title="Print or Save via Browser (Ctrl+P)"
+                >
+                  <span>🖨️</span>
+                  <span>Print / PDF</span>
+                </button>
+                <button
+                  onClick={downloadPDF}
+                  disabled={exporting}
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-[10px] px-7 py-3 rounded-full border border-amber-400/40 no-print transition-all font-black uppercase tracking-widest shadow-[0_0_20px_rgba(245,158,11,0.25)] flex items-center gap-1.5"
+                >
+                  <span>{exporting ? '⏳' : '📥'}</span>
+                  <span>{exporting ? 'Generating Full PDF...' : 'Download Full PDF'}</span>
+                </button>
+              </div>
             </div>
 
             {/* Dedicated Planetary Timeline Cards: Vimshottari Mahadasha & Shani Saadesati */}
@@ -716,7 +743,7 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
             {/* Avakahada Chakra Infographic Dashboard (Gana, Nadi, Yoni, Varna, Paya, Tatva, Manglik, Lucky Matrix) */}
             {avakahadaData && (
               <div className="p-6 md:p-10 border-b border-white/10">
-                <AvakahadaInfographic avakahada={avakahadaData} nativeName={details.name} />
+                <AvakahadaInfographic avakahada={avakahadaData} nativeName={details.name} exportMode={exporting} />
               </div>
             )}
 
@@ -730,38 +757,47 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
               </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 p-6 md:p-12">
-              <div className="lg:col-span-5 space-y-8">
-                <KundaliChart data={analysis.chart} lagnaSign={analysis.lagnaSign} />
-                
-                <div className="grid grid-cols-2 gap-4 p-6 bg-amber-500/5 border border-amber-500/10 rounded-[32px]">
-                   <KPSummaryItem label="Star Lord" value={analysis.starLord} icon="⭐" />
-                   <KPSummaryItem label="Sub Lord" value={analysis.subLord} icon="🔮" />
-                   <KPSummaryItem label="Nakshatra" value={analysis.nakshatra} icon="✨" />
-                   <KPSummaryItem label="Moon Sign" value={analysis.moonSign} icon="🌙" />
+            {/* Janma Kundali Chart, KP Sub-Lords, and Full-Width Decoded Report */}
+            <div className="p-6 md:p-10 space-y-10">
+              {/* Chart & Celestial Position Summary Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start page-break-inside-avoid">
+                <div className="lg:col-span-6 flex flex-col items-center justify-center p-6 bg-black/40 border border-white/10 rounded-[32px] shadow-lg">
+                  <KundaliChart data={analysis.chart} lagnaSign={analysis.lagnaSign} />
                 </div>
+                
+                <div className="lg:col-span-6 space-y-4">
+                  <div className="grid grid-cols-2 gap-4 p-6 bg-amber-500/5 border border-amber-500/10 rounded-[32px]">
+                     <KPSummaryItem label="Star Lord" value={analysis.starLord} icon="⭐" />
+                     <KPSummaryItem label="Sub Lord" value={analysis.subLord} icon="🔮" />
+                     <KPSummaryItem label="Nakshatra" value={analysis.nakshatra} icon="✨" />
+                     <KPSummaryItem label="Moon Sign" value={analysis.moonSign} icon="🌙" />
+                  </div>
 
-                <div className="p-8 bg-slate-900/40 border border-white/5 rounded-[32px] no-print">
-                   <h4 className="text-xs font-black text-amber-500 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
-                     <span className="text-lg">✨</span> Chart Legend
-                   </h4>
-                   <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-[11px] text-slate-400 font-medium">
-                      <div className="flex justify-between border-b border-white/5 pb-1"><span>Su</span> <span className="text-slate-200">Sun (Surya)</span></div>
-                      <div className="flex justify-between border-b border-white/5 pb-1"><span>Mo</span> <span className="text-slate-200">Moon (Chandra)</span></div>
-                      <div className="flex justify-between border-b border-white/5 pb-1"><span>Ma</span> <span className="text-slate-200">Mars (Mangal)</span></div>
-                      <div className="flex justify-between border-b border-white/5 pb-1"><span>Me</span> <span className="text-slate-200">Mercury (Budh)</span></div>
-                      <div className="flex justify-between border-b border-white/5 pb-1"><span>Ju</span> <span className="text-slate-200">Jupiter (Guru)</span></div>
-                      <div className="flex justify-between border-b border-white/5 pb-1"><span>Ve</span> <span className="text-slate-200">Venus (Shukra)</span></div>
-                      <div className="flex justify-between border-b border-white/5 pb-1"><span>Sa</span> <span className="text-slate-200">Saturn (Shani)</span></div>
-                      <div className="flex justify-between border-b border-white/5 pb-1"><span>Ra</span> <span className="text-slate-200">Rahu</span></div>
-                      <div className="flex justify-between border-b border-white/5 pb-1"><span>Ke</span> <span className="text-slate-200">Ketu</span></div>
-                   </div>
+                  <div className="p-6 bg-slate-900/40 border border-white/5 rounded-[32px] no-print">
+                     <h4 className="text-xs font-black text-amber-500 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
+                       <span className="text-lg">✨</span> Chart Legend & Grahas
+                     </h4>
+                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 text-[11px] text-slate-400 font-medium">
+                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Su</span> <span className="text-slate-200">Surya (Sun)</span></div>
+                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Mo</span> <span className="text-slate-200">Chandra (Moon)</span></div>
+                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Ma</span> <span className="text-slate-200">Mangal (Mars)</span></div>
+                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Me</span> <span className="text-slate-200">Budh (Mercury)</span></div>
+                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Ju</span> <span className="text-slate-200">Guru (Jupiter)</span></div>
+                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Ve</span> <span className="text-slate-200">Shukra (Venus)</span></div>
+                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Sa</span> <span className="text-slate-200">Shani (Saturn)</span></div>
+                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Ra</span> <span className="text-slate-200">Rahu (North Node)</span></div>
+                        <div className="flex justify-between border-b border-white/5 pb-1"><span>Ke</span> <span className="text-slate-200">Ketu (South Node)</span></div>
+                     </div>
+                  </div>
                 </div>
               </div>
-              <div className="lg:col-span-7">
+
+              {/* Full-Width Decoded Infographic Report */}
+              <div className="pt-6 border-t border-white/10">
                 <InfographicReportViewer 
                   reportText={typeof analysis.report === 'string' ? analysis.report : JSON.stringify(analysis.report)} 
                   title={`Life Map: ${details.name}`} 
+                  exportMode={exporting}
                 />
                 
                 {chatHistory.length > 0 && (

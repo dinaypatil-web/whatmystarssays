@@ -165,6 +165,31 @@
             height: 100vh;
             gap: 1rem;
         }
+
+        @media print {
+            body {
+                background: #010204 !important;
+                color: #f8fafc !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .no-print, nav, button, input, form {
+                display: none !important;
+            }
+            #kundali-report-area, #numerology-report-area, #matchmaking-report-area {
+                border: none !important;
+                box-shadow: none !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: visible !important;
+            }
+            .page-break-inside-avoid {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+        }
     </style>
 <script type="importmap">
 {

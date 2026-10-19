@@ -4,6 +4,7 @@ import { AvakahadaDetails } from '../types';
 interface AvakahadaInfographicProps {
   avakahada: AvakahadaDetails;
   nativeName?: string;
+  exportMode?: boolean;
 }
 
 const GANA_ICONS = {
@@ -95,7 +96,7 @@ const TATVA_BADGES = {
   'Jala (Water)': { icon: '💧', desc: 'Deep intuition, emotional memory, healing & creativity', color: 'bg-blue-500/20 text-blue-300 border-blue-500/40' }
 };
 
-const AvakahadaInfographic: React.FC<AvakahadaInfographicProps> = ({ avakahada, nativeName }) => {
+const AvakahadaInfographic: React.FC<AvakahadaInfographicProps> = ({ avakahada, nativeName, exportMode = false }) => {
   const [activeTab, setActiveTab] = useState<'chakra' | 'doshas' | 'lucky'>('chakra');
 
   const ganaBadge = GANA_BADGES[avakahada.gana] || GANA_BADGES.Manushya;
@@ -124,39 +125,41 @@ const AvakahadaInfographic: React.FC<AvakahadaInfographicProps> = ({ avakahada, 
             </p>
           </div>
 
-          {/* Sub Navigation Pill */}
-          <div className="flex items-center gap-1.5 p-1 bg-black/40 border border-white/10 rounded-2xl no-print">
-            <button
-              onClick={() => setActiveTab('chakra')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                activeTab === 'chakra'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              🕉️ Avakahada Grid
-            </button>
-            <button
-              onClick={() => setActiveTab('doshas')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                activeTab === 'doshas'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              🛡️ Manglik & Panchanga
-            </button>
-            <button
-              onClick={() => setActiveTab('lucky')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                activeTab === 'lucky'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              💎 Auspicious Matrix
-            </button>
-          </div>
+          {/* Sub Navigation Pill - Hidden during export and print */}
+          {!exportMode && (
+            <div className="flex items-center gap-1.5 p-1 bg-black/40 border border-white/10 rounded-2xl no-print">
+              <button
+                onClick={() => setActiveTab('chakra')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === 'chakra'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                🕉️ Avakahada Grid
+              </button>
+              <button
+                onClick={() => setActiveTab('doshas')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === 'doshas'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                🛡️ Manglik & Panchanga
+              </button>
+              <button
+                onClick={() => setActiveTab('lucky')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === 'lucky'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                💎 Auspicious Matrix
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Dual Cosmic Pillars: Lagna & Chandra */}
@@ -223,8 +226,14 @@ const AvakahadaInfographic: React.FC<AvakahadaInfographicProps> = ({ avakahada, 
         </div>
 
         {/* TAB 1: Avakahada Chakra Infographic Grid */}
-        {activeTab === 'chakra' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in duration-500">
+        {(exportMode || activeTab === 'chakra') && (
+          <div className="space-y-3">
+            {exportMode && (
+              <h4 className="text-sm font-cinzel font-bold text-amber-300 flex items-center gap-2 pt-2 border-t border-white/10">
+                <span>🕉️</span> Avakahada Chakra (Gana, Nadi, Yoni, Paya, Varna, Vashya, Tatva)
+              </h4>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in duration-500">
             {/* Gana Infographic Card */}
             <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 hover:border-amber-500/30 transition-all flex flex-col justify-between">
               <div>
@@ -364,11 +373,17 @@ const AvakahadaInfographic: React.FC<AvakahadaInfographicProps> = ({ avakahada, 
               </div>
             </div>
           </div>
+        </div>
         )}
 
         {/* TAB 2: Manglik & Panchanga Coordinates */}
-        {activeTab === 'doshas' && (
-          <div className="space-y-4 animate-in fade-in duration-500">
+        {(exportMode || activeTab === 'doshas') && (
+          <div className="space-y-4 animate-in fade-in duration-500 pt-2">
+            {exportMode && (
+              <h4 className="text-sm font-cinzel font-bold text-amber-300 flex items-center gap-2 pt-2 border-t border-white/10">
+                <span>🛡️</span> Kuja (Manglik) Dosha & Panchanga Coordinates
+              </h4>
+            )}
             {/* Manglik Shield Banner */}
             <div className={`p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
               !avakahada.manglikStatus.isManglik
@@ -441,8 +456,14 @@ const AvakahadaInfographic: React.FC<AvakahadaInfographicProps> = ({ avakahada, 
         )}
 
         {/* TAB 3: Auspicious Jyotish Matrix */}
-        {activeTab === 'lucky' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in duration-500">
+        {(exportMode || activeTab === 'lucky') && (
+          <div className="space-y-3 pt-2">
+            {exportMode && (
+              <h4 className="text-sm font-cinzel font-bold text-amber-300 flex items-center gap-2 pt-2 border-t border-white/10">
+                <span>💎</span> Auspicious Jyotish Talisman Matrix
+              </h4>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in duration-500">
             {/* Primary Gemstone Talisman */}
             <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/15 via-white/[0.02] to-transparent border border-amber-500/30 flex flex-col justify-between">
               <div>
@@ -499,6 +520,7 @@ const AvakahadaInfographic: React.FC<AvakahadaInfographicProps> = ({ avakahada, 
               </div>
             </div>
           </div>
+        </div>
         )}
       </div>
     </div>
