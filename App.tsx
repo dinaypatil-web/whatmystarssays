@@ -56,7 +56,7 @@ const App: React.FC = () => {
       language={language} 
       setLanguage={setLanguage}
     >
-      <div className="max-w-5xl mx-auto">
+      <div className="w-full max-w-7xl mx-auto">
         {renderContent()}
       </div>
     </Layout>

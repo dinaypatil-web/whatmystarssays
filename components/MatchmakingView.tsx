@@ -328,7 +328,7 @@ const MatchmakingView: React.FC<MatchmakingViewProps> = ({ language }) => {
                       >
                         <div>
                           <div className="flex items-center justify-between gap-1 mb-1">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase truncate">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase break-words leading-tight">
                               {koota.name.split(' ')[0]}
                             </span>
                             {koota.pariharaApplied && (

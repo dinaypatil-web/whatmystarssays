@@ -89,16 +89,16 @@ const PlanetaryInfographicMatrix: React.FC<PlanetaryInfographicMatrixProps> = ({
                     H{pos.house}
                   </span>
                 </div>
-                <div className="font-cinzel font-bold text-xs text-white truncate">
+                <div className="font-cinzel font-bold text-xs text-white break-words">
                   {pos.planet}
                 </div>
-                <div className="text-[10px] text-slate-400 truncate">
+                <div className="text-[10px] text-slate-400 break-words leading-tight">
                   {pos.sign}
                 </div>
               </div>
 
               <div className="mt-3 pt-2 border-t border-white/10">
-                <span className={`inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border truncate w-full text-center ${pos.dignityColor}`}>
+                <span className={`inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border break-words w-full text-center ${pos.dignityColor}`}>
                   {pos.dignity.split(' ')[0]}
                 </span>
               </div>

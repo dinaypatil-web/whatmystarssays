@@ -433,22 +433,22 @@ const AvakahadaInfographic: React.FC<AvakahadaInfographicProps> = ({ avakahada, 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
                 <span className="text-[10px] font-bold text-amber-500 uppercase block mb-1">Tithi (तिथि)</span>
-                <span className="text-xs md:text-sm font-bold text-white block truncate">{avakahada.tithi}</span>
+                <span className="text-xs md:text-sm font-bold text-white block break-words leading-snug">{avakahada.tithi}</span>
                 <span className="text-[10px] text-slate-500">{avakahada.paksha} Paksha</span>
               </div>
               <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
                 <span className="text-[10px] font-bold text-amber-500 uppercase block mb-1">Nitya Yoga (योग)</span>
-                <span className="text-xs md:text-sm font-bold text-white block truncate">{avakahada.yoga}</span>
+                <span className="text-xs md:text-sm font-bold text-white block break-words leading-snug">{avakahada.yoga}</span>
                 <span className="text-[10px] text-slate-500">27 Vedic Yogas</span>
               </div>
               <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
                 <span className="text-[10px] font-bold text-amber-500 uppercase block mb-1">Karana (करण)</span>
-                <span className="text-xs md:text-sm font-bold text-white block truncate">{avakahada.karana}</span>
+                <span className="text-xs md:text-sm font-bold text-white block break-words leading-snug">{avakahada.karana}</span>
                 <span className="text-[10px] text-slate-500">Half-Tithi Period</span>
               </div>
               <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
                 <span className="text-[10px] font-bold text-amber-500 uppercase block mb-1">Sun Sign (सूर्य राशि)</span>
-                <span className="text-xs md:text-sm font-bold text-white block truncate">{avakahada.sunSign}</span>
+                <span className="text-xs md:text-sm font-bold text-white block break-words leading-snug">{avakahada.sunSign}</span>
                 <span className="text-[10px] text-slate-500">{avakahada.sunSignSanskrit}</span>
               </div>
             </div>

@@ -533,7 +533,7 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Current Name</p>
-                  <p className="text-base font-bold text-white truncate">{name || 'Name Not Provided'}</p>
+                  <p className="text-base font-bold text-white break-words">{name || 'Name Not Provided'}</p>
                   <p className="text-[11px] text-slate-500 mt-1">Natal Spelling Analyzed</p>
                 </div>
                 <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl">
@@ -721,14 +721,14 @@ const NumerologyView: React.FC<NumerologyViewProps> = ({ language }) => {
                       >
                         <div>
                           <div className="flex items-center justify-between gap-2 mb-1">
-                            <span className="font-cinzel font-bold text-xs text-white truncate">
+                            <span className="font-cinzel font-bold text-xs text-white break-words">
                               {plane.name.split(' (')[0]}
                             </span>
                             <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${plane.statusColor}`}>
                               {plane.percentage}%
                             </span>
                           </div>
-                          <div className="text-[10px] text-slate-400 truncate">
+                          <div className="text-[10px] text-slate-400 break-words leading-tight">
                             Numbers: {plane.numbers.join(' • ')} ({plane.lifeDomain})
                           </div>
                         </div>
