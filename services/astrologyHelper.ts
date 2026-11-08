@@ -2167,28 +2167,28 @@ export const calculate12BhavasDetailedAnalysis = (
     // Build synthesized deep astrological narrative
     let detailedAnalysis = '';
 
-    if (isHindi) {
-      detailedAnalysis = `${cfg.coreThemesHi}\n\nआपकी जन्म लग्न कुण्डली में इस **${cfg.sanskritName}** पर **${rashiSanskrit}** राशि का प्रभाव है, जिसके अधिपति ग्रह **${rashiLordSanskrit}** हैं। यह भाव तत्त्व रूप में **${element}** ऊर्जा से संचालित है। `;
+    if (language === 'English') {
+      detailedAnalysis = `${cfg.coreThemes}\n\nIn your natal Janma Kundali, this ${cfg.englishTitle} is governed by the sign of ${rashiName}, whose planetary ruler is ${rashiLord}. This house operates under the primal ${element} element. `;
+
+      if (planetsInHouse.length > 0) {
+        const pNames = planetsInHouse.map(p => `${p.planet} (${p.dignity.split(' ')[0]})`).join(', ');
+        detailedAnalysis += `This sacred house is directly energized by the placement of ${pNames}, infusing these life matters with intense focus, specific karmic lessons, and heightened planetary influence. `;
+      } else {
+        detailedAnalysis += `No planetary body directly occupies this house; thus, its fruits are governed primarily through the placement, dignity, and aspects of its house lord ${rashiLord}. `;
+      }
+
+      detailedAnalysis += `Operating within the ${cfg.purushartha} pillar and classified as ${cfg.classification}, this house plays an indispensable role in shaping your ${cfg.lifeDomain}.`;
+    } else {
+      detailedAnalysis = `${cfg.coreThemesHi}\n\nआपकी जन्म लग्न कुण्डली में इस ${cfg.sanskritName} पर ${rashiSanskrit} राशि का प्रभाव है, जिसके अधिपति ग्रह ${rashiLordSanskrit} हैं। यह भाव तत्त्व रूप में ${element} ऊर्जा से संचालित है। `;
 
       if (planetsInHouse.length > 0) {
         const pNames = planetsInHouse.map(p => `${p.planetSanskrit.split('•')[1]?.trim() || p.planet} (${p.dignity})`).join(', ');
-        detailedAnalysis += `इस पावन भाव में **${pNames}** की प्रत्यक्ष उपस्थिति इस भाव के कारकतत्वों को असाधारण बल व विशिष्ट सक्रियता प्रदान करती है। `;
+        detailedAnalysis += `इस पावन भाव में ${pNames} की प्रत्यक्ष उपस्थिति इस भाव के कारकतत्वों को असाधारण बल व विशिष्ट सक्रियता प्रदान करती है। `;
       } else {
-        detailedAnalysis += `इस भाव में वर्तमान में कोई प्रत्यक्ष ग्रह स्थित नहीं है, अतः इसका मुख्य संचालन राशि स्वामी **${rashiLordSanskrit}** की स्थिति तथा शुभ ग्रहों की दृष्टियों द्वारा नियंत्रित होता है। `;
+        detailedAnalysis += `इस भाव में वर्तमान में कोई प्रत्यक्ष ग्रह स्थित नहीं है, अतः इसका मुख्य संचालन राशि स्वामी ${rashiLordSanskrit} की स्थिति तथा शुभ ग्रहों की दृष्टियों द्वारा नियंत्रित होता है। `;
       }
 
-      detailedAnalysis += `यह भाव **${cfg.purushartha}** पुरुषार्थ तथा **${cfg.classification}** की श्रेणी में आता है। अतः जातक के **${cfg.lifeDomain}** से जुड़े समस्त आयामों में यह भाव अत्यंत निर्णायक व प्रभावशाली भूमिका निभाता है।`;
-    } else {
-      detailedAnalysis = `${cfg.coreThemes}\n\nIn your natal Janma Kundali, this **${cfg.englishTitle}** is governed by the sign of **${rashiName} (${rashiSanskrit})**, whose planetary ruler is **${rashiLord} (${rashiLordSanskrit})**. This house operates under the primal **${element}** element. `;
-
-      if (planetsInHouse.length > 0) {
-        const pNames = planetsInHouse.map(p => `${p.planet} (${p.dignity})`).join(', ');
-        detailedAnalysis += `This sacred house is directly energized by the placement of **${pNames}**, infusing these life matters with intense focus, specific karmic lessons, and heightened planetary influence. `;
-      } else {
-        detailedAnalysis += `No planetary body directly occupies this house; thus, its fruits are governed primarily through the placement, dignity, and aspects of its house lord **${rashiLord}**. `;
-      }
-
-      detailedAnalysis += `Operating within the **${cfg.purushartha}** pillar and classified as **${cfg.classification}**, this house plays an indispensable role in shaping your **${cfg.lifeDomain}**.`;
+      detailedAnalysis += `यह भाव ${cfg.purushartha} पुरुषार्थ तथा ${cfg.classification} की श्रेणी में आता है। अतः जातक के ${cfg.lifeDomain} से जुड़े समस्त आयामों में यह भाव अत्यंत निर्णायक व प्रभावशाली भूमिका निभाता है।`;
     }
 
     // Dynamic boons and cautions based on occupying planets
