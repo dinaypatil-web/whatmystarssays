@@ -1,4 +1,4 @@
-import { PlanetaryTransitInfo, SaadesatiPhase, Language, AvakahadaDetails, PlanetaryPositionDetail, KundaliChartData } from "../types";
+import { PlanetaryTransitInfo, SaadesatiPhase, Language, AvakahadaDetails, PlanetaryPositionDetail, KundaliChartData, BhavaDetailedAnalysis } from "../types";
 
 export const CHALDEAN_MAP: Record<string, number> = {
   A: 1, I: 1, J: 1, Q: 1, Y: 1,
@@ -1598,6 +1598,644 @@ export const ensureValidKundaliChart = (
   }
 
   return cleanChart;
+};
+
+// ---------------------------------------------------------------------------
+// DWADASHA BHAVA (12 HOUSES) COMPREHENSIVE VEDIC ANALYSIS ENGINE
+// ---------------------------------------------------------------------------
+
+const PLANET_NAMES_SANSKRIT: Record<string, string> = {
+  Sun: 'Surya (सूर्य)',
+  Moon: 'Chandra (चन्द्र)',
+  Mars: 'Mangal (मंगल)',
+  Mercury: 'Budh (बुध)',
+  Jupiter: 'Guru (बृहस्पति)',
+  Venus: 'Shukra (शुक्र)',
+  Saturn: 'Shani (शनि)',
+  Rahu: 'Rahu (राहु)',
+  Ketu: 'Ketu (केतु)'
+};
+
+const BHAVA_CORE_CONFIG: Array<{
+  sanskritName: string;
+  englishTitle: string;
+  classification: string;
+  purushartha: 'Dharma' | 'Artha' | 'Kama' | 'Moksha';
+  karakaPlanet: string;
+  bodyParts: string;
+  lifeDomain: string;
+  baseBoons: [string, string, string];
+  baseCautions: [string, string, string];
+  baseRemedies: [string, string, string];
+  baseBoonsHi: [string, string, string];
+  baseCautionsHi: [string, string, string];
+  baseRemediesHi: [string, string, string];
+  coreThemes: string;
+  coreThemesHi: string;
+}> = [
+  // House 1
+  {
+    sanskritName: 'प्रथम भाव • तनु भाव (Tanu Bhava)',
+    englishTitle: '1st House • Ascendant & Soul Vitality',
+    classification: 'Kendra & Dharma Trikona (केंद्र एवं धर्म त्रिकोण)',
+    purushartha: 'Dharma',
+    karakaPlanet: 'Sun (Surya • सूर्य)',
+    bodyParts: 'Head, brain, forehead, vitality (मस्तिष्क, सिर, जीवन ऊर्जा)',
+    lifeDomain: 'Self, character, physical vitality, life orientation (शरीर, आत्मसम्मान, व्यक्तित्व)',
+    baseBoons: [
+      'Commanding personality with natural charisma and independent leadership capability.',
+      'Robust baseline vitality, mental fortitude, and resilience in adversity.',
+      'High self-respect and strong moral clarity guiding life decisions.'
+    ],
+    baseCautions: [
+      'Guard against excessive self-absorption, ego pride, or burning the candle at both ends.',
+      'Watch for stress-induced headaches, eye strain, or sudden restlessness.',
+      'Avoid taking impulsive unilateral decisions without consulting trusted confidants.'
+    ],
+    baseRemedies: [
+      'Offer water to the rising Sun (Surya Arghya) with copper vessel every morning.',
+      'Chant Gayatri Mantra (108 times) at dawn with focused meditation.',
+      'Drink water stored overnight in a pure copper vessel to balance vitality.'
+    ],
+    baseBoonsHi: [
+      'आकर्षक व्यक्तित्व, स्वाभाविक सम्मोहन क्षमता तथा स्वतंत्र नेतृत्व सामर्थ्य।',
+      'सुदृढ़ जीवन ऊर्जा, कठिन परिस्थितियों में मानसिक संतुलन और अदम्य इच्छाशक्ति।',
+      'उच्च आत्मसम्मान, नैतिक सत्यनिष्ठा तथा दूरदर्शी जीवन दृष्टिकोण।'
+    ],
+    baseCautionsHi: [
+      'अत्यधिक अहंकार, हठ अथवा कार्यभार के कारण शारीरिक-मानसिक थकान से बचें।',
+      'तनावजनित सिरदर्द, नेत्र-विकार अथवा उतावलेपन पर नियंत्रण रखें।',
+      'दूसरों के परामर्श की उपेक्षा कर एकांगी निर्णय लेने से परहेज करें।'
+    ],
+    baseRemediesHi: [
+      'प्रातःकाल तांबे के लोटे से सूर्य देव को कुमकुम-मिश्रित अर्घ्य अर्पित करें।',
+      'सूर्योदय के समय शांत मन से गायत्री महामंत्र की १ माला (१०८ बार) जपें।',
+      'रात्रि में तांबे के बर्तन में रखा जल प्रातःकाल सेवन कर दिनचर्या प्रारंभ करें।'
+    ],
+    coreThemes: 'The 1st House is the foundational cornerstone of the horoscope. It governs identity, physical vitality, constitutional stamina, and the soul orientation in this incarnation.',
+    coreThemesHi: 'प्रथम भाव जन्म कुण्डली का आधार स्तम्भ है। यह देह, आरोग्य, आत्मसम्मान, स्वभाव तथा इस जन्म में जीवात्मा के मूल उद्देश्य व जीवन दिशा का नियंत्रण करता है।'
+  },
+  // House 2
+  {
+    sanskritName: 'द्वितीय भाव • धन एवं कुटुम्ब भाव (Dhana Bhava)',
+    englishTitle: '2nd House • Wealth, Family Heritage & Speech',
+    classification: 'Panaphara & Maraka (पणफर एवं धन स्थान)',
+    purushartha: 'Artha',
+    karakaPlanet: 'Jupiter (Guru) & Mercury (Budh)',
+    bodyParts: 'Face, mouth, right eye, throat, speech (मुख, वाणी, दाहिना नेत्र, कंठ)',
+    lifeDomain: 'Liquid wealth, family lineage, food habits, speech, accumulated assets (धन-संग्रह, कुटुम्ब, वाणी)',
+    baseBoons: [
+      'Prudent financial accumulation habits and steady long-term asset security.',
+      'Eloquent, persuasive, and culturally refined speech inspiring trust.',
+      'Deep family heritage loyalty and affectionate domestic foundation.'
+    ],
+    baseCautions: [
+      'Avoid high-risk speculation or unverified financial promises during retrograde cycles.',
+      'Watch against harsh verbal retorts or reactive arguments in tense family matters.',
+      'Guard against dietary excesses, irregular meal cycles, or throat vulnerabilities.'
+    ],
+    baseRemedies: [
+      'Chant the sacred Shree Suktam or Lakshmi Ashtakam on Friday evenings.',
+      'Feed green grass, fodder, or soaked lentils to cows on Wednesdays.',
+      'Keep a square piece of pure silver in your wallet or locker for steady cash flow.'
+    ],
+    baseBoonsHi: [
+      'विवेकपूर्ण वित्तीय बचत, स्थिर पूंजी निर्माण तथा दीर्घकालीन परिसम्पत्ति सुरक्षा।',
+      'प्रभावशाली, मधुर एवं सुसंस्कृत वाणी जो जनमानस में विश्वसनीयता स्थापित करे।',
+      'पारिवारिक प्रतिष्ठा का संवर्धन तथा कुटुम्ब में परस्पर सौहार्दपूर्ण सम्बंध।'
+    ],
+    baseCautionsHi: [
+      'अटकलों, सट्टे अथवा बिना सोचे-समझे किए गए वित्तीय निवेश से दूर रहें।',
+      'क्रोध में कटु वाणी अथवा पारिवारिक मामलों में उत्तेजक वार्तालाप से बचें।',
+      'खान-पान में अनियमितता, अत्यधिक गरिष्ठ भोजन तथा गले की समस्याओं पर ध्यान दें।'
+    ],
+    baseRemediesHi: [
+      'शुक्रवार की संध्या घी का दीपक प्रज्वलित कर श्री सूक्त अथवा कनकधारा स्तोत्र का पाठ करें।',
+      'बुधवार के दिन गौमाता को हरा चारा अथवा भीगी हुई मूंग दाल खिलाएं।',
+      'अपनी तिजोरी या पर्स में चांदी का एक चौकोर ठोस टुकड़ा सदैव स्थापित रखें।'
+    ],
+    coreThemes: 'The 2nd House governs wealth preservation, family legacy, verbal eloquence, facial vitality, and dietary habits.',
+    coreThemesHi: 'द्वितीय भाव संचित धन, कुटुम्ब की परंपरा, वाणी का प्रभाव, मुखमंडल की आभा तथा वित्तीय सुरक्षा का प्रतिनिधित्व करता है।'
+  },
+  // House 3
+  {
+    sanskritName: 'तृतीय भाव • सहज एवं पराक्रम भाव (Sahaja Bhava)',
+    englishTitle: '3rd House • Courage, Initiative & Siblings',
+    classification: 'Upachaya & Apoklima (उपचय एवं सहज स्थान)',
+    purushartha: 'Kama',
+    karakaPlanet: 'Mars (Mangal • मंगल)',
+    bodyParts: 'Shoulders, arms, hands, respiratory system (भुजाएं, कंधे, श्वास तंत्र)',
+    lifeDomain: 'Valor, siblings, short journeys, communication, writing, enterprise (पराक्रम, अनुज, संचार, लेखन)',
+    baseBoons: [
+      'Fearless entrepreneurial spirit, dynamic initiative, and mental courage.',
+      'Versatile talents in communication, writing, networking, and digital execution.',
+      'Affectionate relationships and cooperative alliances with siblings and peers.'
+    ],
+    baseCautions: [
+      'Avoid impatience, irritability, or taking unnecessary competitive risks.',
+      'Beware of strain in shoulders, neck posture, or respiratory sensitivity.',
+      'Do not rush into binding verbal agreements without verified documentation.'
+    ],
+    baseRemedies: [
+      'Recite the Hanuman Chalisa on Tuesdays and apply natural red sandalwood tilak.',
+      'Honor and support younger siblings, peers, and co-workers regularly.',
+      'Offer jaggery (gud) and roasted chickpeas to monkeys or temple offerings on Tuesdays.'
+    ],
+    baseBoonsHi: [
+      'अदम्य पराक्रम, साहसिक उद्यमशीलता तथा चुनौतियों से न घबराने वाली कार्यशैली।',
+      'सटीक संचार कौशल, लेखन, तकनीकी दक्षता एवं जनसंपर्क में उत्कृष्ट निपुणता।',
+      'अनुज भ्राता-भगिनी व सहयोगियों का विश्वास व रचनात्मक कार्यों में सहयोग।'
+    ],
+    baseCautionsHi: [
+      'अत्यधिक उतावलेपन, अधीरता अथवा अनावश्यक वाद-विवाद से अपनी ऊर्जा व्यर्थ न करें।',
+      'कंधों, ग्रीवा अथवा श्वास संबंधी संवेदनशीलता के प्रति सजग रहें।',
+      'महत्वपूर्ण समझौतों में केवल मौखिक आश्वासन पर भरोसा न करें।'
+    ],
+    baseRemediesHi: [
+      'मंगलवार को हनुमान जी के समक्ष बैठकर श्रद्धापूर्वक हनुमान चालीसा का पाठ करें।',
+      'छोटे भाइयों, बहनों व कार्यक्षेत्र के अधीनस्थों का यथायोग्य सम्मान व सहयोग करें।',
+      'मंगलवार के दिन लाल मसूर की दाल अथवा गुड़ का दान निर्धनों को करें।'
+    ],
+    coreThemes: 'The 3rd House represents self-made efforts (Parakrama), mental resilience, communication versatility, short-distance travels, and sibling ties.',
+    coreThemesHi: 'तृतीय भाव बाहुबल, स्व-अर्जित पुरुषार्थ, पराक्रम, लेखन-संचार सामर्थ्य, लघु यात्राएं तथा बंधु-बांधवों के सुख का विश्लेषण करता है।'
+  },
+  // House 4
+  {
+    sanskritName: 'चतुर्थ भाव • सुख एवं मातृ भाव (Sukha Bhava)',
+    englishTitle: '4th House • Mother, Real Estate & Emotional Happiness',
+    classification: 'Kendra (केंद्र एवं सुख स्थान)',
+    purushartha: 'Moksha',
+    karakaPlanet: 'Moon (Chandra • चन्द्र)',
+    bodyParts: 'Chest, heart, lungs, maternal bond (हृदय, वक्षस्थल, मातृ सुख)',
+    lifeDomain: 'Mother, home, real estate, vehicles, domestic contentment (माता, गृह, भूमि, वाहन, मानसिक शांति)',
+    baseBoons: [
+      'Deep maternal blessings and warm, supportive domestic environment.',
+      'Favorable opportunities for acquiring comfortable vehicles and real estate properties.',
+      'Rich emotional empathy, intuitive contentment, and strong psychic grounding.'
+    ],
+    baseCautions: [
+      'Guard against emotional hypersensitivity, brooding, or nostalgic melancholy.',
+      'Avoid hasty property investments without comprehensive legal title verification.',
+      'Pay attention to cardiac stamina, respiratory ease, and domestic harmony.'
+    ],
+    baseRemedies: [
+      'Touch your mother’s feet daily or take maternal blessings before important ventures.',
+      'Offer fresh pure milk or water to the Shiva Lingam on Monday mornings.',
+      'Keep a small solid silver ball or bowl in your home’s North-East corner.'
+    ],
+    baseBoonsHi: [
+      'मातृ-कृपा का अनवरत संबल तथा पारिवारिक सुख-सुविधाओं से युक्त शांत गृह-परिवेश।',
+      'सुंदर वाहन, भवन, भूमि व अचल संपत्ति अर्जन के निरंतर शुभ अवसर।',
+      'गहरी संवेदनशीलता, आत्मीय समझदारी तथा मानसिक संतोष की स्वाभाविक अवस्था।'
+    ],
+    baseCautionsHi: [
+      'अत्यधिक भावुकता, पुरानी बातों को लेकर विषाद अथवा काल्पनिक चिंताओं से बचें।',
+      'भूमि-भवन के क्रय-विक्रय में दस्तावेजों की पूरी कानूनी जांच अवश्य कराएं।',
+      'हृदय-स्वास्थ्य, सीने में कफ व गृह-क्लेश को बढ़ावा देने वाली स्थितियों से सतर्क रहें।'
+    ],
+    baseRemediesHi: [
+      'नित्य प्रातः माता के चरण स्पर्श कर आशीर्वाद लें अथवा मातृ-तुल्य स्त्रियों का आदर करें।',
+      'सोमवार के दिन शिवलिंग पर कच्चा दूध व गंगाजल अर्पित कर ॐ नमः शिवाय का जप करें।',
+      'घर के ईशान कोण (उत्तर-पूर्व) में एक चांदी का पात्र अथवा ठोस चांदी का सिक्का रखें।'
+    ],
+    coreThemes: 'The 4th House anchors inner psychological contentment, maternal nurturing, real estate properties, comfortable conveyances, and ancestral roots.',
+    coreThemesHi: 'चतुर्थ भाव आंतरिक मानसिक शांति, मातृ-स्नेह, भूमि, भवन, वाहन तथा गृहस्थ जीवन के सुख का पवित्र केंद्र है।'
+  },
+  // House 5
+  {
+    sanskritName: 'पंचम भाव • पुत्र, बुद्धि एवं पूर्वपुण्य भाव (Putra Bhava)',
+    englishTitle: '5th House • Intellect, Progeny & Past Merits',
+    classification: 'Trikona (त्रिकोण एवं पूर्वपुण्य स्थान)',
+    purushartha: 'Dharma',
+    karakaPlanet: 'Jupiter (Guru • गुरु)',
+    bodyParts: 'Upper abdomen, stomach, intellect, mind (उदर, बुद्धि, अंतःकरण)',
+    lifeDomain: 'Higher intellect, children, past merits, creativity, romance (बुद्धि, संतान, पूर्वपुण्य, मंत्र-दीक्षा)',
+    baseBoons: [
+      'Acute analytical intellect, strategic foresight, and academic excellence.',
+      'Spiritual inclination with natural affinity for mantra sadhana and higher philosophy.',
+      'Fulfilling progeny prospects and joyful creative expression in hobbies and art.'
+    ],
+    baseCautions: [
+      'Avoid greedy speculative gambles, crypto-churning, or shortcuts promising instant riches.',
+      'Guard against digestive acidity, liver sluggishness, or stomach heat.',
+      'Do not let intellectual arrogance overlook the practical wisdom of associates.'
+    ],
+    baseRemedies: [
+      'Chant the Saraswati Mantra or Brihaspati Beej Mantra daily with devotion.',
+      'Donate yellow fruits, turmeric, or study materials to deserving students on Thursdays.',
+      'Practice regular morning pranayama to balance the solar plexus and digestion.'
+    ],
+    baseBoonsHi: [
+      'कुशाग्र स्मरण शक्ति, गूढ़ विषयों को शीघ्र ग्रहण करने की मेधा तथा शैक्षिक सफलता।',
+      'पूर्वजन्म के पुण्यों का लाभ, मंत्र-दीक्षा में सिद्धि तथा गहरी दार्शनिक अंतर्दृष्टि।',
+      'सुयोग्य व आज्ञाकारी संतान का सुख तथा कलात्मक-सृजनात्मक कार्यों में यश।'
+    ],
+    baseCautionsHi: [
+      'सट्टेबाजी, शेयर बाजार के अति-जोखिम अथवा त्वरित धनार्जन के प्रलोभन से बचें।',
+      'पाचन क्रिया, पित्त-विकार तथा उदर स्वास्थ्य के प्रति लापरवाही न बरतें।',
+      'ज्ञान के दंभ में दूसरों के व्यावहारिक अनुभवों की उपेक्षा करने से बचें।'
+    ],
+    baseRemediesHi: [
+      'बृहस्पतिवार को ॐ ग्रां ग्रीं ग्रौं सः गुरुवे नमः का जाप करें व केले के वृक्ष का पूजन करें।',
+      'विद्यार्थियों को पुस्तकें, पेन अथवा अध्ययन सामग्री का दान गुरुवार को करें।',
+      'भगवान विष्णु को पीले पुष्प, चंदन व बेसन के लड्डू का भोग अर्पित करें।'
+    ],
+    coreThemes: 'The 5th House represents the reservoir of past-life karmic credit (Purva Punya), creative genius, progeny destiny, academic brilliance, and mantra illumination.',
+    coreThemesHi: 'पंचम भाव पूर्वजन्म संचित पुण्यों, प्रखर बुद्धि, संतान-सुख, शोध-सृजन तथा मंत्र-साधना का सर्वोच्च धर्म त्रिकोण है।'
+  },
+  // House 6
+  {
+    sanskritName: 'षष्ठ भाव • अरि, रोग एवं सेवा भाव (Ari Bhava)',
+    englishTitle: '6th House • Health Defense, Daily Diligence & Overcoming Adversity',
+    classification: 'Dusthana & Upachaya (दुःस्थान एवं उपचय स्थान)',
+    purushartha: 'Artha',
+    karakaPlanet: 'Mars (Mangal) & Saturn (Shani)',
+    bodyParts: 'Intestines, digestive fire, kidneys, immunity (आंतें, पाचन तंत्र, रोग प्रतिरोधक क्षमता)',
+    lifeDomain: 'Overcoming enemies, debt control, disease defense, competitions (शत्रु विजय, ऋण मुक्ति, रोग रक्षा)',
+    baseBoons: [
+      'Formidable competitive stamina and high probability of triumph in exams and litigation.',
+      'Strong immune recovery power, disciplined daily routine, and dedicated service attitude.',
+      'Strategic diplomacy that disarms rivals and transforms hurdles into stepping stones.'
+    ],
+    baseCautions: [
+      'Guard against accumulating unnecessary debts or taking loans without clear repayment roadmap.',
+      'Watch for digestive inflammatory conditions, gut microbiome balance, and kidney health.',
+      'Avoid getting entangled in petty workplace disputes or protracted ego litigations.'
+    ],
+    baseRemedies: [
+      'Feed seven mixed grains (Sapta Dhanya) to wild birds on Saturday mornings.',
+      'Recite the Durga Kavacham or Hanuman Bahuk for physical immunity and debt relief.',
+      'Donate medicines or hygiene kits to free charitable dispensaries.'
+    ],
+    baseBoonsHi: [
+      'प्रतियोगी परीक्षाओं, मुकदमों तथा विरोधी परिस्थितियों में अजेय विजय सामर्थ्य।',
+      'रोगों से त्वरित मुक्ति दिलाने वाली सुदृढ़ रोग-प्रतिरोधक क्षमता व सेवा-भाव।',
+      'कठिन से कठिन चुनौतियों को अपने कौशल से अवसर में बदलने की व्यावहारिक चतुरता।'
+    ],
+    baseCautionsHi: [
+      'अनावश्यक ऋण लेने अथवा अनियंत्रित उधारी देने की आदत से पूर्णतः बचें।',
+      'पेट, आंतों व गुर्दों के स्वास्थ्य का विशेष ध्यान रखें; खानपान में स्वच्छता बरतें।',
+      'कार्यक्षेत्र में सहकर्मियों से ईर्ष्या या व्यर्थ के कानूनी विवादों में न उलझें।'
+    ],
+    baseRemediesHi: [
+      'शनिवार के दिन पक्षियों को सात प्रकार के मिश्रित अनाज (सप्तधान्य) डालें।',
+      'शत्रु-बाधा व रोग मुक्ति हेतु नित्य दुर्गा चालीसा अथवा हनुमान बाहुक का पाठ करें।',
+      'निर्धनों को औषधियां दान करें अथवा निःशुल्क चिकित्सालय में सेवा कार्य करें।'
+    ],
+    coreThemes: 'The 6th House is an Upachaya (growth) house governing competitive victories, health defense, debt management, daily vocational service, and overcoming adversaries.',
+    coreThemesHi: 'षष्ठ भाव उपचय स्थान होने के कारण निरंतर कर्मबल से रोगों, ऋणों तथा विरोधियों पर विजय प्राप्त करने का सामर्थ्य दर्शाता है।'
+  },
+  // House 7
+  {
+    sanskritName: 'सप्तम भाव • जाया, दाम्पत्य एवं व्यापार भाव (Yuvati Bhava)',
+    englishTitle: '7th House • Marriage, Partnerships & Public Engagements',
+    classification: 'Kendra & Maraka (केंद्र एवं कलत्र स्थान)',
+    purushartha: 'Kama',
+    karakaPlanet: 'Venus (Shukra) & Jupiter (Guru)',
+    bodyParts: 'Lower back, pelvic region, reproduction (कटि प्रदेश, गर्भाशय, जननांग)',
+    lifeDomain: 'Marriage, spouse nature, long-term partnerships, public life (दांपत्य, जीवनसाथी, व्यापारिक अनुबंध)',
+    baseBoons: [
+      'Devoted, dignified, and culturally refined life partner contributing to social elevation.',
+      'Success in collaborative business partnerships, joint ventures, and public interactions.',
+      'Magnetic public appeal and balanced diplomatic grace in negotiating high-stakes contracts.'
+    ],
+    baseCautions: [
+      'Prevent communication silences, passive-aggressive friction, or unrealistic expectations in marriage.',
+      'Ensure strict legal transparency and verified financial terms in all business partnerships.',
+      'Take care of reproductive health, lumbar spinal alignment, and hydration.'
+    ],
+    baseRemedies: [
+      'Offer fragrant white flowers and light a cow-ghee lamp to Goddess Lakshmi on Fridays.',
+      'Chant *Om Shukraya Namaha* (108 times) to harmonize relationship bonds.',
+      'Prepare sweet milk kheer on Friday and share it warmly with family members.'
+    ],
+    baseBoonsHi: [
+      'गुणवान, निष्ठावान व संस्कारवान जीवनसाथी का सानिध्य जो सामाजिक प्रतिष्ठा में वृद्धि करे।',
+      'साझेदारी के व्यवसायों, व्यापारिक गठबंधनों तथा विदेशी संपर्कों में निरंतर प्रगति।',
+      'सार्वजनिक जीवन में सम्मोहक प्रभाव व कूटनीतिक समझौतों में सफलता।'
+    ],
+    baseCautionsHi: [
+      'वैवाहिक जीवन में अहंकार, संवादहीनता अथवा अवास्तविक अपेक्षाओं को स्थान न दें।',
+      'व्यापारिक साझेदारों के साथ सभी नियम-शर्तें लिखित व पारदर्शी रखें।',
+      'कमर के निचले हिस्से, रीढ़ व जननेंद्रियों के स्वास्थ्य के प्रति सचेत रहें।'
+    ],
+    baseRemediesHi: [
+      'शुक्रवार की शाम माता लक्ष्मी के मंदिर में सुगंधित श्वेत पुष्प व गाय के घी का दीपक अर्पित करें।',
+      'दांपत्य माधुर्य हेतु नित्य ॐ शुं शुक्राय नमः का १०८ बार जप करें।',
+      'शुक्रवार को खीर बनाकर पहले कुलदेवी अथवा भगवान को भोग लगाएं, फिर सपत्नीक ग्रहण करें।'
+    ],
+    coreThemes: 'The 7th House anchors marital destiny, life partner characteristics, business joint ventures, legal contracts, and external public interactions.',
+    coreThemesHi: 'सप्तम भाव जीवनसाथी के स्वरूप, दांपत्य जीवन के सामंजस्य, व्यापारिक साझेदारियों तथा समाज के साथ स्थायी संबंधों का दर्पण है।'
+  },
+  // House 8
+  {
+    sanskritName: 'अष्टम भाव • रन्ध्र, आयु एवं गूढ़ ज्ञान भाव (Randhra Bhava)',
+    englishTitle: '8th House • Longevity, Deep Transformation & Hidden Wisdom',
+    classification: 'Dusthana & Panaphara (दुःस्थान एवं आयु स्थान)',
+    purushartha: 'Moksha',
+    karakaPlanet: 'Saturn (Shani • शनि)',
+    bodyParts: 'Excretory system, pelvic floor, longevity (गुदा, जननेंद्रिय, आयु शक्ति)',
+    lifeDomain: 'Longevity, occult wisdom, sudden transformations, legacy (आयु, गूढ़ विद्या, आकस्मिक परिवर्तन)',
+    baseBoons: [
+      'Exceptional lifespan vitality, deep occult/astrological intellect, and investigative acumen.',
+      'Extraordinary psychological resilience that rebounds stronger from life crises.',
+      'Potential for unexpected windfalls through inheritance, insurance, or unearned assets.'
+    ],
+    baseCautions: [
+      'Drive mindfully; avoid reckless driving or venturing into dangerous unknown terrains.',
+      'Guard against chronic anxiety, insomnia, or pelvic/excretory health neglect.',
+      'Never engage in unethical shortcut schemes or unverified speculative secrets.'
+    ],
+    baseRemedies: [
+      'Chant the Maha Mrityunjaya Mantra (11 or 108 times) daily with calm breath.',
+      'Donate black sesame seeds, mustard oil, or dark blankets to the needy on Saturdays.',
+      'Perform periodic Rudrabhishek or water offering to Lord Shiva for universal protection.'
+    ],
+    baseBoonsHi: [
+      'दीर्घायु योग, गूढ़ ज्योतिष-अध्यात्म व अनुसंधान में असाधारण पैठ व अंतर्दृष्टि।',
+      'संकटों व परिवर्तनों के मध्य शांत रहकर पुनः उठ खड़े होने की अद्वितीय मानसिक शक्ति।',
+      'पैतृक संपत्ति, बीमा अथवा अनपेक्षित स्रोतों से आकस्मिक लाभ के शुभ अवसर।'
+    ],
+    baseCautionsHi: [
+      'वाहन चलाते समय पूर्ण सतर्कता बरतें; अज्ञात व जोखिम भरे स्थलों पर जाने से बचें।',
+      'गूढ़ चिंताओं, अनिद्रा अथवा आंतों-गुदा संबंधी विकारों की अनदेखी न करें।',
+      'अनैतिक, गुप्त अथवा अवैध मार्ग से धन अर्जन का प्रयास कभी न करें।'
+    ],
+    baseRemediesHi: [
+      'नित्य प्रातः अथवा संध्या महामृत्युंजय मंत्र की कम से कम १ माला (१०८ बार) जपें।',
+      'शनिवार को काले तिल, सरसों का तेल अथवा काले वस्त्र जरूरतमंदों को दान करें।',
+      'माह में एक बार भगवान शिव का जलाभिषेक अथवा रुद्राभिषेक कराएं।'
+    ],
+    coreThemes: 'The 8th House governs longevity (Ayus), transformational crises, esoteric sciences, unearned inheritance, research depth, and psychological rebirth.',
+    coreThemesHi: 'अष्टम भाव आयु की अवधि, जीवन के आकस्मिक मोड़, गुप्त विद्याएं, अनुसंधान तथा आंतरिक आत्म-रूपांतरण का गूढ़ स्थान है।'
+  },
+  // House 9
+  {
+    sanskritName: 'नवम भाव • भाग्य, धर्म एवं गुरु भाव (Bhagya Bhava)',
+    englishTitle: '9th House • Fortune, Dharma, Higher Wisdom & Mentors',
+    classification: 'Trikona (सर्वश्रेष्ठ धर्म त्रिकोण स्थान)',
+    purushartha: 'Dharma',
+    karakaPlanet: 'Jupiter (Guru) & Sun (Surya)',
+    bodyParts: 'Thighs, hips, arterial system (जंघाएं, कूल्हे, रक्त संचार)',
+    lifeDomain: 'Divine grace, fortune, father, gurus, pilgrimage, dharma (भाग्योदय, धर्म, गुरु, तीर्थयात्रा)',
+    baseBoons: [
+      'Unfailing divine grace that manifests timely solutions during critical life crossroads.',
+      'Blessings of wise mentors, spiritual teachers, and benevolent paternal heritage.',
+      'Auspicious foreign travels, higher philosophical education, and philanthropic honor.'
+    ],
+    baseCautions: [
+      'Avoid taking luck for granted or slacking off on necessary practical preparations.',
+      'Do not harbor ideological dogmatism, judgmentalism, or disrespect toward elders.',
+      'Watch for sciatic nerve sensitivity, hip flexibility, and arterial circulation.'
+    ],
+    baseRemedies: [
+      'Touch your father’s or spiritual teacher’s feet with sincere humility and respect.',
+      'Worship Lord Vishnu with yellow flowers and apply yellow sandalwood tilak on Thursdays.',
+      'Support pilgrimages, temple welfare, or educational funds for underprivileged students.'
+    ],
+    baseBoonsHi: [
+      'दैवीय कृपा का निरंतर संबल, जिससे विषम परिस्थितियों में भी भाग्योदय के द्वार खुलें।',
+      'विद्वान गुरुओं, मार्गदर्शकों व पूज्य पिता का आशीर्वाद तथा उच्च आध्यात्मिक संस्कार।',
+      'तीर्थयात्राओं, उच्च शिक्षा, अंतरराष्ट्रीय यात्राओं तथा सामाजिक सत्कार्यों में यश।'
+    ],
+    baseCautionsHi: [
+      'भाग्य के भरोसे रहकर कर्म व परिश्रम में शिथिलता बरतने से बचें।',
+      'धार्मिक संकीर्णता अथवा गुरुजनों-पिता के प्रति अनादर की भावना मन में न आने दें।',
+      'कूल्हों, जांघों व रक्तचाप की नियमित देखभाल करें।'
+    ],
+    baseRemediesHi: [
+      'पिता अथवा पिता-तुल्य गुरुजनों का नित्य चरण-स्पर्श कर आशीर्वाद प्राप्त करें।',
+      'गुरुवार के दिन भगवान विष्णु को पीले कनेर के फूल व बेसन के लड्डू का भोग लगाएं।',
+      'किसी धार्मिक स्थल, तीर्थ अथवा गुरुकुल के कल्याण कोष में यथाशक्ति दान करें।'
+    ],
+    coreThemes: 'The 9th House is the crest of divine fortune (Bhagya), dharmic living, spiritual mentors, fatherly relationship, and philosophical evolution.',
+    coreThemesHi: 'नवम भाव जन्म कुंडली का सर्वाधिक शुभ धर्म त्रिकोण है। यह भाग्योदय, ईश्वर कृपा, पिता, गुरु, उच्च ज्ञान तथा सत्कर्मों का अधिष्ठाता है।'
+  },
+  // House 10
+  {
+    sanskritName: 'दशम भाव • कर्म, कीर्ति एवं राज्य भाव (Karma Bhava)',
+    englishTitle: '10th House • Career, Executive Authority, Fame & Zenith',
+    classification: 'Kendra (सर्वोच्च केंद्र एवं कर्म स्थान)',
+    purushartha: 'Artha',
+    karakaPlanet: 'Sun, Mercury, Jupiter, Saturn',
+    bodyParts: 'Knees, bones, skeletal structure, joints (जानु, घुटने, अस्थि तंत्र)',
+    lifeDomain: 'Career, vocation, authority, reputation, executive power (आजीविका, पद-प्रतिष्ठा, राज्य सम्मान)',
+    baseBoons: [
+      'Remarkable vocational ascent into positions of executive authority and public command.',
+      'Widespread professional respect, high credibility, and civic/governmental recognition.',
+      'Natural administrative stamina to oversee complex operations with strategic vision.'
+    ],
+    baseCautions: [
+      'Guard against professional workaholism that sacrifices family health and relationships.',
+      'Avoid hubristic management styles that generate unnecessary workplace rivals.',
+      'Pay attention to knee joints, bone density, and posture during sedentary desk hours.'
+    ],
+    baseRemedies: [
+      'Recite the Aditya Hridaya Stotram on Sundays for vocational brilliance and victory.',
+      'Keep a sacred brass or copper Sun emblem facing East at your primary workplace.',
+      'Engage in selfless community service (Nishkama Seva) without expecting accolades.'
+    ],
+    baseBoonsHi: [
+      'कार्यक्षेत्र में निरंतर उन्नति, प्रशासनिक अधिकार तथा उच्च प्रबंधकीय प्रतिष्ठा।',
+      'शासन, समाज व व्यावसायिक जगत में विशिष्ट सम्मान, विश्वसनीयता व कीर्ति।',
+      'जटिल से जटिल योजनाओं को सफलतापूर्वक क्रियान्वित करने का अद्भुत संगठनात्मक सामर्थ्य।'
+    ],
+    baseCautionsHi: [
+      'काम के अत्यधिक दबाव में परिवार, स्वास्थ्य व आत्मिक शांति की उपेक्षा न करें।',
+      'अधीनस्थ कर्मचारियों के प्रति कठोरता अथवा कार्यक्षेत्र में अनावश्यक ईर्ष्या से बचें।',
+      'घुटनों के जोड़ों, हड्डियों के स्वास्थ्य व कार्य के समय बैठने की मुद्रा का ध्यान रखें।'
+    ],
+    baseRemediesHi: [
+      'रविवार को सूर्योदय के समय आदित्य हृदय स्तोत्र का पाठ करें।',
+      'अपने कार्यालय अथवा अध्ययन कक्ष में पूर्व दिशा में तांबे का सूर्य यंत्र स्थापित करें।',
+      'सप्ताह में एक बार निस्वार्थ भाव से समाजोपयोगी सेवा कार्य में अपना समय दें।'
+    ],
+    coreThemes: 'The 10th House is the zenith of the chart (Midheaven), commanding career prestige, worldly achievements, authority figures, and public legacy.',
+    coreThemesHi: 'दशम भाव कुंडली का सर्वोच्च केंद्र (कर्म स्थान) है। यह जातक की आजीविका, व्यवसाय, मान-सम्मान, पदोन्नति तथा समाज में स्थायी प्रभाव का नियमन करता है।'
+  },
+  // House 11
+  {
+    sanskritName: 'एकादश भाव • लाभ, आय एवं सिद्धि भाव (Labha Bhava)',
+    englishTitle: '11th House • Incomes, Social Networks & Wish Fulfillment',
+    classification: 'Upachaya & Panaphara (उपचय एवं लाभ स्थान)',
+    purushartha: 'Kama',
+    karakaPlanet: 'Jupiter (Guru • गुरु)',
+    bodyParts: 'Calves, shins, left ear, ankles (पिंडलियां, बायां कर्ण, टखने)',
+    lifeDomain: 'Regular income, elder siblings, social networks, wish fulfillment (सर्वतोमुखी लाभ, मित्र, महत्वाकांक्षा)',
+    baseBoons: [
+      'Multiple diversified streams of income that expand progressively with age.',
+      'Influential circle of noble friends, mentors, and high-level social networks.',
+      'Fulfillment of long-cherished ambitions, humanitarian triumphs, and public awards.'
+    ],
+    baseCautions: [
+      'Avoid unwritten financial transactions or lending money carelessly within friend circles.',
+      'Do not allow monetary gain to compromise your fundamental moral integrity.',
+      'Watch for calf muscle cramps, ankle stiffness, or circulatory sluggishness in legs.'
+    ],
+    baseRemedies: [
+      'Offer green Durva grass to Lord Ganesha on Wednesdays and chant *Om Gan Ganapataye Namaha*.',
+      'Support elder siblings, mentors, and charitable orphanages on celebratory days.',
+      'Donate food grains, fruits, or green garments to underprivileged families.'
+    ],
+    baseBoonsHi: [
+      'आय के विविध व निरंतर बढ़ते स्रोत, जिससे जीवन में कभी धन का अभाव न रहे।',
+      'प्रतिष्ठित मित्रों, प्रभावशाली समाजसेवियों व शुभचिंतकों का निरंतर सहयोग।',
+      'दीर्घकालीन अभिलाषाओं, सामाजिक संकल्पों व उच्च लक्ष्यों की सहज पूर्ति।'
+    ],
+    baseCautionsHi: [
+      'मित्रों अथवा सामाजिक संपर्कों के साथ बिना लिखा-पढ़ी के वित्तीय लेन-देन से बचें।',
+      'केवल धन-लाभ के लिए अपने नैतिक मूल्यों व सिद्धांतों से समझौता न करें।',
+      'पिंडलियों, टखनों के दर्द अथवा पैरों में रक्त-संचार की शिथिलता के प्रति सावधान रहें।'
+    ],
+    baseRemediesHi: [
+      'बुधवार के दिन भगवान श्री गणेश को २१ दूर्वा दल अर्पित करें व मोदक का भोग लगाएं।',
+      'अपने बड़े भाइयों, बहनों व वरिष्ठ मित्रों का सम्मान करें और उन्हें उपहार दें।',
+      'अनाथालयों अथवा वृद्ध आश्रमों में अन्न व वस्त्र का नियमित दान करें।'
+    ],
+    coreThemes: 'The 11th House is the premier Upachaya (growth) house governing all forms of monetary inflow, social impact networks, elder siblings, and realization of desires.',
+    coreThemesHi: 'एकादश भाव सर्वतोमुखी लाभ, निरंतर धन-आगमन, वरिष्ठ बंधु-बांधवों, प्रभावशाली मित्रों तथा जीवन की समस्त मनोकामनाओं की सिद्धि का पावन स्थान है।'
+  },
+  // House 12
+  {
+    sanskritName: 'द्वादश भाव • व्यय, मोक्ष एवं विदेश भाव (Vyaya Bhava)',
+    englishTitle: '12th House • Spiritual Liberation, Foreign Connections & Inner Peace',
+    classification: 'Dusthana & Apoklima (त्रिक दुःस्थान एवं मोक्ष स्थान)',
+    purushartha: 'Moksha',
+    karakaPlanet: 'Saturn (Shani) & Ketu (केतु)',
+    bodyParts: 'Feet, toes, left eye, sleep cycles (चरण, तलवे, बायां नेत्र, निद्रा चक्र)',
+    lifeDomain: 'Spiritual liberation (Moksha), foreign travels, peaceful sleep, charity (मोक्ष, विदेश वास, दान, ध्यान)',
+    baseBoons: [
+      'Profound spiritual detachment, serene meditative insight, and inner awakening.',
+      'Lucrative opportunities through foreign connections, international voyages, and global ventures.',
+      'Generous philanthropic disposition that transforms wealth into lasting spiritual merit.'
+    ],
+    baseCautions: [
+      'Avoid chronic insomnia, irregular sleep patterns, or excessive escapist daydreams.',
+      'Keep prudent check over financial leakages, impulse purchases, or non-essential expenses.',
+      'Guard against isolation tendencies; maintain healthy social connection with loved ones.'
+    ],
+    baseRemedies: [
+      'Burn pure natural camphor (Kapur) in your bedroom at night to cleanse subtle energies.',
+      'Practice 15 minutes of silent mindful meditation or pranayama right before sleeping.',
+      'Donate warm blankets, shoes, or clothing to the destitute on Saturday evenings.'
+    ],
+    baseBoonsHi: [
+      'गहरी आध्यात्मिक अंतर्मुखता, ध्यान में सहज समाधि तथा सांसारिक प्रपंचों से विरक्ति।',
+      'विदेशी संपर्कों, बहुराष्ट्रीय उपक्रमों, आयात-निर्यात अथवा सुदूर यात्राओं से प्रचुर लाभ।',
+      'परोपकारी स्वभाव, दान-पुण्य से अर्जित अमर पुण्य तथा आंतरिक शांति का अनुभव।'
+    ],
+    baseCautionsHi: [
+      'अनिद्रा, रात्रि में अत्यधिक जागने अथवा व्यर्थ की दिवास्वप्न-वृत्ति पर नियंत्रण रखें।',
+      'अनावश्यक खर्चों, दिखावे अथवा विलासिता पर अनियंत्रित व्यय से बजट न बिगड़ने दें।',
+      'अत्यधिक एकांतप्रिय होकर परिवार व समाज से पूरी तरह कटने से बचें।'
+    ],
+    baseRemediesHi: [
+      'शयनकक्ष में रात्रि के समय शुद्ध भीमसेनी कपूर जलाकर वातावरण को सात्विक बनाएं।',
+      'सोने से पूर्व १०-१५ मिनट शांत बैठकर मन को शांत करें व ॐ का मानसिक जप करें।',
+      'शनिवार की शाम जरूरतमंदों को जूते, चप्पल अथवा ऊनी वस्त्र/कम्बल का दान करें।'
+    ],
+    coreThemes: 'The 12th House represents the final gateway of the zodiac: Moksha (liberation), foreign residence, philanthropic release, dream realms, and detachment from worldly illusions.',
+    coreThemesHi: 'द्वादश भाव राशि चक्र का अंतिम मोक्ष द्वार है। यह आध्यात्मिक मुक्ति, विदेश गमन, परोपकार, व्यय पर नियंत्रण तथा गहन निद्रा-सुख का कारक है।'
+  }
+];
+
+/**
+ * Computes exhaustive, structured analysis for all 12 Bhavas (Houses 1 to 12).
+ * Synthesizes the house's Rashi, Lord, resident planets, classification, and life impact.
+ */
+export const calculate12BhavasDetailedAnalysis = (
+  lagnaSignNumber: number = 1,
+  planetaryPositions: PlanetaryPositionDetail[] = [],
+  language: Language = 'English'
+): BhavaDetailedAnalysis[] => {
+  const isHindi = language === 'Hindi';
+  const lagnaIdx = Math.max(0, Math.min(11, (lagnaSignNumber || 1) - 1));
+
+  return BHAVA_CORE_CONFIG.map((cfg, idx) => {
+    const houseNumber = idx + 1;
+    const rashiIdx = (lagnaIdx + houseNumber - 1) % 12;
+    const rashiNumber = rashiIdx + 1;
+    const rashiName = RASHI_NAMES_EN[rashiIdx];
+    const rashiSanskrit = RASHI_NAMES_SANSKRIT[rashiIdx];
+    const rashiLord = SIGN_LORDS[rashiIdx];
+    const rashiLordSanskrit = PLANET_NAMES_SANSKRIT[rashiLord] || rashiLord;
+    const element = SIGN_ELEMENTS[rashiIdx] || 'Fire';
+
+    // Find planets in this house
+    const planetsInHouse = planetaryPositions.filter(p => p.house === houseNumber);
+
+    // Build synthesized deep astrological narrative
+    let detailedAnalysis = '';
+
+    if (isHindi) {
+      detailedAnalysis = `${cfg.coreThemesHi}\n\nआपकी जन्म लग्न कुण्डली में इस **${cfg.sanskritName}** पर **${rashiSanskrit}** राशि का प्रभाव है, जिसके अधिपति ग्रह **${rashiLordSanskrit}** हैं। यह भाव तत्त्व रूप में **${element}** ऊर्जा से संचालित है। `;
+
+      if (planetsInHouse.length > 0) {
+        const pNames = planetsInHouse.map(p => `${p.planetSanskrit.split('•')[1]?.trim() || p.planet} (${p.dignity})`).join(', ');
+        detailedAnalysis += `इस पावन भाव में **${pNames}** की प्रत्यक्ष उपस्थिति इस भाव के कारकतत्वों को असाधारण बल व विशिष्ट सक्रियता प्रदान करती है। `;
+      } else {
+        detailedAnalysis += `इस भाव में वर्तमान में कोई प्रत्यक्ष ग्रह स्थित नहीं है, अतः इसका मुख्य संचालन राशि स्वामी **${rashiLordSanskrit}** की स्थिति तथा शुभ ग्रहों की दृष्टियों द्वारा नियंत्रित होता है। `;
+      }
+
+      detailedAnalysis += `यह भाव **${cfg.purushartha}** पुरुषार्थ तथा **${cfg.classification}** की श्रेणी में आता है। अतः जातक के **${cfg.lifeDomain}** से जुड़े समस्त आयामों में यह भाव अत्यंत निर्णायक व प्रभावशाली भूमिका निभाता है।`;
+    } else {
+      detailedAnalysis = `${cfg.coreThemes}\n\nIn your natal Janma Kundali, this **${cfg.englishTitle}** is governed by the sign of **${rashiName} (${rashiSanskrit})**, whose planetary ruler is **${rashiLord} (${rashiLordSanskrit})**. This house operates under the primal **${element}** element. `;
+
+      if (planetsInHouse.length > 0) {
+        const pNames = planetsInHouse.map(p => `${p.planet} (${p.dignity})`).join(', ');
+        detailedAnalysis += `This sacred house is directly energized by the placement of **${pNames}**, infusing these life matters with intense focus, specific karmic lessons, and heightened planetary influence. `;
+      } else {
+        detailedAnalysis += `No planetary body directly occupies this house; thus, its fruits are governed primarily through the placement, dignity, and aspects of its house lord **${rashiLord}**. `;
+      }
+
+      detailedAnalysis += `Operating within the **${cfg.purushartha}** pillar and classified as **${cfg.classification}**, this house plays an indispensable role in shaping your **${cfg.lifeDomain}**.`;
+    }
+
+    // Dynamic boons and cautions based on occupying planets
+    const boons = isHindi ? [...cfg.baseBoonsHi] : [...cfg.baseBoons];
+    const cautions = isHindi ? [...cfg.baseCautionsHi] : [...cfg.baseCautions];
+    const remedies = isHindi ? [...cfg.baseRemediesHi] : [...cfg.baseRemedies];
+
+    if (planetsInHouse.length > 0) {
+      for (const p of planetsInHouse) {
+        if (p.dignity.includes('Exalted') || p.dignity.includes('Own') || p.dignity.includes('Moolatrikona')) {
+          if (isHindi) {
+            boons.unshift(`${p.planetSanskrit.split('•')[1]?.trim() || p.planet} की शुभ व उच्च स्थिति इस भाव के फलों में असाधारण वृद्धि करती है।`);
+          } else {
+            boons.unshift(`Auspicious dignity of ${p.planet} significantly magnifies the boons and fruits of this house.`);
+          }
+        } else if (p.dignity.includes('Debilitated') || p.dignity.includes('Enemy')) {
+          if (isHindi) {
+            cautions.unshift(`${p.planetSanskrit.split('•')[1]?.trim() || p.planet} की स्थिति इस भाव से संबंधित मामलों में सचेत व धैर्यवान रहने की प्रेरणा देती है।`);
+          } else {
+            cautions.unshift(`Dignity of ${p.planet} advises conscious patience and mindfulness in matters governed by this house.`);
+          }
+        }
+      }
+    }
+
+    return {
+      houseNumber,
+      name: cfg.englishTitle,
+      sanskritName: cfg.sanskritName,
+      rashiNumber,
+      rashiName,
+      rashiSanskrit,
+      rashiLord,
+      rashiLordSanskrit,
+      element,
+      classification: cfg.classification,
+      purushartha: cfg.purushartha,
+      karakaPlanet: cfg.karakaPlanet,
+      bodyParts: cfg.bodyParts,
+      lifeDomain: cfg.lifeDomain,
+      planets: planetsInHouse,
+      detailedAnalysis,
+      boons: boons.slice(0, 3),
+      cautions: cautions.slice(0, 3),
+      remedies: remedies.slice(0, 3)
+    };
+  });
 };
 
 // ---------------------------------------------------------------------------

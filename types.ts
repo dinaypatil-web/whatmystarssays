@@ -132,6 +132,28 @@ export interface PlanetaryPositionDetail {
   degree?: string;
 }
 
+export interface BhavaDetailedAnalysis {
+  houseNumber: number;
+  name: string;
+  sanskritName: string;
+  rashiNumber: number;
+  rashiName: string;
+  rashiSanskrit: string;
+  rashiLord: string;
+  rashiLordSanskrit: string;
+  element: string;
+  classification: string;
+  purushartha: 'Dharma' | 'Artha' | 'Kama' | 'Moksha';
+  karakaPlanet: string;
+  bodyParts: string;
+  lifeDomain: string;
+  planets: PlanetaryPositionDetail[];
+  detailedAnalysis: string;
+  boons: string[];
+  cautions: string[];
+  remedies: string[];
+}
+
 export interface KundaliResponse {
   report: string;
   chart: KundaliChartData;

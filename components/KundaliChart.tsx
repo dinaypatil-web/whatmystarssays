@@ -5,6 +5,7 @@ import { KundaliChartData } from '../types';
 interface KundaliChartProps {
   data: KundaliChartData;
   lagnaSign: number; // The sign (1-12) for the 1st House
+  onSelectHouse?: (houseNumber: number) => void;
 }
 
 const PLANET_SYMBOLS: { [key: string]: string } = {
@@ -65,7 +66,7 @@ const HOUSE_NAMES: { [key: number]: string } = {
   12: 'Vyaya (Losses)',
 };
 
-const KundaliChart: React.FC<KundaliChartProps> = ({ data, lagnaSign }) => {
+const KundaliChart: React.FC<KundaliChartProps> = ({ data, lagnaSign, onSelectHouse }) => {
   const [hoveredHouse, setHoveredHouse] = useState<number | null>(null);
 
   // SVG coordinates for house centers in a 400x400 diamond chart
@@ -191,6 +192,7 @@ const KundaliChart: React.FC<KundaliChartProps> = ({ data, lagnaSign }) => {
               className={`transition-all duration-500 cursor-pointer ${hoveredHouse === parseInt(id) ? 'fill-amber-500/20' : 'fill-transparent'}`}
               onMouseEnter={() => setHoveredHouse(parseInt(id))}
               onMouseLeave={() => setHoveredHouse(null)}
+              onClick={() => onSelectHouse?.(parseInt(id, 10))}
             />
           ))}
 
@@ -237,10 +239,11 @@ const KundaliChart: React.FC<KundaliChartProps> = ({ data, lagnaSign }) => {
 
         {/* Hover Information Overlay */}
         <div className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-500 ${hoveredHouse ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="bg-black/80 backdrop-blur-md px-6 py-2 rounded-full border border-amber-500/50 shadow-2xl">
-             <p className="text-amber-400 font-cinzel text-sm uppercase tracking-widest font-bold">
+          <div className="bg-black/85 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-amber-500/60 shadow-2xl text-center">
+             <p className="text-amber-400 font-cinzel text-xs sm:text-sm uppercase tracking-widest font-bold">
                {hoveredHouse ? `${hoveredHouse}${getOrdinal(hoveredHouse)} House: ${HOUSE_NAMES[hoveredHouse]}` : ''}
              </p>
+             <p className="text-[9px] text-amber-200/80 font-sans tracking-wider mt-0.5">Click to view in-depth Bhava analysis</p>
           </div>
         </div>
       </div>
