@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { BirthDetails, Language, ChatMessage, KundaliResponse, KundaliSystem, MahadashaPeriod, SaadesatiPhase, AvakahadaDetails, PlanetaryPositionDetail, BhavaDetailedAnalysis } from '../types';
 import { KUNDALI_SYSTEMS } from '../constants';
-import { ensureValidKundaliChart, calculate12BhavasDetailedAnalysis } from '../services/astrologyHelper';
+import { ensureValidKundaliChart, calculate12BhavasDetailedAnalysis, RASHI_NAMES_EN } from '../services/astrologyHelper';
 import KundaliChart from './KundaliChart';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -15,6 +15,7 @@ import {
   getLocalizedDignity,
   getLocalizedPaya,
   getLocalizedElement,
+  getLocalizedPurushartha,
   stripAsterisksAndMarkdown
 } from '../services/kundaliLocalization';
 

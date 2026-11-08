@@ -971,3 +971,4 @@ export const getLocalizedBhavaData = (houseNumber: number, language: Language): 
   }
   return generateIndicBhavaData(clampedHouse, language);
 };
+

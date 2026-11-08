@@ -143,7 +143,7 @@ export interface BhavaDetailedAnalysis {
   rashiLordSanskrit: string;
   element: string;
   classification: string;
-  purushartha: 'Dharma' | 'Artha' | 'Kama' | 'Moksha';
+  purushartha: 'Dharma' | 'Artha' | 'Kama' | 'Moksha' | string;
   karakaPlanet: string;
   bodyParts: string;
   lifeDomain: string;
