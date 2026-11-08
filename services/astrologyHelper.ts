@@ -1,4 +1,5 @@
 import { PlanetaryTransitInfo, SaadesatiPhase, Language, AvakahadaDetails, PlanetaryPositionDetail, KundaliChartData, BhavaDetailedAnalysis } from "../types";
+import { getLocalizedPlanet, getLocalizedSign, getLocalizedHouse, getLocalizedDignity, getLocalizedPurushartha, getLocalizedElement, getLocalizedClassification } from "./kundaliLocalization";
 
 export const CHALDEAN_MAP: Record<string, number> = {
   A: 1, I: 1, J: 1, Q: 1, Y: 1,
@@ -2139,6 +2140,256 @@ const BHAVA_CORE_CONFIG: Array<{
   }
 ];
 
+const BHAVA_MARATHI_CONFIG: Record<number, {
+  title: string;
+  lifeDomain: string;
+  coreThemes: string;
+  baseBoons: string[];
+  baseCautions: string[];
+  baseRemedies: string[];
+}> = {
+  1: {
+    title: 'प्रथम भाव • तनु भाव (शरीर, आरोग्य व व्यक्तिमत्त्व)',
+    lifeDomain: 'आरोग्य, शारीरिक तेज, स्वभाव, आत्मविश्वास आणि जीवन ऊर्जा',
+    coreThemes: 'प्रथम भाव किंवा लग्न स्थान हे संपूर्ण कुंडलीचा प्राण असून, ते जातकाचे शरीर, आरोग्य, व्यक्तिमत्त्व, विचारसरणी आणि स्वाभिमानाचे मूळ केंद्र आहे.',
+    baseBoons: [
+      'प्रभावी व्यक्तिमत्त्व, उच्च आत्मविश्वास, उत्तम आरोग्य आणि समाजात प्रतिष्ठा.',
+      'संकटांवर मात करण्याची मानसिक क्षमता आणि स्वतंत्र विचारसरणी.',
+      'स्वाभाविक नेतृत्वगुण, तेजस्वी स्वभाव आणि दीर्घायुष्य योग.'
+    ],
+    baseCautions: [
+      'अतिउत्साह किंवा कामाच्या ताणामुळे डोकेदुखी व मानसिक तणाव टाळा.',
+      'आहार आणि दिनचर्येचे काटेकोर नियम पाळा; आरोग्याकडे दुर्लक्ष करू नका.',
+      'अहंकार किंवा हट्टी स्वभावामुळे जवळच्या नातेवाईकांशी वाद टाळा.'
+    ],
+    baseRemedies: [
+      'दररोज सकाळी तांब्याच्या पात्रातून सूर्याला अर्घ्य द्यावे व ॐ घृणि सूर्याय नमः चा जप करावा.',
+      'कपाळावर चंदनाचा किंवा केशरचा टिळा लावावा.',
+      'गायीला चारा किंवा गूळ-पोळी खाऊ घालावी.'
+    ]
+  },
+  2: {
+    title: 'द्वितीय भाव • धन भाव (वाणी, संपत्ती व कुटुंब)',
+    lifeDomain: 'संचित धन, वाणी, कौटुंबिक सौख्य आणि संस्कार',
+    coreThemes: 'द्वितीय भाव जातकाची वाणी, पैतृक संपत्ती, संचित कोष, कौटुंबिक सौख्य आणि प्राथमिक संस्कारांचे द्योतक आहे.',
+    baseBoons: [
+      'आर्थिक स्थैर्य, संचित संपत्तीत निरंतर वृद्धी आणि व्यवसायात धनलाभ.',
+      'गोड आणि प्रभावी वाणी, ज्यामुळे समाजात आणि कुटुंबात आदर प्राप्त होतो.',
+      'कौटुंबिक सहकार्य आणि वडिलोपार्जित संपत्तीचा विशेष लाभ.'
+    ],
+    baseCautions: [
+      'अनावश्यक खर्च आणि सट्टेबाजी किंवा अनपेक्षित जोखमींपासून दूर राहा.',
+      'कटू शब्द वापरणे टाळा, ज्यामुळे नात्यांमध्ये दुरावा निर्माण होणार नाही.',
+      'मुख व डोळ्यांच्या आरोग्याची नियमित काळजी घ्या.'
+    ],
+    baseRemedies: [
+      'शुक्रवारी कनकधारा स्तोत्र किंवा महालक्ष्मी अष्टकमचे पठण करावे.',
+      'गुरुवारी गरजू व्यक्तींना पिवळे धान्य किंवा मिठाई दान करावी.',
+      'नेहमी घरात व तिजोरीत स्वच्छता ठेवावी.'
+    ]
+  },
+  3: {
+    title: 'तृतीय भाव • सहज भाव (पराक्रम, भावंडे व कौशल्य)',
+    lifeDomain: 'पराक्रम, धाडस, लहान भावंडे, संपर्क कला आणि कौशल्य',
+    coreThemes: 'तृतीय भाव अदम्य धैर्य, पराक्रम, लहान भावंडे, संपर्क कौशल्य आणि हाताच्या कौशल्यांचे स्थान आहे.',
+    baseBoons: [
+      'अफाट धाडस, जिद्द, परिश्रम करण्याची तयारी आणि संकटांशी लढण्याची क्षमता.',
+      'उत्कृष्ट संवाद कौशल्य, तांत्रिक कार्ये, लेखन किंवा कलेत निपुणता.',
+      'लहान भावंडांचे सहकार्य आणि अल्प प्रवासांतून आर्थिक लाभ.'
+    ],
+    baseCautions: [
+      'अति घाईगडबडीत घेतलेले निर्णय नुकसान पोहोचवू शकतात; संयम बाळगा.',
+      'सहकारी किंवा भावंडांसोबत गैरसमज टाळण्यासाठी स्पष्ट संवाद ठेवा.',
+      'खांदे, हात आणि श्वसन प्रणालीची नियमित काळजी घ्या.'
+    ],
+    baseRemedies: [
+      'मंगळवारी हनुमान चालिसाचे पठण करावे व लाल चंदनाचा टिळा लावावा.',
+      'पक्षांना दररोज धान्य आणि पाणी ठेवावे.',
+      'लहान भावंडांना किंवा मित्रांना मदत करावी.'
+    ]
+  },
+  4: {
+    title: 'चतुर्थ भाव • सुख भाव (माता, गृह, भूमी व मनःशांती)',
+    lifeDomain: 'मातृसुख, घर, जमीन, वाहन आणि अंतःकरणातील शांतता',
+    coreThemes: 'चतुर्थ भाव मातृसुख, स्वतःचे घर, जमीन-जुमला, वाहन आणि अंतःकरणातील मानसिक समाधानाचे केंद्र आहे.',
+    baseBoons: [
+      'मातेचा उत्तम आशीर्वाद, स्वतःचे घर आणि आलिशान वाहनांचे सुख.',
+      'स्थिर मालमत्ता, सुसज्ज गृहसौख्य आणि कुटुंबात शांततामय वातावरण.',
+      'सकारात्मक मनःस्थिती आणि समाजात प्रतिष्ठित स्थान.'
+    ],
+    baseCautions: [
+      'अतिसंवेदनशील किंवा भावूक होऊन स्वतःला एकाकी समजू नका.',
+      'घर किंवा मालमत्ता खरेदी-विक्री करताना कागदपत्रांची काळजीपूर्वक तपासणी करा.',
+      'हृदय, छाती आणि फुप्फुसांच्या आरोग्याची वेळोवेळी तपासणी करा.'
+    ],
+    baseRemedies: [
+      'दररोज सकाळी मातेच्या चरणांना स्पर्श करून आशीर्वाद घ्यावेत.',
+      'सोमवारी महादेवाला कच्च्या दुधाचा आणि पाण्याचा अभिषेक करावा.',
+      'घरात स्वच्छ आणि सकारात्मक वातावरण ठेवावे.'
+    ]
+  },
+  5: {
+    title: 'पंचम भाव • बुद्धी भाव (ज्ञान, संतती व पूर्वपुण्य)',
+    lifeDomain: 'उच्च विद्या, निर्णयक्षमता, संतती, पूर्वपुण्य आणि कलात्मक बुद्धी',
+    coreThemes: 'पंचम भाव पूर्वजन्मातील संचित पुण्य, उच्च विद्या, बुद्धिमत्ता, मंत्र साधना, सर्जनशीलता आणि संतती सुखाचे पावन स्थान आहे.',
+    baseBoons: [
+      'तीक्ष्ण बुद्धिमत्ता, उच्च शिक्षण, संशोधक वृत्ती आणि विद्वत्ता.',
+      'सुसंस्कृत संततीचे सौख्य आणि संततीकडून मान-सन्मान.',
+      'शेअर बाजार किंवा बौद्धिक कामांतून विशेष धनलाभाचे योग.'
+    ],
+    baseCautions: [
+      'अतिआत्मविश्वासात मोठी आर्थिक जोखीम किंवा जुगार खेळणे टाळा.',
+      'अभ्यास किंवा एकाग्रतेत खंड पडू देऊ नका.',
+      'पोटाचे विकार, पचनशक्ती आणि पाठीच्या मणक्याची काळजी घ्या.'
+    ],
+    baseRemedies: [
+      'दररोज गायत्री मंत्राचा किंवा सरस्वती स्तोत्राचा १०८ वेळा जप करावा.',
+      'गुरुवारी विद्यार्थ्यांना शैक्षणिक साहित्य किंवा पुस्तके भेट द्यावीत.',
+      'पिवळ्या रंगाचे वस्त्र किंवा केळीचे झाड पूजनीय मानावे.'
+    ]
+  },
+  6: {
+    title: 'षष्ठ भाव • सेवा भाव (शत्रू, रोग, स्पर्धा व विजय)',
+    lifeDomain: 'स्पर्धा परीक्षा, नोकरी, रोगप्रतिकारशक्ती, कर्ज आणि विजय',
+    coreThemes: 'षष्ठ भाव दैनंदिन कार्य, नोकरी, स्पर्धा, रोगप्रतिकारशक्ती आणि विरोधकांवर विजय मिळवण्याचे स्थान आहे.',
+    baseBoons: [
+      'स्पर्धा परीक्षांमध्ये दैदीप्यमान यश, विरोधकांवर सहज विजय.',
+      'उत्कृष्ट कार्यक्षमता, सेवेची आवड आणि नोकरीत पदोन्नतीचे योग.',
+      'कोणत्याही कठीण प्रसंगातून स्वतःला सुरक्षित बाहेर काढण्याची क्षमता.'
+    ],
+    baseCautions: [
+      'विनाकारण कर्ज घेणे किंवा कोणाची जामीन राहणे टाळा.',
+      'पोटाच्या तक्रारी किंवा पचनसंस्थेचे विकार दुर्लक्षित करू नका.',
+      'शत्रू किंवा विरोधकांना कधीही कमी लेखू नका; सावध राहा.'
+    ],
+    baseRemedies: [
+      'बुधवारी किंवा शनिवारी गरजू लोकांना अन्नदान करावे.',
+      'दररोज ॐ नमो भगवते वासुदेवाय चा जप करावा.',
+      'नियमित योग आणि प्राणायाम करून रोगप्रतिकारशक्ती वाढवावी.'
+    ]
+  },
+  7: {
+    title: 'सप्तम भाव • जाया भाव (विवाह, जोडीदार व भागीदारी)',
+    lifeDomain: 'दांपत्य जीवन, जोडीदार, भागीदारी व्यवसाय आणि जनसंपर्क',
+    coreThemes: 'सप्तम भाव वैवाहिक जीवन, जीवनसाथी, व्यावसायिक भागीदारी आणि सामाजिक जनसंपर्काचे महत्त्वाचे केंद्र आहे.',
+    baseBoons: [
+      'सुसंस्कृत, प्रेमळ आणि सहकार्य करणारा जीवनसाथी मिळण्याचे योग.',
+      'भागीदारीच्या व्यवसायातून मोठा नफा आणि समाजात लोकप्रियता.',
+      'सुखद आणि आनंदी वैवाहिक जीवन.'
+    ],
+    baseCautions: [
+      'संवादातील गैरसमज किंवा अहंकारामुळे दांपत्य जीवनात वाद निर्माण होऊ देऊ नका.',
+      'भागीदारी करताना सर्व करार लेखी आणि कायदेशीररीत्या करा.',
+      'मूत्रपिंड किंवा कमरेखालच्या अवयवांची काळजी घ्या.'
+    ],
+    baseRemedies: [
+      'शुक्रवारी लक्ष्मी-नारायणाची पूजा करावी आणि पांढरी मिठाई अर्पण करावी.',
+      'जोडीदाराचा आदर करावा आणि परस्पर समंजसपणा वाढवावा.',
+      'गाईला दररोज ताजी पोळी खाऊ घालावी.'
+    ]
+  },
+  8: {
+    title: 'अष्टम भाव • गूढ भाव (दीर्घायुष्य, संकट व आध्यात्मिक परिवर्तन)',
+    lifeDomain: 'आयुर्मर्यादा, आकस्मिक धनलाभ, गूढ ज्ञान, संशोधन व वारसाहक्क',
+    coreThemes: 'अष्टम भाव आयुष्याची मर्यादा, अकस्मात घडणाऱ्या घटना, गूढ विद्या, वारसाहक्क आणि आध्यात्मिक पुनर्जन्माचे गूढ स्थान आहे.',
+    baseBoons: [
+      'दीर्घायुष्य, गूढ शास्त्रे, ज्योतिष आणि अध्यात्मात सखोल गती.',
+      'अचानक धनलाभ, विमा, वारसाहक्क किंवा गुप्त स्रोतांतून आर्थिक फायदा.',
+      'कठीण संकटांतून तावून-सुलाखून बाहेर पडण्याची प्रचंड मानसिक शक्ती.'
+    ],
+    baseCautions: [
+      'वाहन चालवताना वेगावर नियंत्रण ठेवा आणि सतर्क राहा.',
+      'गुपित व्यवहार किंवा अनैतिक मार्गाने पैसे कमावण्याचा मोह टाळा.',
+      'मानसिक चिंता किंवा जुनाट विकारांकडे वेळीच लक्ष द्या.'
+    ],
+    baseRemedies: [
+      'दररोज महामृत्युंजय मंत्राचा किमान ११ किंवा १०८ वेळा जप करावा.',
+      'शनिवारी काळे तीळ किंवा मोहरीचे तेल दान करावे.',
+      'महादेवाला जलाभिषेक करावा.'
+    ]
+  },
+  9: {
+    title: 'नवम भाव • भाग्य भाव (भाग्य, धर्म, गुरु व उच्च शिक्षण)',
+    lifeDomain: 'ईश्वरीय कृपा, भाग्योदय, वडील, गुरु, तीर्थयात्रा आणि धर्म',
+    coreThemes: 'नवम भाव जन्म कुंडलीचा सर्वश्रेष्ठ धर्म त्रिकोण असून, तो भाग्योदय, ईश्वरीय कृपा, वडील, गुरु, उच्च ज्ञान आणि सदाचाराचे अधिष्ठान आहे.',
+    baseBoons: [
+      'प्रचंड भाग्यबल, संकटसमयी आपोआप मार्ग सापडणे आणि ईश्वराची कृपा.',
+      'विद्वान गुरुंचे आणि वडिलांचे आशीर्वाद, उच्च संस्कार आणि धार्मिक निष्ठा.',
+      'तीर्थयात्रा, परदेश प्रवास आणि उच्च शिक्षणात उत्तुंग यश.'
+    ],
+    baseCautions: [
+      'केवळ नशिबावर विसंबून राहून कष्टांकडे दुर्लक्ष करू नका.',
+      'वडिलांशी किंवा गुरुजनांशी कधीही मतभेद किंवा वाद घालू नका.',
+      'मांड्या, खुबा किंवा रक्ताभिसरणाची काळजी घ्या.'
+    ],
+    baseRemedies: [
+      'दररोज वडिलांच्या आणि गुरुंच्या चरणांना स्पर्श करून आशीर्वाद घ्यावेत.',
+      'गुरुवारी विष्णू सहस्रनामाचे पठण करावे किंवा पिवळे चंदन लावावे.',
+      'धार्मिक कार्यासाठी किंवा विद्यार्थ्यांच्या शिक्षणासाठी यथाशक्ती मदत करावी.'
+    ]
+  },
+  10: {
+    title: 'दशम भाव • कर्म भाव (कारकीर्द, अधिकार, पद व कीर्ती)',
+    lifeDomain: 'व्यवसाय, नोकरी, सामाजिक प्रतिष्ठा, अधिकार आणि कीर्ती',
+    coreThemes: 'दशम भाव सर्वोच्च केंद्र स्थान असून ते जातकाची आजीविका, व्यवसाय, अधिकार, राजकीय प्रतिष्ठा आणि यशाचे उत्तुंग शिखर आहे.',
+    baseBoons: [
+      'कारकीर्दीत सर्वोच्च पद, सरकारी किंवा खाजगी क्षेत्रात मोठा मान-सन्मान.',
+      'व्यापारात मोठी प्रगती, नेतृत्व करण्याची संधी आणि समाजात नावलौकिक.',
+      'कष्टातून स्वतःचे स्वतंत्र साम्राज्य निर्माण करण्याची क्षमता.'
+    ],
+    baseCautions: [
+      'कामाच्या ठिकाणी सहकाऱ्यांशी उद्धटपणा टाळा; अहंकारावर नियंत्रण ठेवा.',
+      'कामाचा अतिताण घेऊन आरोग्याकडे दुर्लक्ष करू नका.',
+      'गुडघे आणि सांध्यांच्या आरोग्याची काळजी घ्या.'
+    ],
+    baseRemedies: [
+      'दररोज सकाळी सूर्याला जल अर्पण करून आदित्य हृदय स्तोत्राचे पठण करावे.',
+      'शनिवारी शनी मंदिरात दिवा लावावा किंवा गरजूंना मदत करावी.',
+      'आपल्या कामात नेहमी सचोटी आणि प्रामाणिकपणा ठेवावा.'
+    ]
+  },
+  11: {
+    title: 'एकादश भाव • लाभ भाव (उत्पन्न, मित्र, इच्छापूर्ती व यश)',
+    lifeDomain: 'नियमित धनलाभ, उत्पन्न, मोठे भावंडे, मित्रपरिवार आणि इच्छापूर्ती',
+    coreThemes: 'एकादश भाव सर्व प्रकारचा लाभ, उत्पन्नाचे स्रोत, मित्रपरिवार, मोठे भावंडे आणि जीवनातील महत्त्वाकांक्षा पूर्ण करण्याचे स्थान आहे.',
+    baseBoons: [
+      'अनेक स्रोतांतून निरंतर धनलाभ, मोठी आर्थिक उद्दिष्टे साध्य होणे.',
+      'प्रतिष्ठित मित्रमंडळींचे सहकार्य आणि समाजातील प्रभावशाली व्यक्तींशी संबंध.',
+      'सर्व मनोकामना वेळेवर पूर्ण होण्याचे अत्यंत शुभ योग.'
+    ],
+    baseCautions: [
+      'लोभी किंवा स्वार्थी मित्रांच्या नादाला लागून आर्थिक नुकसान करून घेऊ नका.',
+      'कमाईचा योग्य विनियोग करा, उधळपट्टी टाळा.',
+      'घोटे आणि पायांच्या आरोग्याची काळजी घ्या.'
+    ],
+    baseRemedies: [
+      'बुधवारी गणपतीला २१ दुर्वा अर्पण कराव्यात आणि मोदकाचा नैवेद्य दाखवावा.',
+      'मोठ्या भावाचा आणि ज्येष्ठ व्यक्तींचा नेहमी आदर करावा.',
+      'आपल्या कमाईतील काही भाग समाजसेवेसाठी खर्च करावा.'
+    ]
+  },
+  12: {
+    title: 'द्वादश भाव • मोक्ष भाव (खर्च, परदेशगमन, ध्यान व मुक्ती)',
+    lifeDomain: 'खर्च, परदेश वास्तव्य, दानधर्म, एकांत, ध्यान आणि मोक्ष',
+    coreThemes: 'द्वादश भाव अंतिम मोक्ष, परदेश वास्तव्य, ध्यान, आध्यात्मिक एकांत आणि दातृत्व दर्शवणारे परम स्थान आहे.',
+    baseBoons: [
+      'परदेश प्रवास किंवा परदेशात स्थायिक होण्याचे अत्यंत प्रबळ योग.',
+      'धार्मिक कार्ये, दानधर्म आणि परोपकारातून मिळणारे समाधान आणि पुण्य.',
+      'अध्यात्म, ध्यानधारणा आणि मानसिक शांततेत प्रगती.'
+    ],
+    baseCautions: [
+      'व्यसने किंवा अनावश्यक विलासावर अनाठायी खर्च करणे टाळा.',
+      'डोळे आणि पायांच्या आरोग्याकडे दुर्लक्ष करू नका; पुरेशी झोप घ्या.',
+      'अनोळखी व्यक्तींवर डोळे झाकून आर्थिक विश्वास ठेवू नका.'
+    ],
+    baseRemedies: [
+      'रात्री झोपण्यापूर्वी मन शांत ठेवून नामस्मरण किंवा ध्यान करावे.',
+      'सोमवारी किंवा शनिवारी गरजू लोकांना अन्न किंवा पांढरी वस्त्रे दान करावीत.',
+      'तीर्थस्थानी जाऊन ध्यान किंवा साधना करावी.'
+    ]
+  }
+};
+
 /**
  * Computes exhaustive, structured analysis for all 12 Bhavas (Houses 1 to 12).
  * Synthesizes the house's Rashi, Lord, resident planets, classification, and life impact.
@@ -2148,6 +2399,8 @@ export const calculate12BhavasDetailedAnalysis = (
   planetaryPositions: PlanetaryPositionDetail[] = [],
   language: Language = 'English'
 ): BhavaDetailedAnalysis[] => {
+  const isEnglish = language === 'English';
+  const isMarathi = language === 'Marathi';
   const isHindi = language === 'Hindi';
   const lagnaIdx = Math.max(0, Math.min(11, (lagnaSignNumber || 1) - 1));
 
@@ -2161,74 +2414,124 @@ export const calculate12BhavasDetailedAnalysis = (
     const rashiLordSanskrit = PLANET_NAMES_SANSKRIT[rashiLord] || rashiLord;
     const element = SIGN_ELEMENTS[rashiIdx] || 'Fire';
 
+    // Localized attributes
+    const localizedSign = getLocalizedSign(rashiName, language);
+    const localizedLord = getLocalizedPlanet(rashiLord, language);
+    const localizedElement = getLocalizedElement(element, language);
+    const localizedPurushartha = getLocalizedPurushartha(cfg.purushartha, language);
+    const localizedClassification = getLocalizedClassification(cfg.classification, language);
+
     // Find planets in this house
     const planetsInHouse = planetaryPositions.filter(p => p.house === houseNumber);
 
     // Build synthesized deep astrological narrative
     let detailedAnalysis = '';
+    const mrCfg = BHAVA_MARATHI_CONFIG[houseNumber];
 
-    if (language === 'English') {
+    if (isEnglish) {
       detailedAnalysis = `${cfg.coreThemes}\n\nIn your natal Janma Kundali, this ${cfg.englishTitle} is governed by the sign of ${rashiName}, whose planetary ruler is ${rashiLord}. This house operates under the primal ${element} element. `;
 
       if (planetsInHouse.length > 0) {
-        const pNames = planetsInHouse.map(p => `${p.planet} (${p.dignity.split(' ')[0]})`).join(', ');
+        const pNames = planetsInHouse.map(p => `${p.planet} (${getLocalizedDignity(p.dignity, language)})`).join(', ');
         detailedAnalysis += `This sacred house is directly energized by the placement of ${pNames}, infusing these life matters with intense focus, specific karmic lessons, and heightened planetary influence. `;
       } else {
         detailedAnalysis += `No planetary body directly occupies this house; thus, its fruits are governed primarily through the placement, dignity, and aspects of its house lord ${rashiLord}. `;
       }
 
       detailedAnalysis += `Operating within the ${cfg.purushartha} pillar and classified as ${cfg.classification}, this house plays an indispensable role in shaping your ${cfg.lifeDomain}.`;
-    } else {
-      detailedAnalysis = `${cfg.coreThemesHi}\n\nआपकी जन्म लग्न कुण्डली में इस ${cfg.sanskritName} पर ${rashiSanskrit} राशि का प्रभाव है, जिसके अधिपति ग्रह ${rashiLordSanskrit} हैं। यह भाव तत्त्व रूप में ${element} ऊर्जा से संचालित है। `;
+    } else if (isMarathi && mrCfg) {
+      detailedAnalysis = `${mrCfg.coreThemes}\n\nआपल्या जन्म लग्न कुंडलीमध्ये या ${mrCfg.title} वर ${localizedSign} राशीचा प्रभाव असून, या राशीचे स्वामी ग्रह ${localizedLord} आहेत. हा भाव तत्त्व रूपाने ${localizedElement} ऊर्जेने संचालित आहे. `;
 
       if (planetsInHouse.length > 0) {
-        const pNames = planetsInHouse.map(p => `${p.planetSanskrit.split('•')[1]?.trim() || p.planet} (${p.dignity})`).join(', ');
-        detailedAnalysis += `इस पावन भाव में ${pNames} की प्रत्यक्ष उपस्थिति इस भाव के कारकतत्वों को असाधारण बल व विशिष्ट सक्रियता प्रदान करती है। `;
+        const pNames = planetsInHouse.map(p => `${getLocalizedPlanet(p.planet, language)} (${getLocalizedDignity(p.dignity, language)})`).join(', ');
+        detailedAnalysis += `या पावन भावात ${pNames} यांची प्रत्यक्ष उपस्थिती या भावाच्या कारकतत्त्वांना असाधारण बळ व विशेष सक्रियता प्रदान करते. `;
       } else {
-        detailedAnalysis += `इस भाव में वर्तमान में कोई प्रत्यक्ष ग्रह स्थित नहीं है, अतः इसका मुख्य संचालन राशि स्वामी ${rashiLordSanskrit} की स्थिति तथा शुभ ग्रहों की दृष्टियों द्वारा नियंत्रित होता है। `;
+        detailedAnalysis += `या भावात सध्या कोणताही प्रत्यक्ष ग्रह स्थित नसून, याचे मुख्य फळ राशी स्वामी ${localizedLord} यांची स्थिती व शुभ ग्रहांच्या दृष्टींद्वारे नियंत्रित होते. `;
       }
 
-      detailedAnalysis += `यह भाव ${cfg.purushartha} पुरुषार्थ तथा ${cfg.classification} की श्रेणी में आता है। अतः जातक के ${cfg.lifeDomain} से जुड़े समस्त आयामों में यह भाव अत्यंत निर्णायक व प्रभावशाली भूमिका निभाता है।`;
+      detailedAnalysis += `हा भाव ${localizedPurushartha} पुरुषार्थ तसेच ${localizedClassification} या श्रेणीत येतो. त्यामुळे जातकाच्या ${mrCfg.lifeDomain} या सर्व अंगांमध्ये हा भाव अत्यंत निर्णायक व प्रभावी भूमिका बजावतो.`;
+    } else {
+      detailedAnalysis = `${cfg.coreThemesHi}\n\nआपकी जन्म लग्न कुण्डली में इस ${cfg.sanskritName} पर ${localizedSign} राशि का प्रभाव है, जिसके अधिपति ग्रह ${localizedLord} हैं। यह भाव तत्त्व रूप में ${localizedElement} ऊर्जा से संचालित है। `;
+
+      if (planetsInHouse.length > 0) {
+        const pNames = planetsInHouse.map(p => `${getLocalizedPlanet(p.planet, language)} (${getLocalizedDignity(p.dignity, language)})`).join(', ');
+        detailedAnalysis += `इस पावन भाव में ${pNames} की प्रत्यक्ष उपस्थिति इस भाव के कारकतत्वों को असाधारण बल व विशिष्ट सक्रियता प्रदान करती है। `;
+      } else {
+        detailedAnalysis += `इस भाव में वर्तमान में कोई प्रत्यक्ष ग्रह स्थित नहीं है, अतः इसका मुख्य संचालन राशि स्वामी ${localizedLord} की स्थिति तथा शुभ ग्रहों की दृष्टियों द्वारा नियंत्रित होता है। `;
+      }
+
+      detailedAnalysis += `यह भाव ${localizedPurushartha} पुरुषार्थ तथा ${localizedClassification} की श्रेणी में आता है। अतः जातक के ${cfg.lifeDomain} से जुड़े समस्त आयामों में यह भाव अत्यंत निर्णायक व प्रभावशाली भूमिका निभाता है।`;
     }
 
-    // Dynamic boons and cautions based on occupying planets
-    const boons = isHindi ? [...cfg.baseBoonsHi] : [...cfg.baseBoons];
-    const cautions = isHindi ? [...cfg.baseCautionsHi] : [...cfg.baseCautions];
-    const remedies = isHindi ? [...cfg.baseRemediesHi] : [...cfg.baseRemedies];
+    // Dynamic boons, cautions, and remedies strictly localized
+    let boons: string[] = [];
+    let cautions: string[] = [];
+    let remedies: string[] = [];
+
+    if (isEnglish) {
+      boons = [...cfg.baseBoons];
+      cautions = [...cfg.baseCautions];
+      remedies = [...cfg.baseRemedies];
+    } else if (isMarathi && mrCfg) {
+      boons = [...mrCfg.baseBoons];
+      cautions = [...mrCfg.baseCautions];
+      remedies = [...mrCfg.baseRemedies];
+    } else {
+      boons = [...cfg.baseBoonsHi];
+      cautions = [...cfg.baseCautionsHi];
+      remedies = [...cfg.baseRemediesHi];
+    }
 
     if (planetsInHouse.length > 0) {
       for (const p of planetsInHouse) {
+        const planetLabel = getLocalizedPlanet(p.planet, language);
         if (p.dignity.includes('Exalted') || p.dignity.includes('Own') || p.dignity.includes('Moolatrikona')) {
-          if (isHindi) {
-            boons.unshift(`${p.planetSanskrit.split('•')[1]?.trim() || p.planet} की शुभ व उच्च स्थिति इस भाव के फलों में असाधारण वृद्धि करती है।`);
+          if (isEnglish) {
+            boons.unshift(`Auspicious dignity of ${planetLabel} significantly magnifies the boons and fruits of this house.`);
+          } else if (isMarathi) {
+            boons.unshift(`${planetLabel} यांची शुभ व बलवान स्थिती या भावाच्या फळांमध्ये असाधारण वृद्धी घडवून आणते.`);
           } else {
-            boons.unshift(`Auspicious dignity of ${p.planet} significantly magnifies the boons and fruits of this house.`);
+            boons.unshift(`${planetLabel} की शुभ व उच्च स्थिति इस भाव के फलों में असाधारण वृद्धि करती है।`);
           }
         } else if (p.dignity.includes('Debilitated') || p.dignity.includes('Enemy')) {
-          if (isHindi) {
-            cautions.unshift(`${p.planetSanskrit.split('•')[1]?.trim() || p.planet} की स्थिति इस भाव से संबंधित मामलों में सचेत व धैर्यवान रहने की प्रेरणा देती है।`);
+          if (isEnglish) {
+            cautions.unshift(`Dignity of ${planetLabel} advises conscious patience and mindfulness in matters governed by this house.`);
+          } else if (isMarathi) {
+            cautions.unshift(`${planetLabel} यांची स्थिती या भावाशी संबंधित विषयात विशेष सावधगिरी व संयम बाळगण्याची प्रेरणा देते.`);
           } else {
-            cautions.unshift(`Dignity of ${p.planet} advises conscious patience and mindfulness in matters governed by this house.`);
+            cautions.unshift(`${planetLabel} की स्थिति इस भाव से संबंधित मामलों में सचेत व धैर्यवान रहने की प्रेरणा देती है।`);
           }
         }
       }
     }
 
+    const houseDisplayName = isEnglish
+      ? cfg.englishTitle
+      : isMarathi && mrCfg
+        ? mrCfg.title
+        : cfg.sanskritName;
+
+    const houseLifeDomain = isEnglish
+      ? cfg.lifeDomain
+      : isMarathi && mrCfg
+        ? mrCfg.lifeDomain
+        : cfg.lifeDomain;
+
     return {
       houseNumber,
-      name: cfg.englishTitle,
-      sanskritName: cfg.sanskritName,
+      name: houseDisplayName,
+      sanskritName: houseDisplayName,
       rashiNumber,
-      rashiName,
-      rashiSanskrit,
-      rashiLord,
-      rashiLordSanskrit,
-      element,
-      classification: cfg.classification,
-      purushartha: cfg.purushartha,
+      rashiName: localizedSign,
+      rashiSanskrit: localizedSign,
+      rashiLord: localizedLord,
+      rashiLordSanskrit: localizedLord,
+      element: localizedElement,
+      classification: localizedClassification,
+      purushartha: localizedPurushartha,
       karakaPlanet: cfg.karakaPlanet,
       bodyParts: cfg.bodyParts,
-      lifeDomain: cfg.lifeDomain,
+      lifeDomain: houseLifeDomain,
       planets: planetsInHouse,
       detailedAnalysis,
       boons: boons.slice(0, 3),

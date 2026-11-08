@@ -37,6 +37,8 @@ export interface KundaliLocaleData {
     chapter: string;
     part: string;
     ch1Title: string;
+    ch1Part1Title: string;
+    ch1Part2Title: string;
     ch2Title: string;
     ch3Title: string;
     ch4Title: string;
@@ -70,6 +72,7 @@ export interface KundaliLocaleData {
     ofLabel: string;
     coverOption: string;
     chartOption: string;
+    sphutaOption: string;
     panchangaOption: string;
     navagrahaOption: string;
     mahadashaOption: string;
@@ -80,6 +83,7 @@ export interface KundaliLocaleData {
     pagePrefix: string;
     coverFooter: string;
     chartFooter: string;
+    sphutaFooter: string;
     panchangaFooter: string;
     navagrahaFooter: string;
     mahadashaFooter: string;
@@ -484,6 +488,84 @@ export const getLocalizedDignity = (dignity: string, language: Language): string
 };
 
 /**
+ * Normalizes Purushartha life pillar to clean localized label.
+ */
+export const getLocalizedPurushartha = (purushartha: string, language: Language): string => {
+  const pLower = (purushartha || '').toLowerCase();
+  if (language === 'English') {
+    if (pLower.includes('dharma')) return 'Dharma';
+    if (pLower.includes('artha')) return 'Artha';
+    if (pLower.includes('kama')) return 'Kama';
+    if (pLower.includes('moksha')) return 'Moksha';
+    return purushartha;
+  }
+  if (language === 'Marathi') {
+    if (pLower.includes('dharma') || pLower.includes('धर्म')) return 'धर्म';
+    if (pLower.includes('artha') || pLower.includes('अर्थ')) return 'अर्थ';
+    if (pLower.includes('kama') || pLower.includes('काम')) return 'काम';
+    if (pLower.includes('moksha') || pLower.includes('मोक्ष')) return 'मोक्ष';
+  }
+  if (pLower.includes('dharma') || pLower.includes('धर्म')) return 'धर्म';
+  if (pLower.includes('artha') || pLower.includes('अर्थ')) return 'अर्थ';
+  if (pLower.includes('kama') || pLower.includes('काम')) return 'काम';
+  if (pLower.includes('moksha') || pLower.includes('मोक्ष')) return 'मोक्ष';
+  return purushartha;
+};
+
+/**
+ * Normalizes Element (Fire, Earth, Air, Water) to clean localized label.
+ */
+export const getLocalizedElement = (element: string, language: Language): string => {
+  const eLower = (element || '').toLowerCase();
+  if (language === 'English') {
+    if (eLower.includes('fire') || eLower.includes('अग्नि')) return 'Fire';
+    if (eLower.includes('earth') || eLower.includes('पृथ्वी')) return 'Earth';
+    if (eLower.includes('air') || eLower.includes('वायु')) return 'Air';
+    if (eLower.includes('water') || eLower.includes('जल')) return 'Water';
+    return element;
+  }
+  if (language === 'Marathi') {
+    if (eLower.includes('fire') || eLower.includes('अग्नि') || eLower.includes('अग्नी')) return 'अग्नी';
+    if (eLower.includes('earth') || eLower.includes('पृथ्वी')) return 'पृथ्वी';
+    if (eLower.includes('air') || eLower.includes('वायु') || eLower.includes('वायू')) return 'वायू';
+    if (eLower.includes('water') || eLower.includes('जल')) return 'जल';
+  }
+  if (eLower.includes('fire') || eLower.includes('अग्नि')) return 'अग्नि';
+  if (eLower.includes('earth') || eLower.includes('पृथ्वी')) return 'पृथ्वी';
+  if (eLower.includes('air') || eLower.includes('वायु')) return 'वायु';
+  if (eLower.includes('water') || eLower.includes('जल')) return 'जल';
+  return element;
+};
+
+/**
+ * Normalizes House Classification to clean localized label.
+ */
+export const getLocalizedClassification = (classification: string, language: Language): string => {
+  const cLower = (classification || '').toLowerCase();
+  if (language === 'English') {
+    if (cLower.includes('kendra')) return 'Kendra (Cardinal Pillar)';
+    if (cLower.includes('trikona')) return 'Trikona (Trine of Fortune)';
+    if (cLower.includes('panaphara')) return 'Panaphara (Succedent)';
+    if (cLower.includes('apoklima')) return 'Apoklima (Cadent)';
+    if (cLower.includes('dusthana') || cLower.includes('trik')) return 'Dusthana (Karmic Friction)';
+    return classification;
+  }
+  if (language === 'Marathi') {
+    if (cLower.includes('kendra')) return 'केंद्र स्थान (मुख्य आधार)';
+    if (cLower.includes('trikona')) return 'त्रिकोण स्थान (परम भाग्य स्थान)';
+    if (cLower.includes('panaphara')) return 'पणफर स्थान';
+    if (cLower.includes('apoklima')) return 'अपोक्लिम स्थान';
+    if (cLower.includes('dusthana') || cLower.includes('trik')) return 'त्रिक / दुःख स्थान (सावधगिरीचे स्थान)';
+  }
+  if (cLower.includes('kendra')) return 'केन्द्र स्थान';
+  if (cLower.includes('trikona')) return 'त्रिकोण स्थान';
+  if (cLower.includes('panaphara')) return 'पणफर स्थान';
+  if (cLower.includes('apoklima')) return 'अपोक्लिम स्थान';
+  if (cLower.includes('dusthana') || cLower.includes('trik')) return 'त्रिक स्थान';
+  return classification;
+};
+
+/**
  * Comprehensive UI strings localized for all supported languages.
  */
 export const getKundaliLocale = (language: Language): KundaliLocaleData => {
@@ -517,6 +599,8 @@ export const getKundaliLocale = (language: Language): KundaliLocaleData => {
         chapter: 'Chapter',
         part: 'Part',
         ch1Title: 'Ascendant Birth Chart & Planetary Coordinates',
+        ch1Part1Title: 'Ascendant Birth Chart & Astral Coordinates',
+        ch1Part2Title: 'Graha Sphuta • Planetary Degrees & Dignities Table',
         ch2Title: 'Avakahada Chakra & Birth Panchanga (8 Cosmic Pillars)',
         ch3Title: 'Navagraha Matrix & Four Life Pillars (Purusharthas)',
         ch4Title: 'Vimshottari Mahadasha Timeline & Shani Sade Sati',
@@ -550,9 +634,10 @@ export const getKundaliLocale = (language: Language): KundaliLocaleData => {
         ofLabel: 'of',
         coverOption: 'Page 1: Royal Book Cover',
         chartOption: 'Page 2: Janma Kundali & Chart',
-        panchangaOption: 'Page 3: Avakahada & Panchanga',
-        navagrahaOption: 'Page 4: Navagraha & Purushartha',
-        mahadashaOption: 'Page 5: Vimshottari Mahadasha & Sade Sati',
+        sphutaOption: 'Page 3: Graha Sphuta & Planetary Table',
+        panchangaOption: 'Page 4: Avakahada & Panchanga',
+        navagrahaOption: 'Page 5: Navagraha & Purushartha',
+        mahadashaOption: 'Page 6: Vimshottari Mahadasha & Sade Sati',
         epilogueOption: 'Epilogue & Mantras'
       },
       footers: {
@@ -560,6 +645,7 @@ export const getKundaliLocale = (language: Language): KundaliLocaleData => {
         pagePrefix: 'Page',
         coverFooter: 'Certified Royal Patrika',
         chartFooter: 'Ascendant Birth Chart',
+        sphutaFooter: 'Graha Sphuta Table',
         panchangaFooter: 'Birth Panchanga',
         navagrahaFooter: 'Planetary Matrix',
         mahadashaFooter: 'Mahadasha & Sade Sati',
@@ -622,6 +708,8 @@ export const getKundaliLocale = (language: Language): KundaliLocaleData => {
         chapter: 'अध्याय',
         part: 'भाग',
         ch1Title: 'जन्म लग्न चक्र आणि ग्रह स्थिती',
+        ch1Part1Title: 'जन्म लग्न चक्र आणि खगोलीय निर्देशक',
+        ch1Part2Title: 'ग्रह स्पष्ट • नवग्रह स्थिती, राशी व अंश तालिका',
         ch2Title: 'अवकहडा चक्र आणि जन्म पंचांग',
         ch3Title: 'नवग्रह स्थिती आणि चार पुरुषार्थ',
         ch4Title: 'विंशोत्तरी महादशा कालचक्र आणि साडेसाती',
@@ -655,9 +743,10 @@ export const getKundaliLocale = (language: Language): KundaliLocaleData => {
         ofLabel: 'पैकी',
         coverOption: 'पृष्ठ १: मुख्य पृष्ठ',
         chartOption: 'पृष्ठ २: जन्म लग्न चक्र',
-        panchangaOption: 'पृष्ठ ३: अवकहडा आणि पंचांग',
-        navagrahaOption: 'पृष्ठ ४: नवग्रह आणि पुरुषार्थ',
-        mahadashaOption: 'पृष्ठ ५: महादशा आणि साडेसाती',
+        sphutaOption: 'पृष्ठ ३: ग्रह स्पष्ट व ग्रह स्थिती',
+        panchangaOption: 'पृष्ठ ४: अवकहडा आणि पंचांग',
+        navagrahaOption: 'पृष्ठ ५: नवग्रह आणि पुरुषार्थ',
+        mahadashaOption: 'पृष्ठ ६: महादशा आणि साडेसाती',
         epilogueOption: 'उपसंहार आणि मंत्र'
       },
       footers: {
@@ -665,6 +754,7 @@ export const getKundaliLocale = (language: Language): KundaliLocaleData => {
         pagePrefix: 'पृष्ठ',
         coverFooter: 'प्रमाणीकृत कुंडली',
         chartFooter: 'जन्म लग्न चक्र',
+        sphutaFooter: 'ग्रह स्पष्ट तालिका',
         panchangaFooter: 'जन्म पंचांग',
         navagrahaFooter: 'नवग्रह स्थिती',
         mahadashaFooter: 'महादशा आणि साडेसाती',
@@ -726,6 +816,8 @@ export const getKundaliLocale = (language: Language): KundaliLocaleData => {
         chapter: 'અધ્યાય',
         part: 'ભાગ',
         ch1Title: 'જન્મ લગ્ન ચક્ર અને ગ્રહ સ્પષ્ટ',
+        ch1Part1Title: 'જન્મ લગ્ન ચક્ર અને ખગોળીય નિર્દેશાંક',
+        ch1Part2Title: 'ગ્રહ સ્પષ્ટ • નવગ્રહ સ્થિતિ અને રાશિ પત્રક',
         ch2Title: 'અવકહડા ચક્ર અને જન્મ પંચાંગ',
         ch3Title: 'નવગ્રહ સ્થિતિ અને પુરુષાર્થ',
         ch4Title: 'વિંશોત્તરી મહાદશા કાળચક્ર અને સાડાસાતી',
@@ -759,9 +851,10 @@ export const getKundaliLocale = (language: Language): KundaliLocaleData => {
         ofLabel: 'માંથી',
         coverOption: 'પૃષ્ઠ ૧: મુખપૃષ્ઠ',
         chartOption: 'પૃષ્ઠ ૨: જન્મ લગ્ન ચક્ર',
-        panchangaOption: 'પૃષ્ઠ ૩: અવકહડા અને પંચાંગ',
-        navagrahaOption: 'પૃષ્ઠ ૪: નવગ્રહ અને પુરુષાર્થ',
-        mahadashaOption: 'પૃષ્ઠ ૫: મહાદશા અને સાડાસાતી',
+        sphutaOption: 'પૃષ્ઠ ૩: ગ્રહ સ્પષ્ટ અને ગ્રહ સ્થિતિ',
+        panchangaOption: 'પૃષ્ઠ ૪: અવકહડા અને પંચાંગ',
+        navagrahaOption: 'પૃષ્ઠ ૫: નવગ્રહ અને પુરુષાર્થ',
+        mahadashaOption: 'પૃષ્ઠ ૬: મહાદશા અને સાડાસાતી',
         epilogueOption: 'ઉપસંહાર અને મંત્ર'
       },
       footers: {
@@ -769,6 +862,7 @@ export const getKundaliLocale = (language: Language): KundaliLocaleData => {
         pagePrefix: 'પૃષ્ઠ',
         coverFooter: 'પ્રમાણિત કુંડળી',
         chartFooter: 'જન્મ લગ્ન ચક્ર',
+        sphutaFooter: 'ગ્રહ સ્પષ્ટ પત્રક',
         panchangaFooter: 'જન્મ પંચાંગ',
         navagrahaFooter: 'નવગ્રહ સ્થિતિ',
         mahadashaFooter: 'મહાદશા અને સાડાસાતી',
@@ -830,6 +924,8 @@ export const getKundaliLocale = (language: Language): KundaliLocaleData => {
       chapter: 'अध्याय',
       part: 'भाग',
       ch1Title: 'जन्म लग्न चक्र एवं ग्रह स्पष्ट स्थिति',
+      ch1Part1Title: 'जन्म लग्न चक्र एवं खगोलीय निर्देशांक',
+      ch1Part2Title: 'ग्रह स्पष्ट • नवग्रह स्थिति, राशि एवं बलाबल सारिणी',
       ch2Title: 'अवकहड़ा चक्र एवं जन्म पंचांग (८ मूलभूत आधार)',
       ch3Title: 'नवग्रह स्थिति एवं पुरुषार्थ चतुष्टय',
       ch4Title: 'विंशोत्तरी महादशा काल चक्र एवं साढ़ेसाती',
@@ -862,10 +958,11 @@ export const getKundaliLocale = (language: Language): KundaliLocaleData => {
       pageLabel: 'पृष्ठ',
       ofLabel: 'कुल',
       coverOption: 'पृष्ठ १: शाही मुखपृष्ठ',
-      chartOption: 'पृष्ठ २: जन्म लग्न चक्र एवं ग्रह स्पष्ट',
-      panchangaOption: 'पृष्ठ ३: अवकहड़ा चक्र एवं जन्म पंचांग',
-      navagrahaOption: 'पृष्ठ ४: नवग्रह स्थिति एवं पुरुषार्थ',
-      mahadashaOption: 'पृष्ठ ५: विंशोत्तरी महादशा एवं साढ़ेसाती',
+      chartOption: 'पृष्ठ २: जन्म लग्न चक्र',
+      sphutaOption: 'पृष्ठ ३: ग्रह स्पष्ट एवं ग्रह तालिका',
+      panchangaOption: 'पृष्ठ ४: अवकहड़ा चक्र एवं जन्म पंचांग',
+      navagrahaOption: 'पृष्ठ ५: नवग्रह स्थिति एवं पुरुषार्थ',
+      mahadashaOption: 'पृष्ठ ६: विंशोत्तरी महादशा एवं साढ़ेसाती',
       epilogueOption: 'उपसंहार एवं मन्त्र'
     },
     footers: {
@@ -873,6 +970,7 @@ export const getKundaliLocale = (language: Language): KundaliLocaleData => {
       pagePrefix: 'पृष्ठ',
       coverFooter: 'ज्योतिषपीठ प्रमाणीकरण',
       chartFooter: 'जन्म लग्न चक्र',
+      sphutaFooter: 'ग्रह स्पष्ट सारिणी',
       panchangaFooter: 'जन्म पंचांग',
       navagrahaFooter: 'नवग्रह स्थिति',
       mahadashaFooter: 'महादशा एवं साढ़ेसाती',

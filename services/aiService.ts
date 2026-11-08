@@ -459,23 +459,26 @@ ${moonContext}
 ${saadesatiPromptContext}
 
 MANDATORY DEPTH & STRUCTURE REQUIREMENTS FOR THE REPORT:
-The "report" field must be an exhaustive, deeply detailed, beautifully written multi-page Markdown document in ${language} featuring:
-1. **Lagna & Atmakaraka Soul Blueprint (लग्न एवं आत्मकारक विश्लेषण)**: Exhaustive multi-paragraph analysis of the Ascendant sign, physical vitality, temperament, psychological profile, and core karmic life purpose.
-2. **Comprehensive 12 Bhava (House-by-House) Detailed Predictions (द्वादश भाव विस्तृत फलकथन)**:
+The "report" field must be an exhaustive, deeply detailed, beautifully written multi-page Markdown document written strictly and exclusively in ${language} featuring:
+1. Lagna & Atmakaraka Soul Blueprint: Exhaustive multi-paragraph analysis of the Ascendant sign, physical vitality, temperament, psychological profile, and core karmic life purpose.
+2. Comprehensive 12 Bhava (House-by-House) Detailed Predictions:
    - Provide an individual, deeply detailed multi-paragraph evaluation for ALL 12 HOUSES (1 to 12).
    - In EVERY house analysis, detail BOTH positive strengths/fruits and negative challenges/friction points.
    - For every challenging placement, immediately integrate constructive insights and specific Vedic remedial countermeasures.
-3. **Navagraha Deep Interpretation (नवग्रह विस्तृत प्रभाव)**: Detailed assessment of all 9 Grahas (Sun through Ketu) in their respective signs and houses with dignity, aspects (Drishti), and functional indications.
-4. **Career, Profession & Financial Trajectory (आजीविका एवं धन-सम्पत्ति योग)**: In-depth analysis of optimal career industries, job vs business suitability, financial accumulation capacity, and peak earning years, alongside periods of professional struggle, career stagnation, or financial leakages, paired with actionable remedies.
-5. **Marriage, Love & Relationship Dynamics (विवाह, दाम्पत्य एवं सम्बन्ध)**: In-depth analysis of the 7th house, Venus/Jupiter placements, spouse characteristics, natural harmonies, and potential friction/misunderstandings, provided with constructive communication habits and Vedic relationship remedies.
-6. **Health, Vitality & Preventive Ayurveda (स्वास्थ्य, जीवन शक्ति एवं आयुर्वेद)**: Physical constitution (Vata/Pitta/Kapha), strengths, sensitive bodily areas, potential stress cycles, and preventative Ayurvedic/Vedic lifestyle remedies.
-7. **Major Planetary Yogas, Doshas & Gochara Transits (ग्रह योग, दोष एवं गोचर)**: Raja Yogas, Dhana Yogas, Gajakesari Yoga, Manglik / Kalsarp / Pitri Rin analysis with specific classical cancellations and uplifting mitigation remedies.
-8. **Vimshottari Mahadasha Lifelong Timeline Table (120-Year)**: Complete 9-Mahadasha table with exact years, plus detailed interpretation of active Mahadasha and Antardasha detailing both favorable boons and challenging test periods with targeted planetary remedies.
-9. **Shani Saadesati Exact Timeline**: Exact start and end dates for all 3 phases (~2.5 years each) with real-time status and reassuring, protective remedial guidance.
-10. **Prescriptive Classical Vedic Remedies (विस्तृत वैदिक एवं लाल किताब उपाय)**: Comprehensive dedicated section detailing Primary gemstone (carats, metal, finger, day, ritual), Rudraksha mukhi, Vedic Beej mantras with exact counts, charitable acts (Daan), and daily spiritual disciplines to balance all identified karmic challenges.
+3. Navagraha Deep Interpretation: Detailed assessment of all 9 Grahas (Sun through Ketu) in their respective signs and houses with dignity, aspects (Drishti), and functional indications.
+4. Career, Profession & Financial Trajectory: In-depth analysis of optimal career industries, job vs business suitability, financial accumulation capacity, and peak earning years, alongside periods of professional struggle, career stagnation, or financial leakages, paired with actionable remedies.
+5. Marriage, Love & Relationship Dynamics: In-depth analysis of the 7th house, Venus/Jupiter placements, spouse characteristics, natural harmonies, and potential friction/misunderstandings, provided with constructive communication habits and Vedic relationship remedies.
+6. Health, Vitality & Preventive Ayurveda: Physical constitution (Vata/Pitta/Kapha), strengths, sensitive bodily areas, potential stress cycles, and preventative Ayurvedic/Vedic lifestyle remedies.
+7. Major Planetary Yogas, Doshas & Gochara Transits: Raja Yogas, Dhana Yogas, Gajakesari Yoga, Manglik / Kalsarp / Pitri Rin analysis with specific classical cancellations and uplifting mitigation remedies.
+8. Vimshottari Mahadasha Lifelong Timeline Table (120-Year): Complete 9-Mahadasha table with exact years, plus detailed interpretation of active Mahadasha and Antardasha detailing both favorable boons and challenging test periods with targeted planetary remedies.
+9. Shani Saadesati Exact Timeline: Exact start and end dates for all 3 phases (~2.5 years each) with real-time status and reassuring, protective remedial guidance.
+10. Prescriptive Classical Vedic Remedies: Comprehensive dedicated section detailing Primary gemstone (carats, metal, finger, day, ritual), Rudraksha mukhi, Vedic Beej mantras with exact counts, charitable acts (Daan), and daily spiritual disciplines to balance all identified karmic challenges.
 
-CRITICAL CHART & LANGUAGE REQUIREMENT:
-- You MUST write the entire "report" and all textual descriptions (starLord, subLord, nakshatra, moonSign) in ${language} (using native ${language} script).
+CRITICAL SCRIPT & LANGUAGE PURITY MANDATE:
+- The user has chosen the language: ${language}.
+- You MUST write 100% of the "report" and all textual fields (starLord, subLord, nakshatra, moonSign) strictly and exclusively in ${language} (using native ${language} script).
+- NEVER mix Hindi, Marathi, or English words together.
+- When ${language} is selected, do NOT use English or Hindi words in parentheses (e.g. if Marathi is selected, do NOT write "आरोग्य (Health)" or "लग्न (Lagna)" or "Friendly (मित्र)"). Write everything strictly in pure, natural, fluent ${language}.
 - ASTERISK AND FORMATTING MANDATE: Do NOT use asterisks (*) or (**) for bolding, bullet points, or titles. Write all text cleanly and fluently in ${language} without code-like markdown asterisks (*, **, ***).
 - The JSON keys ("report", "chart", "lagnaSign", "starLord", "subLord", "nakshatra", "moonSign", "mahadashas", "saadesatiCycles") and house numbers ("1".."12") must remain in English.
 - "chart": Distribute all 9 planets into their authentic astrological houses across keys "1" through "12" using standard abbreviations ["Su", "Mo", "Ma", "Me", "Ju", "Ve", "Sa", "Ra", "Ke"]. NEVER place all planets into House 1. Rahu and Ketu MUST be in opposite houses (7 houses apart).`,
@@ -635,15 +638,122 @@ const generateOfflineKundali = (
   });
 
   const RASHI_NAMES_HI = [
-    'मेष (Aries)', 'वृषभ (Taurus)', 'मिथुन (Gemini)', 'कर्क (Cancer)',
-    'सिंह (Leo)', 'कन्या (Virgo)', 'तुला (Libra)', 'वृश्चिक (Scorpio)',
-    'धनु (Sagittarius)', 'मकर (Capricorn)', 'कुम्भ (Aquarius)', 'मीन (Pisces)'
+    'मेष', 'वृषभ', 'मिथुन', 'कर्क',
+    'सिंह', 'कन्या', 'तुला', 'वृश्चिक',
+    'धनु', 'मकर', 'कुम्भ', 'मीन'
+  ];
+  const RASHI_NAMES_MR = [
+    'मेष', 'वृषभ', 'मिथुन', 'कर्क',
+    'सिंह', 'कन्या', 'तूळ', 'वृश्चिक',
+    'धनु', 'मकर', 'कुंभ', 'मीन'
   ];
   const lagnaName = RASHI_NAMES_HI[lagnaSign - 1];
+  const lagnaNameMr = RASHI_NAMES_MR[lagnaSign - 1];
 
+  const isMarathi = language === 'Marathi';
   const isHindi = language === 'Hindi';
 
-  const report = isHindi
+  const report = isMarathi
+    ? `# लग्न व आत्मकारक जीवन स्वरूप
+जातक ${details.name || 'जिज्ञासू'} यांचा जन्म शुभ ${lagnaNameMr} लग्नात झाला आहे. आपली जन्म चंद्र राशी ${moonSignName} असून पावन ${nakshatraName} नक्षत्रात जन्म झाला आहे. लग्न स्वामीचा प्रभाव आपल्या व्यक्तिमत्त्वात दृढ आत्मविश्वास, नैतिक निष्ठा, अफाट इच्छाशक्ती आणि स्वाभाविक नेतृत्वगुणांचे सिंचन करतो. आपले मन संवेदनशील, दूरदर्शी आणि सकारात्मक दृष्टिकोनाने परिपूर्ण आहे.
+
+## द्वादश भाव सखोल विश्लेषण
+### प्रथम भाव - तनु भाव
+प्रथम भाव आपले शरीर, आरोग्य, स्वाभिमान आणि जीवन ऊर्जेचे प्रतिनिधित्व करतो. लग्नाचे बळ आपल्याला संकटांवर मात करण्याचे धाडस प्रदान करते.
+- शुभ फल: उत्कृष्ट बौद्धिक प्रतिभा, प्रभावी व्यक्तिमत्त्व, आकर्षक तेज आणि स्वतंत्र निर्णय घेण्याची क्षमता.
+- सतर्कता: अतिपरिश्रम किंवा अनियमित दिनचर्येमुळे डोकेदुखी अथवा मानसिक तणाव टाळावा.
+- वैदिक उपाय: दररोज सकाळी तांब्याच्या पात्रातून सूर्याला अर्घ्य द्यावे व ॐ घृणि सूर्याय नमः चा जप करावा.
+
+### द्वितीय भाव - धन भाव
+द्वितीय भाव वाणी, संचित धन, कौटुंबिक संपत्ती आणि सुसंस्कारांचे प्रतीक आहे.
+- शुभ फल: शिस्तबद्ध आर्थिक नियोजन, दीर्घकालीन संपत्तीची निर्मिती आणि कुटुंबात आदर.
+- सतर्कता: अनपेक्षित खर्च किंवा सट्टेबाजी आणि जोखमीच्या व्यवहारांपासून दूर राहा.
+- वैदिक उपाय: शुक्रवारी महालक्ष्मी स्तोत्राचे पठण करावे किंवा गाईला चारा खाऊ घालावा.
+
+### तृतीय भाव - सहज भाव
+तृतीय भाव पराक्रम, धाडस, संपर्क कला आणि लहान भावंडांचे स्थान आहे.
+- शुभ फल: अफाट धैर्य, प्रभावी संवाद कौशल्य, तांत्रिक व लेखन कौशल्यात यश.
+- सतर्कता: अतिउतावळेपणात सहकाऱ्यांशी मतभेद होऊ देऊ नका.
+- वैदिक उपाय: मंगळवारी हनुमान चालिसाचे पठण करावे आणि लाल चंदनाचा टिळा लावावा.
+
+### चतुर्थ भाव - सुख भाव
+चतुर्थ भाव मातृसुख, घर, जमीन, वाहन आणि अंतःकरणातील शांततेचे केंद्र आहे.
+- शुभ फल: मातेचे आशीर्वाद, स्वतःचे घर व वाहनांचे सुख आणि समाधानी कौटुंबिक वातावरण.
+- सतर्कता: भावुकतेच्या भरात स्वतःला एकाकी समजू नका.
+- वैदिक उपाय: दररोज मातेच्या चरणांना स्पर्श करून आशीर्वाद घ्यावेत.
+
+### पंचम भाव - बुद्धी भाव
+पंचम भाव पूर्वजन्मातील संचित पुण्य, उच्च शिक्षण, सर्जनशीलता आणि संतती सुखाचे स्थान आहे.
+- शुभ फल: तीक्ष्ण स्मरणशक्ती, ज्ञानसाधनेत यश, संशोधन व कलात्मक कामांत विशेष प्रगती.
+- सतर्कता: अनपेक्षित प्रलोभनांमध्ये किंवा जुगारात पैसे गुंतवू नका.
+- वैदिक उपाय: दररोज गायत्री मंत्राचा एकाग्रतेने १०८ वेळा जप करावा.
+
+### षष्ठ भाव - सेवा भाव
+षष्ठ भाव स्पर्धा, नोकरी, आरोग्य आणि संकटांवर विजय मिळवण्याचे स्थान आहे.
+- शुभ फल: स्पर्धा परीक्षांमध्ये यश, विरोधकांवर विजय आणि उत्तम कार्यक्षमता.
+- सतर्कता: पोटाच्या आरोग्याची काळजी घ्या; अनावश्यक कर्ज घेणे टाळा.
+- वैदिक उपाय: पक्ष्यांना धान्य टाकावे आणि गरजूंना मदत करावी.
+
+### सप्तम भाव - जाया भाव
+सप्तम भाव वैवाहिक जीवन, जोडीदार आणि व्यावसायिक भागीदारीचे केंद्र आहे.
+- शुभ फल: गुणी, प्रेमळ आणि समजूतदार जीवनसाथीची साथ; भागीदारीत यश.
+- सतर्कता: संवादातील दुरावा किंवा अहंकारामुळे वाद निर्माण होऊ देऊ नका.
+- वैदिक उपाय: शुक्रवारी देवी लक्ष्मीची पूजा करून पांढरी मिठाई अर्पण करावी.
+
+### अष्टम भाव - गूढ भाव
+अष्टम भाव आयुष्य, गूढ विद्या, अंतर्ज्ञान आणि अचानक घडणाऱ्या घटनांचे स्थान आहे.
+- शुभ फल: दीर्घायुष्य, गूढ शास्त्रे, संशोधन आणि अध्यात्मात सखोल गती.
+- सतर्कता: वाहन सावकाश चालवावे आणि अनोळखी जोखमींपासून सावध राहावे.
+- वैदिक उपाय: महामृत्युंजय मंत्राचा नित्य ११ किंवा १०८ वेळा जप करावा.
+
+### नवम भाव - भाग्य भाव
+नवम भाव धर्म, भाग्य, वडील, गुरु आणि ईश्वरीय कृपेचे सर्वश्रेष्ठ स्थान आहे.
+- शुभ फल: भाग्योदयाच्या उत्तम संधी, विद्वान गुरुंचे मार्गदर्शन आणि उच्च नैतिक प्रतिष्ठा.
+- सतर्कता: वडिलधाऱ्या व्यक्तींचा किंवा गुरुंचा अनादर कधीही करू नका.
+- वैदिक उपाय: गुरुवारी भगवान विष्णूंची पूजा करून पिवळे फूल अर्पण करावे.
+
+### दशम भाव - कर्म भाव
+दशम भाव कारकीर्द, व्यवसाय, सामाजिक मान-सन्मान आणि अधिकारांचे सर्वोच्च स्थान आहे.
+- शुभ फल: उच्च पद, प्रशासकीय कौशल्य, व्यवसायात मोठी भरभराट आणि समाजात नावलौकिक.
+- सतर्कता: कामाच्या ठिकाणी सहकाऱ्यांशी उद्धटपणा टाळावा.
+- वैदिक उपाय: दररोज सकाळी सूर्याला नमस्कार करावा व ज्येष्ठांचा आदर करावा.
+
+### एकादश भाव - लाभ भाव
+एकादश भाव नियमित उत्पन्न, इच्छापूर्ती, मित्रमंडळी आणि धनलाभाचे स्थान आहे.
+- शुभ फल: उत्पन्नाचे अनेक मार्ग, मित्रांचे सहकार्य, मनोकामना पूर्ण होण्याचे योग.
+- सतर्कता: पैशांच्या व्यवहारात स्पष्टता आणि पारदर्शकता ठेवावी.
+- वैदिक उपाय: बुधवारी गणपतीला दुर्वा अर्पण करून मोदकाचा नैवेद्य दाखवावा.
+
+### द्वादश भाव - मोक्ष भाव
+द्वादश भाव मोक्ष, परदेश गमन, दानधर्म, ध्यान आणि अध्यात्माचे स्थान आहे.
+- शुभ फल: परदेश प्रवासाचे योग, परोपकारी वृत्ती आणि ध्यानात मन रमणे.
+- सतर्कता: अनावश्यक खर्चांवर नियंत्रण ठेवावे; पुरेशी झोप घ्यावी.
+- वैदिक उपाय: गरजू व्यक्तींना वस्त्र किंवा अन्नदान करावे.
+
+## आजीविका, व्यवसाय व आर्थिक प्रगती
+दशम आणि द्वितीय भावाचा परस्पर संबंध दर्शवतो की आपल्या कारकीर्दीत बौद्धिक आणि व्यवस्थापकीय कौशल्याला मोठे महत्त्व असेल. प्रशासन, व्यवस्थापन, वित्त, शिक्षण किंवा तंत्रज्ञान क्षेत्रात आपल्याला विशेष प्रतिष्ठा मिळेल.
+- शुभ फल: व्यावसायिक नेतृत्व, कायमस्वरूपी संपत्तीची निर्मिती आणि प्रतिष्ठित पद.
+- सतर्कता: भागीदार निवडताना किंवा करारांवर स्वाक्षरी करताना कायदेशीर सल्ला आवर्जून घ्या.
+- वैदिक उपाय: आपल्या कामाच्या ठिकाणी श्रीयंत्राची स्थापना करावी.
+
+## विवाह व दांपत्य जीवन
+सप्तमेश व शुक्र यांची स्थिती दर्शवते की आपल्याला निष्ठावान, सुविद्य आणि समजूतदार जीवनसाथी लाभेल. परस्पर विश्वास आणि खुला संवाद आपल्या वैवाहिक जीवनात अखंड गोडवा टिकवून ठेवेल.
+- शुभ फल: सुखी गृहस्थ जीवन, कौटुंबिक प्रतिष्ठा आणि परस्पर आदर.
+- सतर्कता: कामाच्या तणावाखाली जोडीदारावर राग काढणे टाळावे.
+- वैदिक उपाय: शुक्रवारी खीर बनवून सहकुटुंब प्रसाद ग्रहण करावा.
+
+## आरोग्य व शारीरिक जीवन ऊर्जा
+लग्न व षष्ठ भावाच्या विश्लेषणानुसार आपली प्रकृती वात-पित्त प्रधान आहे. मेंदूची व विचारांची गती वेगवान असल्याने पचनसंस्था व मज्जासंस्थेची काळजी घेणे आवश्यक आहे.
+- शुभ फल: उत्तम रोगप्रतिकारशक्ती, नैसर्गिक शारीरिक संतुलन.
+- सतर्कता: तेलकट किंवा अवेळी जेवण टाळावे; पुरेशी झोप घ्यावी.
+- वैदिक उपाय: दररोज सकाळी प्राणायाम आणि सूर्यनमस्कार करावेत.
+
+## ग्रह योग व शास्त्रीय वैदिक उपाय
+आपल्या जन्म पत्रिकेत शुभ ग्रहांच्या दृष्टींमुळे उत्तम राजयोग व धनयोगाची पार्श्वभूमी तयार होत आहे.
+1. मूळ वैदिक मंत्र: दररोज सकाळी ॐ नमो भगवते वासुदेवाय किंवा महामृत्युंजय मंत्राचा जप करावा.
+2. शुभ रत्न: योग्य ज्योतिषी सल्ल्याने भाग्योदयासाठी योग्य रत्न परिधान करावे.
+3. सेवा व दान: शनिवारी गरजूंना अन्न किंवा वस्त्र दान करावे आणि गोसेवा करावी.`
+    : isHindi
     ? `# लग्न एवं आत्मकारक जीवन स्वरूप (Ascendant & Soul Blueprint)
 जातक ${details.name || 'जिज्ञासु'} का जन्म शुभ ${lagnaName} लग्न में हुआ है। आपका जन्म चन्द्रमा ${moonSignSanskrit} राशि में तथा पावन ${nakshatraSanskrit} नक्षत्र में स्थित है। लग्न स्वामी का प्रभाव आपके व्यक्तित्व में उच्च आत्मबल, नैतिक निष्ठा, दृढ इच्छाशक्ति तथा स्वाभाविक नेतृत्व क्षमता का संचार करता है। आपका मन संवेदनशील, दूरदर्शी और दार्शनिक दृष्टिकोण से परिपूर्ण है।
 

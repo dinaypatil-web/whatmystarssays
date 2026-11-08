@@ -286,6 +286,72 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
     return chapters;
   }, [analysis.report, language]);
 
+  // Dynamic AI chapters cleanly paginated so overflowing text flows across pages!
+  const aiPages = useMemo(() => {
+    const pages: Array<{
+      chapter: ParsedChapter;
+      part: 1 | 2;
+      totalParts: 1 | 2;
+      content: string;
+      cleanTitle: string;
+      icon: string;
+      strengths: string[];
+      cautions: string[];
+      remedies: string[];
+    }> = [];
+
+    parsedChapters.forEach((ch) => {
+      const cleanContent = stripAsterisksAndMarkdown(ch.content);
+      const isOverflowing = cleanContent.length > 900 || (ch.strengths.length + ch.cautions.length + ch.remedies.length > 3);
+
+      if (isOverflowing && cleanContent.length > 600) {
+        // Find a paragraph or newline break near the midpoint
+        const paragraphs = cleanContent.split('\n\n');
+        const midpoint = Math.ceil(paragraphs.length / 2);
+        const part1Content = paragraphs.slice(0, midpoint).join('\n\n');
+        const part2Content = paragraphs.slice(midpoint).join('\n\n');
+
+        pages.push({
+          chapter: ch,
+          part: 1,
+          totalParts: 2,
+          content: part1Content,
+          cleanTitle: ch.cleanTitle,
+          icon: ch.icon,
+          strengths: ch.strengths,
+          cautions: ch.cautions,
+          remedies: []
+        });
+
+        pages.push({
+          chapter: ch,
+          part: 2,
+          totalParts: 2,
+          content: part2Content,
+          cleanTitle: ch.cleanTitle,
+          icon: ch.icon,
+          strengths: [],
+          cautions: [],
+          remedies: ch.remedies
+        });
+      } else {
+        pages.push({
+          chapter: ch,
+          part: 1,
+          totalParts: 1,
+          content: cleanContent,
+          cleanTitle: ch.cleanTitle,
+          icon: ch.icon,
+          strengths: ch.strengths,
+          cautions: ch.cautions,
+          remedies: ch.remedies
+        });
+      }
+    });
+
+    return pages;
+  }, [parsedChapters]);
+
   // Dedicated Separate Pages for Each of the 12 Bhavas.
   // If details overflow from a single page, an additional page is automatically added to accommodate it.
   const bhavaPages = useMemo(() => {
@@ -304,8 +370,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
         b.planets.length > 0 ||
         (b.boons.length + b.cautions.length + b.remedies.length) >= 5;
 
-      const isEnglish = language === 'English';
-      const houseDisplayName = isEnglish ? `House ${b.houseNumber}: ${b.name}` : `${b.sanskritName} • भाव ${b.houseNumber}`;
+      const houseDisplayName = `${getLocalizedHouse(b.houseNumber, language)}: ${b.name} (${getLocalizedSign(b.rashiName, language)})`;
 
       if (isDetailedOverflowing) {
         // Part 1: Cosmic Coordinates & Deep Astrological Narrative
@@ -313,9 +378,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
           bhava: b,
           part: 1,
           totalParts: 2,
-          pageTitle: isEnglish
-            ? `${houseDisplayName} • Analysis & Coordinates`
-            : `${houseDisplayName} • स्वरूप एवं विश्लेषण`,
+          pageTitle: `${houseDisplayName} • ${locale.bhavaPillars.analysisTitle.replace(':', '')}`,
           chapterNumber
         });
         // Part 2: Added page to cleanly accommodate Boons, Cautions & Vedic Upayas
@@ -323,9 +386,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
           bhava: b,
           part: 2,
           totalParts: 2,
-          pageTitle: isEnglish
-            ? `${houseDisplayName} • Boons, Cautions & Remedies`
-            : `${houseDisplayName} • फलकथन एवं वैदिक उपाय`,
+          pageTitle: `${houseDisplayName} • ${locale.bhavaPillars.boonsTitle.replace(':', '')}`,
           chapterNumber
         });
       } else {
@@ -341,20 +402,21 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
     });
 
     return pages;
-  }, [bhavasDetailed, language]);
+  }, [bhavasDetailed, language, locale]);
 
   // Page index offsets:
-  // Page 0: Royal Book Cover
-  // Page 1: Janma Kundali Chart & Graha Sphuta
-  // Page 2: Avakahada Chakra & Birth Panchanga
-  // Page 3: Navagraha Matrix & Purushartha Life Pillars
-  // Page 4: Vimshottari Mahadasha Timeline & Shani Sade Sati
-  // Pages 5 .. (5 + bhavaPages.length - 1): Separate Dedicated Pages for each Bhava!
-  // Pages (5 + bhavaPages.length) .. : Dynamic AI Chapters
+  // Page 0: Royal Book Cover (Page 1)
+  // Page 1: Chapter 1 Part 1 - Janma Kundali Chart & Astral Coordinates (Page 2)
+  // Page 2: Chapter 1 Part 2 - Graha Sphuta (Planetary Positions & Dignities Table) (Page 3) - overflowed cleanly from Page 2 to Page 3!
+  // Page 3: Chapter 2 - Avakahada Chakra & Birth Panchanga (Page 4)
+  // Page 4: Chapter 3 - Navagraha Matrix & Purushartha Life Pillars (Page 5)
+  // Page 5: Chapter 4 - Vimshottari Mahadasha Timeline & Shani Sade Sati (Page 6)
+  // Pages 6 .. (6 + bhavaPages.length - 1): Separate Dedicated Pages for each Bhava!
+  // Pages (6 + bhavaPages.length) .. : Dynamic AI Chapters (paginated cleanly so overflowing chapters add to next page!)
   // Last Page: Epilogue, Vedic Mantras & Certified Seal
-  const bhavaStartPage = 5;
+  const bhavaStartPage = 6;
   const aiChaptersStartPage = bhavaStartPage + bhavaPages.length;
-  const totalPages = aiChaptersStartPage + Math.max(1, parsedChapters.length) + 1;
+  const totalPages = aiChaptersStartPage + Math.max(1, aiPages.length) + 1;
 
   // Jump to next spread or page
   const handleNext = () => {
@@ -534,7 +596,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
       );
     }
 
-    // Page 1: Janma Kundali Chart & Graha Sphuta
+    // Page 1 (Book Page 2): Janma Kundali Chart & Astral Coordinates
     if (pageIdx === 1) {
       return (
         <div className="relative h-full flex flex-col justify-between p-6 sm:p-10 select-none">
@@ -544,10 +606,10 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
           <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-4 pt-2">
             <div>
               <span className="text-[9px] font-black uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400">
-                {locale.chapterLabels.chapter} 1 • Chapter I
+                {locale.chapterLabels.chapter} 1 • {locale.chapterLabels.part} 1
               </span>
               <h3 className={`text-base sm:text-xl font-devanagari font-bold ${textTitleClass}`}>
-                {locale.chapterLabels.ch1Title}
+                {locale.chapterLabels.ch1Part1Title}
               </h3>
             </div>
             <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-500/30">
@@ -555,12 +617,12 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
             </span>
           </div>
 
-          {/* Chart & Core Sphuta Grid */}
+          {/* Chart & Core Coordinates Grid */}
           <div className="space-y-4 my-auto">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
               {/* North Indian Diamond Chart */}
               <div className="md:col-span-7 flex justify-center p-3 rounded-2xl bg-amber-500/[0.03] border border-amber-500/20">
-                <div className="scale-90 sm:scale-100 transform origin-center">
+                <div className="scale-95 sm:scale-105 transform origin-center">
                   <KundaliChart
                     data={ensureValidKundaliChart(analysis.chart, planetaryPositionsData)}
                     lagnaSign={analysis.lagnaSign || 1}
@@ -576,69 +638,47 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
               </div>
 
               {/* Four Cardinal Coordinates */}
-              <div className="md:col-span-5 grid grid-cols-2 gap-2 text-xs">
-                <div className={`p-3 rounded-xl border ${cardBgClass} text-center`}>
-                  <span className="text-base block mb-0.5">⭐</span>
+              <div className="md:col-span-5 grid grid-cols-2 gap-2.5 text-xs">
+                <div className={`p-3.5 rounded-xl border ${cardBgClass} text-center`}>
+                  <span className="text-xl block mb-1">⭐</span>
                   <span className="text-[9px] uppercase font-black tracking-wider text-amber-600 dark:text-amber-400 block">{locale.cardinalPoints.starLord}</span>
-                  <span className="font-bold text-xs">{getLocalizedPlanet(analysis.starLord || 'Sun', language)}</span>
+                  <span className="font-bold text-xs mt-0.5 block">{getLocalizedPlanet(analysis.starLord || 'Sun', language)}</span>
                 </div>
-                <div className={`p-3 rounded-xl border ${cardBgClass} text-center`}>
-                  <span className="text-base block mb-0.5">🔮</span>
+                <div className={`p-3.5 rounded-xl border ${cardBgClass} text-center`}>
+                  <span className="text-xl block mb-1">🔮</span>
                   <span className="text-[9px] uppercase font-black tracking-wider text-amber-600 dark:text-amber-400 block">{locale.cardinalPoints.subLord}</span>
-                  <span className="font-bold text-xs">{getLocalizedPlanet(analysis.subLord || 'Jupiter', language)}</span>
+                  <span className="font-bold text-xs mt-0.5 block">{getLocalizedPlanet(analysis.subLord || 'Jupiter', language)}</span>
                 </div>
-                <div className={`p-3 rounded-xl border ${cardBgClass} text-center`}>
-                  <span className="text-base block mb-0.5">✨</span>
+                <div className={`p-3.5 rounded-xl border ${cardBgClass} text-center`}>
+                  <span className="text-xl block mb-1">✨</span>
                   <span className="text-[9px] uppercase font-black tracking-wider text-amber-600 dark:text-amber-400 block">{locale.cardinalPoints.nakshatra}</span>
-                  <span className="font-bold text-xs">{stripAsterisksAndMarkdown(analysis.nakshatra) || 'Rohini'}</span>
+                  <span className="font-bold text-xs mt-0.5 block">{stripAsterisksAndMarkdown(analysis.nakshatra) || 'Rohini'}</span>
                 </div>
-                <div className={`p-3 rounded-xl border ${cardBgClass} text-center`}>
-                  <span className="text-base block mb-0.5">🌙</span>
+                <div className={`p-3.5 rounded-xl border ${cardBgClass} text-center`}>
+                  <span className="text-xl block mb-1">🌙</span>
                   <span className="text-[9px] uppercase font-black tracking-wider text-amber-600 dark:text-amber-400 block">{locale.cardinalPoints.moonSign}</span>
-                  <span className="font-bold text-xs">{getLocalizedSign(analysis.moonSign || 'Taurus', language)}</span>
+                  <span className="font-bold text-xs mt-0.5 block">{getLocalizedSign(analysis.moonSign || 'Taurus', language)}</span>
                 </div>
               </div>
             </div>
 
-            {/* Graha Sphuta Position Table */}
-            {planetaryPositionsData.length > 0 && (
-              <div className="overflow-x-auto rounded-xl border border-amber-500/20 bg-amber-500/[0.02]">
-                <table className="w-full text-left text-[11px]">
-                  <thead>
-                    <tr className="border-b border-amber-500/20 bg-amber-500/10 font-cinzel text-amber-800 dark:text-amber-300">
-                      <th className="py-1.5 px-3">{locale.planetHeaders.planet}</th>
-                      <th className="py-1.5 px-3">{locale.planetHeaders.sign}</th>
-                      <th className="py-1.5 px-3">{locale.planetHeaders.house}</th>
-                      <th className="py-1.5 px-3">{locale.planetHeaders.dignity}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-amber-500/10">
-                    {planetaryPositionsData.map((pos) => {
-                      const planetDisplay = getLocalizedPlanet(pos.planet, language);
-                      const signDisplay = getLocalizedSign(pos.sign, language);
-                      const houseDisplay = getLocalizedHouse(pos.house, language);
-                      const dignityDisplay = getLocalizedDignity(pos.dignity, language);
-
-                      return (
-                        <tr key={pos.planet} className="hover:bg-amber-500/5">
-                          <td className="py-1 px-3 font-semibold flex items-center gap-1.5">
-                            <span>{pos.icon}</span>
-                            <span>{planetDisplay}</span>
-                          </td>
-                          <td className="py-1 px-3">{signDisplay}</td>
-                          <td className="py-1 px-3 font-mono font-bold">{houseDisplay}</td>
-                          <td className="py-1 px-3">
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 border border-amber-500/30">
-                              {dignityDisplay}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            {/* Ascendant Lagna Foundation Card */}
+            <div className="p-4 rounded-2xl border border-amber-500/20 bg-amber-500/[0.03] text-xs leading-relaxed text-stone-700 dark:text-slate-300">
+              <strong className="text-amber-600 dark:text-amber-400 block mb-1.5 text-xs font-devanagari font-bold">
+                {language === 'English'
+                  ? `Ascendant Sign: ${getLocalizedSign(RASHI_NAMES_EN[(analysis.lagnaSign || 1) - 1], language)} (Lagna House 1)`
+                  : language === 'Marathi'
+                  ? `जन्म लग्न राशी: ${getLocalizedSign(RASHI_NAMES_EN[(analysis.lagnaSign || 1) - 1], language)} (प्रथम भाव / लग्न स्थान)`
+                  : `जन्म लग्न राशि: ${getLocalizedSign(RASHI_NAMES_EN[(analysis.lagnaSign || 1) - 1], language)} (प्रथम भाव / लग्न केन्द्र)`}
+              </strong>
+              <p className="leading-relaxed">
+                {language === 'English'
+                  ? `The Ascendant (Lagna) represents the physical incarnation, biological temperament, vitality, and primary orientation of consciousness. With ${getLocalizedSign(RASHI_NAMES_EN[(analysis.lagnaSign || 1) - 1], language)} rising at the eastern horizon during birth, your life operates with innate purpose, distinct individuality, and continuous evolution. Detailed planetary longitudes and dignities are presented on the subsequent page.`
+                  : language === 'Marathi'
+                  ? `जन्म लग्न हे आत्म्याचे स्थूल रूप, प्रकृती, शारीरिक तेज आणि विचारसरणीचे मूळ केंद्र आहे. आपल्या जन्माच्या वेळी पूर्व क्षितिजावर ${getLocalizedSign(RASHI_NAMES_EN[(analysis.lagnaSign || 1) - 1], language)} राशीचा उदय झाल्यामुळे आपल्या व्यक्तिमत्त्वात दृढ आत्मविश्वास आणि स्वतंत्र विचारसरणी दिसून येते. सर्व नवग्रहांचे स्पष्ट अंश, राशी व स्थिती पुढील पानावर सविस्तर दिली आहे.`
+                  : `जन्म लग्न जातक के स्थूल शरीर, आरोग्य, जीवन ऊर्जा एवं दृष्टिकोण का मुख्य आधार है। जन्म समय पूर्व क्षितिज पर ${getLocalizedSign(RASHI_NAMES_EN[(analysis.lagnaSign || 1) - 1], language)} राशि के उदय से व्यक्तित्व में विशिष्ट आभा, दृढ संकल्प एवं स्वाभाविक तेज का संचार होता है। संपूर्ण नवग्रहों की स्पष्ट स्थिति, राशि व बलाबल आगामी पृष्ठ पर प्रस्तुत है।`}
+              </p>
+            </div>
           </div>
 
           {/* Footer */}
@@ -651,8 +691,101 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
       );
     }
 
-    // Page 2: Avakahada Chakra & Birth Panchanga
+    // Page 2 (Book Page 3): Graha Sphuta (Complete Planetary Positions & Dignities Table)
     if (pageIdx === 2) {
+      return (
+        <div className="relative h-full flex flex-col justify-between p-6 sm:p-10 select-none">
+          <BookBorderFlourish theme={bookTheme} />
+
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-4 pt-2">
+            <div>
+              <span className="text-[9px] font-black uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400">
+                {locale.chapterLabels.chapter} 1 • {locale.chapterLabels.part} 2
+              </span>
+              <h3 className={`text-base sm:text-xl font-devanagari font-bold ${textTitleClass}`}>
+                {locale.chapterLabels.ch1Part2Title}
+              </h3>
+            </div>
+            <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+              Graha Sphuta
+            </span>
+          </div>
+
+          {/* Graha Sphuta Full Table & Planetary Dignity Matrix */}
+          <div className="space-y-4 my-auto">
+            {planetaryPositionsData.length > 0 ? (
+              <div className="overflow-x-auto rounded-2xl border-2 border-amber-500/30 bg-amber-500/[0.02] shadow-sm">
+                <table className="w-full text-left text-xs sm:text-sm">
+                  <thead>
+                    <tr className="border-b-2 border-amber-500/30 bg-amber-500/10 font-cinzel text-amber-900 dark:text-amber-300">
+                      <th className="py-2.5 px-4 font-bold">{locale.planetHeaders.planet}</th>
+                      <th className="py-2.5 px-4 font-bold">{locale.planetHeaders.sign}</th>
+                      <th className="py-2.5 px-4 font-bold">{locale.planetHeaders.house}</th>
+                      <th className="py-2.5 px-4 font-bold">{locale.planetHeaders.dignity}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-amber-500/15">
+                    {planetaryPositionsData.map((pos) => {
+                      const planetDisplay = getLocalizedPlanet(pos.planet, language);
+                      const signDisplay = getLocalizedSign(pos.sign, language);
+                      const houseDisplay = getLocalizedHouse(pos.house, language);
+                      const dignityDisplay = getLocalizedDignity(pos.dignity, language);
+
+                      return (
+                        <tr key={pos.planet} className="hover:bg-amber-500/10 transition-colors">
+                          <td className="py-2 px-4 font-semibold flex items-center gap-2">
+                            <span className="text-base">{pos.icon}</span>
+                            <span className="font-bold">{planetDisplay}</span>
+                          </td>
+                          <td className="py-2 px-4 font-medium">{signDisplay}</td>
+                          <td className="py-2 px-4 font-mono font-bold">{houseDisplay}</td>
+                          <td className="py-2 px-4">
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 border border-amber-500/30">
+                              {dignityDisplay}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="py-12 text-center text-xs opacity-75">Compiling Planetary Positions...</div>
+            )}
+
+            {/* Planetary Dispositions Insight Card */}
+            <div className="p-4 rounded-2xl border border-amber-500/20 bg-amber-500/[0.03] text-xs leading-relaxed text-stone-700 dark:text-slate-300">
+              <strong className="text-amber-600 dark:text-amber-400 block mb-1 font-devanagari font-bold">
+                {language === 'English'
+                  ? 'Planetary Dignity & Cosmic Strength (Shadbala Matrix):'
+                  : language === 'Marathi'
+                  ? 'ग्रह स्पष्ट व ग्रहावस्था विश्लेषण:'
+                  : 'ग्रह स्पष्ट एवं ग्रह बलाबल समीक्षा:'}
+              </strong>
+              <p>
+                {language === 'English'
+                  ? 'In authentic Vedic Jyotish, planetary strength (Bala) and dignity determine the potency with which a Graha delivers its karmic results. Planets in Exaltation (Uchcha) or Own Sign (Swakshetra) bestow heightened boons with ease, while planets in Debilitation (Neecha) or Enemy Signs encourage conscious discipline, patience, and classical remedial propitiation.'
+                  : language === 'Marathi'
+                  ? 'वैदिक ज्योतिष शास्त्रानुसार ग्रहांचे अंश, राशी आणि अवस्था यावरून ग्रह किती सामर्थ्याने फळे देणार हे निश्चित होते. उच्च किंवा स्वराशीतील ग्रह शुभ फळांची सहज वृद्धी करतात, तर नीच किंवा शत्रू राशीतील ग्रह जातकाला संयम, परिश्रम आणि वैदिक उपायांची प्रेरणा देतात.'
+                  : 'वैदिक ज्योतिष में ग्रहों की स्पष्ट स्थिति एवं गरिमा यह निर्धारित करती है कि ग्रह अपने कारकतत्वों का फल किस तीव्रता से प्रदान करेंगे। उच्च अथवा स्वराशि में स्थित ग्रह शुभ फलों में सहज वृद्धि करते हैं, जबकि नीच या शत्रु राशि के ग्रह धैर्य एवं शास्त्रीय उपायों की आवश्यकता रेखांकित करते हैं।'}
+              </p>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between border-t border-amber-500/20 pt-2 text-[10px] font-mono text-stone-500 dark:text-slate-400 px-4">
+            <span>{locale.footers.bookName}</span>
+            <span>— {locale.footers.pagePrefix} 3 —</span>
+            <span>{locale.footers.sphutaFooter}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // Page 3 (Book Page 4): Avakahada Chakra & Birth Panchanga
+    if (pageIdx === 3) {
       return (
         <div className="relative h-full flex flex-col justify-between p-6 sm:p-10 select-none">
           <BookBorderFlourish theme={bookTheme} />
@@ -679,17 +812,17 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                 <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                   <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">{locale.panchanga.varna}</span>
                   <p className="font-bold text-sm mt-0.5">{stripAsterisksAndMarkdown(avakahadaData.varna)}</p>
-                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Spiritual Temperament' : 'आत्मिक प्रकृति'}</p>
+                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Spiritual Temperament' : language === 'Marathi' ? 'आत्मिक प्रवृत्ती' : 'आत्मिक प्रकृति'}</p>
                 </div>
                 <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                   <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">{locale.panchanga.vashya}</span>
                   <p className="font-bold text-sm mt-0.5">{stripAsterisksAndMarkdown(avakahadaData.vashya)}</p>
-                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Dominance & Alignment' : 'प्रभाव व सामंजस्य'}</p>
+                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Dominance & Alignment' : language === 'Marathi' ? 'प्रभाव व सामंजस्य' : 'प्रभाव व सामंजस्य'}</p>
                 </div>
                 <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                   <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">{locale.panchanga.yoni}</span>
                   <p className="font-bold text-sm mt-0.5">{stripAsterisksAndMarkdown(avakahadaData.yoni)} {avakahadaData.yoniAnimal ? `(${stripAsterisksAndMarkdown(avakahadaData.yoniAnimal)})` : ''}</p>
-                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Instinctive Nature' : 'प्रवृत्तिमूलक स्वभाव'}</p>
+                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Instinctive Nature' : language === 'Marathi' ? 'प्रवृत्ती व स्वभाव' : 'प्रवृत्तिमूलक स्वभाव'}</p>
                 </div>
                 <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                   <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">{locale.panchanga.gana}</span>
@@ -699,17 +832,17 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                 <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                   <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">{locale.panchanga.nadi}</span>
                   <p className="font-bold text-sm mt-0.5">{stripAsterisksAndMarkdown(avakahadaData.nadi)} {avakahadaData.nadiAyurveda ? `(${stripAsterisksAndMarkdown(avakahadaData.nadiAyurveda)})` : ''}</p>
-                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Bio-Energetic Pulse' : 'जैविक ऊर्जा'}</p>
+                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Bio-Energetic Pulse' : language === 'Marathi' ? 'आरोग्य ऊर्जा' : 'जैविक ऊर्जा'}</p>
                 </div>
                 <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                   <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">{locale.panchanga.paya}</span>
                   <p className="font-bold text-sm mt-0.5">{stripAsterisksAndMarkdown(avakahadaData.paya)}</p>
-                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Foundational Leg' : 'आधारभूत स्थिति'}</p>
+                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Foundational Leg' : language === 'Marathi' ? 'पायाभूत आधार' : 'आधारभूत स्थिति'}</p>
                 </div>
                 <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                   <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">{locale.panchanga.element}</span>
                   <p className="font-bold text-sm mt-0.5">{stripAsterisksAndMarkdown(avakahadaData.tatva)}</p>
-                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Elemental Core' : 'मूलभूत ऊर्जा'}</p>
+                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Elemental Core' : language === 'Marathi' ? 'मूलभूत तत्त्व' : 'मूलभूत ऊर्जा'}</p>
                 </div>
                 <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                   <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">{locale.panchanga.tithi}</span>
@@ -730,14 +863,14 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                       {avakahadaData.manglikStatus.isManglik 
                         ? `${locale.panchanga.manglikActive} (${avakahadaData.manglikStatus.severity})`
                         : locale.panchanga.manglikNirdosha}
-                      {avakahadaData.manglikStatus.hasParihara && ` • ${language === 'English' ? 'Parihara (Nullification) Present' : 'परिहार उपस्थित'}`}
+                      {avakahadaData.manglikStatus.hasParihara && ` • ${language === 'English' ? 'Parihara (Nullification) Present' : language === 'Marathi' ? 'दोष परिहार उपस्थित' : 'परिहार उपस्थित'}`}
                     </p>
                   </div>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-xs font-black uppercase flex-shrink-0 ${
                   avakahadaData.manglikStatus.isManglik ? 'bg-orange-500/20 text-orange-400 border border-orange-500/40' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                 }`}>
-                  {avakahadaData.manglikStatus.isManglik ? (language === 'English' ? 'Caution' : 'सचेत') : (language === 'English' ? 'Auspicious' : 'शुभ')}
+                  {avakahadaData.manglikStatus.isManglik ? (language === 'English' ? 'Caution' : language === 'Marathi' ? 'सावधान' : 'सचेत') : (language === 'English' ? 'Auspicious' : language === 'Marathi' ? 'शुभ' : 'शुभ')}
                 </span>
               </div>
 
@@ -761,15 +894,15 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
           {/* Footer */}
           <div className="flex items-center justify-between border-t border-amber-500/20 pt-2 text-[10px] font-mono text-stone-500 dark:text-slate-400 px-4">
             <span>{locale.footers.panchangaFooter}</span>
-            <span>— {locale.footers.pagePrefix} 3 —</span>
+            <span>— {locale.footers.pagePrefix} 4 —</span>
             <span>{locale.footers.bookName}</span>
           </div>
         </div>
       );
     }
 
-    // Page 3: Navagraha Matrix & Purushartha Life Pillars
-    if (pageIdx === 3) {
+    // Page 4 (Book Page 5): Navagraha Matrix & Purushartha Life Pillars
+    if (pageIdx === 4) {
       return (
         <div className="relative h-full flex flex-col justify-between p-6 sm:p-10 select-none">
           <BookBorderFlourish theme={bookTheme} />
@@ -795,34 +928,34 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
               <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                 <div className="flex items-center justify-between">
                   <span className="text-xl">🕉️</span>
-                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">{language === 'English' ? 'Dharma' : 'धर्म'}</span>
+                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">{getLocalizedPurushartha('Dharma', language)}</span>
                 </div>
-                <h4 className="font-bold text-xs mt-1">{language === 'English' ? 'Dharma (H 1,5,9)' : 'धर्म (भाव १,५,९)'}</h4>
-                <p className="text-[9px] opacity-75 mt-0.5">{language === 'English' ? 'Soul purpose & moral code' : 'आत्मिक उद्देश्य व नैतिक निष्ठा'}</p>
+                <h4 className="font-bold text-xs mt-1">{language === 'English' ? 'Dharma (H 1,5,9)' : language === 'Marathi' ? 'धर्म (भाव १,५,९)' : 'धर्म (भाव १,५,९)'}</h4>
+                <p className="text-[9px] opacity-75 mt-0.5">{language === 'English' ? 'Soul purpose & moral code' : language === 'Marathi' ? 'आत्मिक हेतू व कर्तव्यनिष्ठा' : 'आत्मिक उद्देश्य व नैतिक निष्ठा'}</p>
               </div>
               <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                 <div className="flex items-center justify-between">
                   <span className="text-xl">💰</span>
-                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{language === 'English' ? 'Artha' : 'अर्थ'}</span>
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{getLocalizedPurushartha('Artha', language)}</span>
                 </div>
-                <h4 className="font-bold text-xs mt-1">{language === 'English' ? 'Artha (H 2,6,10)' : 'अर्थ (भाव २,६,१०)'}</h4>
-                <p className="text-[9px] opacity-75 mt-0.5">{language === 'English' ? 'Wealth, vocation & resources' : 'धन, आजीविका व संचित कोष'}</p>
+                <h4 className="font-bold text-xs mt-1">{language === 'English' ? 'Artha (H 2,6,10)' : language === 'Marathi' ? 'अर्थ (भाव २,६,१०)' : 'अर्थ (भाव २,६,१०)'}</h4>
+                <p className="text-[9px] opacity-75 mt-0.5">{language === 'English' ? 'Wealth, vocation & resources' : language === 'Marathi' ? 'धन, कारकीर्द व संचित संपत्ती' : 'धन, आजीविका व संचित कोष'}</p>
               </div>
               <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                 <div className="flex items-center justify-between">
                   <span className="text-xl">💖</span>
-                  <span className="text-[10px] font-bold text-pink-600 dark:text-pink-400">{language === 'English' ? 'Kama' : 'काम'}</span>
+                  <span className="text-[10px] font-bold text-pink-600 dark:text-pink-400">{getLocalizedPurushartha('Kama', language)}</span>
                 </div>
-                <h4 className="font-bold text-xs mt-1">{language === 'English' ? 'Kama (H 3,7,11)' : 'काम (भाव ३,७,११)'}</h4>
-                <p className="text-[9px] opacity-75 mt-0.5">{language === 'English' ? 'Desires, love & kinship' : 'कामना, प्रेम व अभिलाषा'}</p>
+                <h4 className="font-bold text-xs mt-1">{language === 'English' ? 'Kama (H 3,7,11)' : language === 'Marathi' ? 'काम (भाव ३,७,११)' : 'काम (भाव ३,७,११)'}</h4>
+                <p className="text-[9px] opacity-75 mt-0.5">{language === 'English' ? 'Desires, love & kinship' : language === 'Marathi' ? 'इच्छा, नातेसंबंध व प्रेम' : 'कामना, प्रेम व अभिलाषा'}</p>
               </div>
               <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                 <div className="flex items-center justify-between">
                   <span className="text-xl">🌊</span>
-                  <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400">{language === 'English' ? 'Moksha' : 'मोक्ष'}</span>
+                  <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400">{getLocalizedPurushartha('Moksha', language)}</span>
                 </div>
-                <h4 className="font-bold text-xs mt-1">{language === 'English' ? 'Moksha (H 4,8,12)' : 'मोक्ष (भाव ४,८,१२)'}</h4>
-                <p className="text-[9px] opacity-75 mt-0.5">{language === 'English' ? 'Liberation & spiritual peace' : 'मुक्ति, अध्यात्म व आत्म-शांति'}</p>
+                <h4 className="font-bold text-xs mt-1">{language === 'English' ? 'Moksha (H 4,8,12)' : language === 'Marathi' ? 'मोक्ष (भाव ४,८,१२)' : 'मोक्ष (भाव ४,८,१२)'}</h4>
+                <p className="text-[9px] opacity-75 mt-0.5">{language === 'English' ? 'Liberation & spiritual peace' : language === 'Marathi' ? 'मुक्ती, अध्यात्म व मनःशांती' : 'मुक्ति, अध्यात्म व आत्म-शांति'}</p>
               </div>
             </div>
 
@@ -846,10 +979,12 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
 
             <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.03] text-xs leading-relaxed text-stone-700 dark:text-slate-300">
               <strong className="text-amber-600 dark:text-amber-400 block mb-1">
-                {language === 'English' ? 'Astrological Insight:' : 'ज्योतिषीय दृष्टि:'}
+                {language === 'English' ? 'Astrological Insight:' : language === 'Marathi' ? 'ज्योतिषीय दृष्टी:' : 'ज्योतिषीय दृष्टि:'}
               </strong>
               {language === 'English'
                 ? 'The planetary dispositions in your Janma Kundali reflect accumulated karmic predispositions. Harmonious planetary alignment across the four Purusharthas indicates that conscious action, ethical dedication, and timely remedies bring balance and fruition.'
+                : language === 'Marathi'
+                ? 'आपल्या जन्म कुंडलीतील ग्रहांची स्थिती संचित प्रारब्ध कर्मांचे प्रतिबिंब आहे. चार पुरुषार्थांमध्ये ग्रहांचा सुसंवाद दर्शवतो की योग्य कर्म, नीतिमत्ता आणि वेळेवर केलेले वैदिक उपाय जीवनातील सर्व उद्दिष्टे साध्य करतात.'
                 : 'आपकी जन्म पत्रिका में ग्रहों की स्थिति संचित प्रारब्ध कर्मों का दर्पण है। चारों पुरुषार्थों में ग्रहों का संतुलन यह दर्शाता है कि समयबद्ध कर्तव्य पालन, नैतिक आचरण एवं शास्त्रीय उपायों द्वारा जीवन के समस्त क्षेत्रों में संतुलन व सिद्धि प्राप्त होती है।'}
             </div>
           </div>
@@ -857,15 +992,15 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
           {/* Footer */}
           <div className="flex items-center justify-between border-t border-amber-500/20 pt-2 text-[10px] font-mono text-stone-500 dark:text-slate-400 px-4">
             <span>{locale.footers.navagrahaFooter}</span>
-            <span>— {locale.footers.pagePrefix} 4 —</span>
+            <span>— {locale.footers.pagePrefix} 5 —</span>
             <span>{locale.footers.bookName}</span>
           </div>
         </div>
       );
     }
 
-    // Page 4: Vimshottari Mahadasha Timeline & Shani Sade Sati
-    if (pageIdx === 4) {
+    // Page 5 (Book Page 6): Vimshottari Mahadasha Timeline & Shani Sade Sati
+    if (pageIdx === 5) {
       return (
         <div className="relative h-full flex flex-col justify-between p-6 sm:p-10 select-none">
           <BookBorderFlourish theme={bookTheme} />
@@ -892,7 +1027,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 mb-2 flex items-center justify-between">
                   <span>⏳ {locale.mahadasha.title}</span>
                   <span className="text-[9px] font-normal text-stone-500 dark:text-slate-400">
-                    {language === 'English' ? 'Current Period Marked Active' : 'सक्रिय महादशा पर विशेष मुहर'}
+                    {language === 'English' ? 'Current Period Marked Active' : language === 'Marathi' ? 'चालू महादशेवर विशेष शिक्का' : 'सक्रिय महादशा पर विशेष मुहर'}
                   </span>
                 </h4>
                 <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-1.5 sm:gap-2">
@@ -962,7 +1097,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
           {/* Footer */}
           <div className="flex items-center justify-between border-t border-amber-500/20 pt-2 text-[10px] font-mono text-stone-500 dark:text-slate-400 px-4">
             <span>{locale.footers.mahadashaFooter}</span>
-            <span>— {locale.footers.pagePrefix} 5 —</span>
+            <span>— {locale.footers.pagePrefix} 6 —</span>
             <span>{locale.footers.bookName}</span>
           </div>
         </div>
@@ -1285,7 +1420,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
           {/* Footer */}
           <div className="flex items-center justify-between border-t border-amber-500/20 pt-2 text-[10px] font-mono text-stone-500 dark:text-slate-400 px-4">
             <span>{locale.footers.bhavaFooter}</span>
-            <span>— {locale.footers.pagePrefix} ${pageIdx + 1} —</span>
+            <span>— {locale.footers.pagePrefix} {pageIdx + 1} —</span>
             <span>{getLocalizedHouse(bhava.houseNumber, language)} {totalParts > 1 ? `(${locale.chapterLabels.part} ${part}/${totalParts})` : ''}</span>
           </div>
         </div>
@@ -1293,9 +1428,12 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
     }
 
     // Dynamic AI Life Chapters (Following dedicated Bhava pages)
-    const chapterOffset = pageIdx - aiChaptersStartPage;
-    if (chapterOffset >= 0 && chapterOffset < parsedChapters.length) {
-      const chapter = parsedChapters[chapterOffset];
+    // Long chapters cleanly flow across pages without inner scrollbar or truncation!
+    const aiOffset = pageIdx - aiChaptersStartPage;
+    if (aiOffset >= 0 && aiOffset < aiPages.length) {
+      const ap = aiPages[aiOffset];
+      const chapterNumber = bhavaPages.length + 5 + Math.floor(aiOffset / 2) + 1;
+
       return (
         <div className="relative h-full flex flex-col justify-between p-6 sm:p-10 select-none">
           <BookBorderFlourish theme={bookTheme} />
@@ -1304,30 +1442,30 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
           <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-4 pt-2">
             <div>
               <span className="text-[9px] font-black uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400">
-                {locale.chapterLabels.chapter} {bhavaPages.length + 5 + chapterOffset}
+                {locale.chapterLabels.chapter} {chapterNumber} {ap.totalParts > 1 ? `• ${locale.chapterLabels.part} ${ap.part}/${ap.totalParts}` : ''}
               </span>
               <h3 className={`text-base sm:text-xl font-devanagari font-bold ${textTitleClass} flex items-center gap-2`}>
-                <span>{chapter.icon}</span>
-                <span>{stripAsterisksAndMarkdown(chapter.cleanTitle)}</span>
+                <span>{ap.icon}</span>
+                <span>{stripAsterisksAndMarkdown(ap.cleanTitle)}</span>
               </h3>
             </div>
             <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400">
-              Vedic Predictions
+              {locale.footers.bookName}
             </span>
           </div>
 
           {/* Chapter Content & Highlights */}
           <div className="space-y-4 my-auto text-xs leading-relaxed text-stone-800 dark:text-slate-200">
             {/* Highlights Grid (Strengths, Cautions, Remedies) */}
-            {(chapter.strengths.length > 0 || chapter.cautions.length > 0 || chapter.remedies.length > 0) && (
+            {(ap.strengths.length > 0 || ap.cautions.length > 0 || ap.remedies.length > 0) && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {chapter.strengths.length > 0 && (
+                {ap.strengths.length > 0 && (
                   <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
                     <span className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-400 block mb-1">
                       🌟 {locale.bhavaPillars.boonsTitle}
                     </span>
                     <ul className="text-[10px] space-y-1">
-                      {chapter.strengths.map((s, i) => (
+                      {ap.strengths.map((s, i) => (
                         <li key={i} className="flex items-start gap-1">
                           <span className="text-emerald-500">•</span>
                           <span>{stripAsterisksAndMarkdown(s)}</span>
@@ -1336,13 +1474,13 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                     </ul>
                   </div>
                 )}
-                {chapter.cautions.length > 0 && (
+                {ap.cautions.length > 0 && (
                   <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
                     <span className="text-[9px] font-black uppercase text-amber-600 dark:text-amber-400 block mb-1">
                       ⚠️ {locale.bhavaPillars.cautionsTitle}
                     </span>
                     <ul className="text-[10px] space-y-1">
-                      {chapter.cautions.map((c, i) => (
+                      {ap.cautions.map((c, i) => (
                         <li key={i} className="flex items-start gap-1">
                           <span className="text-amber-500">•</span>
                           <span>{stripAsterisksAndMarkdown(c)}</span>
@@ -1351,13 +1489,13 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                     </ul>
                   </div>
                 )}
-                {chapter.remedies.length > 0 && (
+                {ap.remedies.length > 0 && (
                   <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30">
                     <span className="text-[9px] font-black uppercase text-purple-600 dark:text-purple-400 block mb-1">
                       🪔 {locale.bhavaPillars.upayasTitle}
                     </span>
                     <ul className="text-[10px] space-y-1">
-                      {chapter.remedies.map((r, i) => (
+                      {ap.remedies.map((r, i) => (
                         <li key={i} className="flex items-start gap-1">
                           <span className="text-purple-500">•</span>
                           <span>{stripAsterisksAndMarkdown(r)}</span>
@@ -1370,16 +1508,16 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
             )}
 
             {/* Markdown Chapter Text without Asterisks */}
-            <div className={`p-4 rounded-2xl border ${cardBgClass} max-h-[460px] xl:max-h-[540px] overflow-y-auto no-scrollbar prose prose-sm dark:prose-invert leading-relaxed text-xs`}>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{stripAsterisksAndMarkdown(chapter.content)}</ReactMarkdown>
+            <div className={`p-4 rounded-2xl border ${cardBgClass} prose prose-sm dark:prose-invert leading-relaxed text-xs`}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{stripAsterisksAndMarkdown(ap.content)}</ReactMarkdown>
             </div>
           </div>
 
           {/* Footer */}
           <div className="flex items-center justify-between border-t border-amber-500/20 pt-2 text-[10px] font-mono text-stone-500 dark:text-slate-400 px-4">
             <span>{locale.footers.bookName}</span>
-            <span>— {locale.footers.pagePrefix} ${pageIdx + 1} —</span>
-            <span className="break-words">{stripAsterisksAndMarkdown(chapter.cleanTitle)}</span>
+            <span>— {locale.footers.pagePrefix} {pageIdx + 1} —</span>
+            <span className="break-words">{stripAsterisksAndMarkdown(ap.cleanTitle)}</span>
           </div>
         </div>
       );
@@ -1610,7 +1748,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 disabled:opacity-30 disabled:pointer-events-none transition-all"
               >
                 <span>‹</span>
-                <span>Previous Page</span>
+                <span>{locale.navigation.prevPage}</span>
               </button>
 
               {/* Chapter / Page Quick Jump */}
@@ -1623,22 +1761,23 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                   onChange={(e) => setCurrentPage(parseInt(e.target.value, 10))}
                   className="bg-black/60 border border-amber-500/30 text-amber-200 text-xs rounded-xl px-3 py-2 outline-none font-medium cursor-pointer"
                 >
-                  <option value={0}>Page 1: Royal Book Cover</option>
-                  <option value={1}>Page 2: Janma Kundali & Chart</option>
-                  <option value={2}>Page 3: Avakahada & Panchanga</option>
-                  <option value={3}>Page 4: Navagraha & Purushartha</option>
-                  <option value={4}>Page 5: Vimshottari Mahadasha & Sade Sati</option>
+                  <option value={0}>Page 1: {locale.navigation.coverOption}</option>
+                  <option value={1}>Page 2: {locale.navigation.chartOption}</option>
+                  <option value={2}>Page 3: {locale.navigation.sphutaOption}</option>
+                  <option value={3}>Page 4: {locale.navigation.panchangaOption}</option>
+                  <option value={4}>Page 5: {locale.navigation.navagrahaOption}</option>
+                  <option value={5}>Page 6: {locale.navigation.mahadashaOption}</option>
                   {bhavaPages.map((bp, bpIdx) => (
                     <option key={`bhava-pg-${bpIdx}`} value={bhavaStartPage + bpIdx}>
-                      Page {bhavaStartPage + bpIdx + 1}: भाव {bp.bhava.houseNumber} ({bp.bhava.rashiSanskrit}) {bp.totalParts > 1 ? `[भाग ${bp.part}/2]` : ''}
+                      Page {bhavaStartPage + bpIdx + 1}: {getLocalizedHouse(bp.bhava.houseNumber, language)} ({getLocalizedSign(bp.bhava.rashiName, language)}) {bp.totalParts > 1 ? `[${bp.part}/2]` : ''}
                     </option>
                   ))}
-                  {parsedChapters.map((ch, idx) => (
-                    <option key={ch.id} value={aiChaptersStartPage + idx}>
-                      Page {aiChaptersStartPage + idx + 1}: {ch.cleanTitle}
+                  {aiPages.map((ap, idx) => (
+                    <option key={`ai-pg-${idx}`} value={aiChaptersStartPage + idx}>
+                      Page {aiChaptersStartPage + idx + 1}: {ap.cleanTitle} {ap.totalParts > 1 ? `[${ap.part}/2]` : ''}
                     </option>
                   ))}
-                  <option value={totalPages - 1}>Page {totalPages}: Epilogue & Mantras</option>
+                  <option value={totalPages - 1}>Page {totalPages}: {locale.navigation.epilogueOption}</option>
                 </select>
               </div>
 
@@ -1647,7 +1786,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                 disabled={currentPage >= totalPages - 2}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 disabled:opacity-30 disabled:pointer-events-none transition-all"
               >
-                <span>Next Page</span>
+                <span>{locale.navigation.nextPage}</span>
                 <span>›</span>
               </button>
             </div>
