@@ -1,5 +1,6 @@
 import { PlanetaryTransitInfo, SaadesatiPhase, Language, AvakahadaDetails, PlanetaryPositionDetail, KundaliChartData, BhavaDetailedAnalysis } from "../types";
 import { getLocalizedPlanet, getLocalizedSign, getLocalizedHouse, getLocalizedDignity, getLocalizedPurushartha, getLocalizedElement, getLocalizedClassification } from "./kundaliLocalization";
+import { getLocalizedBhavaData } from "./bhavaLocalization";
 
 export const CHALDEAN_MAP: Record<string, number> = {
   A: 1, I: 1, J: 1, Q: 1, Y: 1,
@@ -1907,7 +1908,7 @@ const BHAVA_CORE_CONFIG: Array<{
     ],
     baseRemedies: [
       'Offer fragrant white flowers and light a cow-ghee lamp to Goddess Lakshmi on Fridays.',
-      'Chant *Om Shukraya Namaha* (108 times) to harmonize relationship bonds.',
+      'Chant Om Shukraya Namaha (108 times) to harmonize relationship bonds.',
       'Prepare sweet milk kheer on Friday and share it warmly with family members.'
     ],
     baseBoonsHi: [
@@ -2074,7 +2075,7 @@ const BHAVA_CORE_CONFIG: Array<{
       'Watch for calf muscle cramps, ankle stiffness, or circulatory sluggishness in legs.'
     ],
     baseRemedies: [
-      'Offer green Durva grass to Lord Ganesha on Wednesdays and chant *Om Gan Ganapataye Namaha*.',
+      'Offer green Durva grass to Lord Ganesha on Wednesdays and chant Om Gan Ganapataye Namaha.',
       'Support elder siblings, mentors, and charitable orphanages on celebratory days.',
       'Donate food grains, fruits, or green garments to underprivileged families.'
     ],
@@ -2399,9 +2400,6 @@ export const calculate12BhavasDetailedAnalysis = (
   planetaryPositions: PlanetaryPositionDetail[] = [],
   language: Language = 'English'
 ): BhavaDetailedAnalysis[] => {
-  const isEnglish = language === 'English';
-  const isMarathi = language === 'Marathi';
-  const isHindi = language === 'Hindi';
   const lagnaIdx = Math.max(0, Math.min(11, (lagnaSignNumber || 1) - 1));
 
   return BHAVA_CORE_CONFIG.map((cfg, idx) => {
@@ -2409,9 +2407,7 @@ export const calculate12BhavasDetailedAnalysis = (
     const rashiIdx = (lagnaIdx + houseNumber - 1) % 12;
     const rashiNumber = rashiIdx + 1;
     const rashiName = RASHI_NAMES_EN[rashiIdx];
-    const rashiSanskrit = RASHI_NAMES_SANSKRIT[rashiIdx];
     const rashiLord = SIGN_LORDS[rashiIdx];
-    const rashiLordSanskrit = PLANET_NAMES_SANSKRIT[rashiLord] || rashiLord;
     const element = SIGN_ELEMENTS[rashiIdx] || 'Fire';
 
     // Localized attributes
@@ -2421,106 +2417,168 @@ export const calculate12BhavasDetailedAnalysis = (
     const localizedPurushartha = getLocalizedPurushartha(cfg.purushartha, language);
     const localizedClassification = getLocalizedClassification(cfg.classification, language);
 
+    // Get localized bhava content
+    const bhavaData = getLocalizedBhavaData(houseNumber, language);
+    const localizedKaraka = getLocalizedPlanet(bhavaData.karakaKey, language);
+
     // Find planets in this house
     const planetsInHouse = planetaryPositions.filter(p => p.house === houseNumber);
 
-    // Build synthesized deep astrological narrative
+    // Synthesize detailed analysis in pure native language
     let detailedAnalysis = '';
-    const mrCfg = BHAVA_MARATHI_CONFIG[houseNumber];
+    const isEnglish = language === 'English';
+    const isMarathi = language === 'Marathi';
+    const isGujarati = language === 'Gujarati';
+    const isBengali = language === 'Bengali';
+    const isTamil = language === 'Tamil';
+    const isTelugu = language === 'Telugu';
+    const isKannada = language === 'Kannada';
+    const isMalayalam = language === 'Malayalam';
+    const isPunjabi = language === 'Punjabi';
+    const isOdia = language === 'Odia';
 
     if (isEnglish) {
-      detailedAnalysis = `${cfg.coreThemes}\n\nIn your natal Janma Kundali, this ${cfg.englishTitle} is governed by the sign of ${rashiName}, whose planetary ruler is ${rashiLord}. This house operates under the primal ${element} element. `;
-
+      detailedAnalysis = `${bhavaData.coreThemes}\n\nIn your natal Janma Kundali, this ${bhavaData.title} is governed by the sign of ${localizedSign}, whose planetary ruler is ${localizedLord}. This house operates under the primal ${localizedElement} element. `;
       if (planetsInHouse.length > 0) {
-        const pNames = planetsInHouse.map(p => `${p.planet} (${getLocalizedDignity(p.dignity, language)})`).join(', ');
+        const pNames = planetsInHouse.map(p => `${getLocalizedPlanet(p.planet, language)} (${getLocalizedDignity(p.dignity, language)})`).join(', ');
         detailedAnalysis += `This sacred house is directly energized by the placement of ${pNames}, infusing these life matters with intense focus, specific karmic lessons, and heightened planetary influence. `;
       } else {
-        detailedAnalysis += `No planetary body directly occupies this house; thus, its fruits are governed primarily through the placement, dignity, and aspects of its house lord ${rashiLord}. `;
+        detailedAnalysis += `No planetary body directly occupies this house; thus, its fruits are governed primarily through the placement, dignity, and aspects of its house lord ${localizedLord}. `;
       }
-
-      detailedAnalysis += `Operating within the ${cfg.purushartha} pillar and classified as ${cfg.classification}, this house plays an indispensable role in shaping your ${cfg.lifeDomain}.`;
-    } else if (isMarathi && mrCfg) {
-      detailedAnalysis = `${mrCfg.coreThemes}\n\nआपल्या जन्म लग्न कुंडलीमध्ये या ${mrCfg.title} वर ${localizedSign} राशीचा प्रभाव असून, या राशीचे स्वामी ग्रह ${localizedLord} आहेत. हा भाव तत्त्व रूपाने ${localizedElement} ऊर्जेने संचालित आहे. `;
-
+      detailedAnalysis += `Operating within the ${localizedPurushartha} pillar and classified as ${localizedClassification}, this house plays an indispensable role in shaping your ${bhavaData.lifeDomain}.`;
+    } else if (isMarathi) {
+      detailedAnalysis = `${bhavaData.coreThemes}\n\nआपल्या जन्म लग्न कुंडलीमध्ये या ${bhavaData.title} वर ${localizedSign} राशीचा प्रभाव असून, या राशीचे स्वामी ग्रह ${localizedLord} आहेत. हा भाव तत्त्व रूपाने ${localizedElement} ऊर्जेने संचालित आहे. `;
       if (planetsInHouse.length > 0) {
         const pNames = planetsInHouse.map(p => `${getLocalizedPlanet(p.planet, language)} (${getLocalizedDignity(p.dignity, language)})`).join(', ');
         detailedAnalysis += `या पावन भावात ${pNames} यांची प्रत्यक्ष उपस्थिती या भावाच्या कारकतत्त्वांना असाधारण बळ व विशेष सक्रियता प्रदान करते. `;
       } else {
         detailedAnalysis += `या भावात सध्या कोणताही प्रत्यक्ष ग्रह स्थित नसून, याचे मुख्य फळ राशी स्वामी ${localizedLord} यांची स्थिती व शुभ ग्रहांच्या दृष्टींद्वारे नियंत्रित होते. `;
       }
-
-      detailedAnalysis += `हा भाव ${localizedPurushartha} पुरुषार्थ तसेच ${localizedClassification} या श्रेणीत येतो. त्यामुळे जातकाच्या ${mrCfg.lifeDomain} या सर्व अंगांमध्ये हा भाव अत्यंत निर्णायक व प्रभावी भूमिका बजावतो.`;
+      detailedAnalysis += `हा भाव ${localizedPurushartha} पुरुषार्थ तसेच ${localizedClassification} या श्रेणीत येतो. त्यामुळे जातकाच्या ${bhavaData.lifeDomain} या सर्व अंगांमध्ये हा भाव अत्यंत निर्णायक व प्रभावी भूमिका बजावतो.`;
+    } else if (isGujarati) {
+      detailedAnalysis = `${bhavaData.coreThemes}\n\nઆપની જન્મ લગ્ન કુંડળીમાં આ ${bhavaData.title} પર ${localizedSign} રાશિનો પ્રભાવ છે, જેના અધિપતિ ગ્રહ ${localizedLord} છે. આ ભાવ તત્ત્વ સ્વરૂપે ${localizedElement} ઊર્જાથી સંચાલિત છે. `;
+      if (planetsInHouse.length > 0) {
+        const pNames = planetsInHouse.map(p => `${getLocalizedPlanet(p.planet, language)} (${getLocalizedDignity(p.dignity, language)})`).join(', ');
+        detailedAnalysis += `આ પાવન ભાવમાં ${pNames} ની પ્રત્યક્ષ ઉપસ્થિતિ આ ભાવના કારકતત્ત્વોને વિશેષ બળ અને સક્રિયતા પ્રદાન કરે છે. `;
+      } else {
+        detailedAnalysis += `આ ભાવમાં કોઈ પ્રત્યક્ષ ગ્રહ સ્થિત નથી; તેથી તેનું મુખ્ય સંચાલન રાશિ સ્વામી ${localizedLord} ની સ્થિતિ અને શુભ દ્રષ્ટિઓ દ્વારા થાય છે. `;
+      }
+      detailedAnalysis += `આ ભાવ ${localizedPurushartha} પુરુષાર્થ તેમજ ${localizedClassification} શ્રેણીમાં આવે છે. તેથી જાતકના ${bhavaData.lifeDomain} સાથે જોડાયેલા તમામ પાસાંઓમાં આ ભાવ અત્યંત નિર્ણાયક ભૂમિકા ભજવે છે.`;
+    } else if (isBengali) {
+      detailedAnalysis = `${bhavaData.coreThemes}\n\nআপনার জন্ম লগ্ন কুণ্ডলীতে এই ${bhavaData.title}-এর উপর ${localizedSign} রাশির প্রভাব রয়েছে, যার অধিপতি গ্রহ ${localizedLord}। এই ভাবটি মূল উপাদান হিসেবে ${localizedElement} শক্তি দ্বারা পরিচালিত। `;
+      if (planetsInHouse.length > 0) {
+        const pNames = planetsInHouse.map(p => `${getLocalizedPlanet(p.planet, language)} (${getLocalizedDignity(p.dignity, language)})`).join(', ');
+        detailedAnalysis += `এই পবিত্র ভাবে ${pNames}-এর প্রত্যক্ষ উপস্থিতি এই ভাবের কারকতত্ত্বকে বিশেষ শক্তি ও সক্রিয়তা প্রদান করে। `;
+      } else {
+        detailedAnalysis += `এই ভাবে বর্তমানে কোনো প্রত্যক্ষ গ্রহ অবস্থিত নয়; সুতরাং এর ফলাফল মূলত রাশি পতি ${localizedLord}-এর অবস্থান ও শুভ দৃষ্টির দ্বারা নিয়ন্ত্রিত। `;
+      }
+      detailedAnalysis += `এই ভাবটি ${localizedPurushartha} পুরুষার্থ এবং ${localizedClassification} শ্রেণির অন্তর্গত। ফলে জাতকের ${bhavaData.lifeDomain} সংক্রান্ত সকল ক্ষেত্রে এটি অত্যন্ত গুরুত্বপূর্ণ ভূমিকা পালন করে।`;
+    } else if (isTamil) {
+      detailedAnalysis = `${bhavaData.coreThemes}\n\nஉங்கள் ஜென்ம லக்ன ஜாதகத்தில் இந்த ${bhavaData.title} ${localizedSign} ராசியால் ஆளப்படுகிறது, இதன் அதிபதி கிரகம் ${localizedLord} ஆவார். இந்த வீடு ${localizedElement} ஆற்றலால் இயக்கப்படுகிறது. `;
+      if (planetsInHouse.length > 0) {
+        const pNames = planetsInHouse.map(p => `${getLocalizedPlanet(p.planet, language)} (${getLocalizedDignity(p.dignity, language)})`).join(', ');
+        detailedAnalysis += `இந்த புனித வீட்டில் ${pNames} அமர்ந்துள்ளதால், இந்த வீட்டின் பலன்கள் விசேஷ ஆற்றலுடன் செயல்படுகின்றன. `;
+      } else {
+        detailedAnalysis += `இந்த வீட்டில் நேரடி கிரகங்கள் இல்லை; எனவே இதன் பலன்கள் வீட்டதிபதி ${localizedLord} கிரகத்தின் நிலையால் தீர்மானிக்கப்படுகின்றன. `;
+      }
+      detailedAnalysis += `இந்த வீடு ${localizedPurushartha} புருஷார்த்தம் மற்றும் ${localizedClassification} அமைப்பில் வருகிறது. எனவே ஜாதகரின் ${bhavaData.lifeDomain} சார்ந்த விஷயங்களில் இது மிக முக்கிய பங்கு வகிக்கிறது.`;
+    } else if (isTelugu) {
+      detailedAnalysis = `${bhavaData.coreThemes}\n\nమీ జన్మ లగ్న కుండలిలో ఈ ${bhavaData.title} పై ${localizedSign} రాశి ప్రభావం ఉంది, దీనికి అధిపతి గ్రహం ${localizedLord}. ఈ స్థానం ${localizedElement} తత్త్వ శక్తితో నడుస్తుంది. `;
+      if (planetsInHouse.length > 0) {
+        const pNames = planetsInHouse.map(p => `${getLocalizedPlanet(p.planet, language)} (${getLocalizedDignity(p.dignity, language)})`).join(', ');
+        detailedAnalysis += `ఈ పవిత్ర స్థానంలో ${pNames} ఉండటం వల్ల ఈ భావపు కారకత్వాలకు విశేష బలం మరియు చైతన్యం లభిస్తుంది. `;
+      } else {
+        detailedAnalysis += `ఈ స్థానంలో ప్రత్యక్ష గ్రహాలు లేవు; కావున దీని ఫలితాలు రాశినాథుడు ${localizedLord} స్థితి మరియు శుభ దృష్టిల ద్వారా నియంత్రించబడతాయి. `;
+      }
+      detailedAnalysis += `ఈ స్థానం ${localizedPurushartha} పురుషార్థం మరియు ${localizedClassification} పరిధిలోకి వస్తుంది. అందువల్ల జాతకుని ${bhavaData.lifeDomain} అంశాలలో ఇది అత్యంత కీలకమైన పాత్ర పోషిస్తుంది.`;
+    } else if (isKannada) {
+      detailedAnalysis = `${bhavaData.coreThemes}\n\nನಿಮ್ಮ ಜನ್ಮ ಲಗ್ನ ಕುಂಡಲಿಯಲ್ಲಿ ಈ ${bhavaData.title} ಮೇಲೆ ${localizedSign} ರಾಶಿಯ ಪ್ರಭಾವವಿದ್ದು, ಇದರ ಅಧಿಪತಿ ಗ್ರಹ ${localizedLord}. ಈ ಭಾವವು ${localizedElement} ಶಕ್ತಿಯಿಂದ ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತದೆ. `;
+      if (planetsInHouse.length > 0) {
+        const pNames = planetsInHouse.map(p => `${getLocalizedPlanet(p.planet, language)} (${getLocalizedDignity(p.dignity, language)})`).join(', ');
+        detailedAnalysis += `ಈ ಪವಿತ್ರ ಮನೆಯಲ್ಲಿ ${pNames} ಉಪಸ್ಥಿತಿಯು ಈ ಭಾವದ ಕಾರಕತ್ವಗಳಿಗೆ ವಿಶೇಷ ಬಲ ಮತ್ತು ಚೈತನ್ಯವನ್ನು ನೀಡುತ್ತದೆ. `;
+      } else {
+        detailedAnalysis += `ಈ ಮನೆಯಲ್ಲಿ ಯಾವುದೇ ಪ್ರತ್ಯಕ್ಷ ಗ್ರಹಗಳಿಲ್ಲ; ಆದ್ದರಿಂದ ಇದರ ಫಲಗಳು ರಾಶ್ಯಾಧಿಪತಿ ${localizedLord} ಅವರ ಸ್ಥಿತಿ ಮತ್ತು ಶುಭ ದೃಷ್ಟಿಯಿಂದ ನಿರ್ಧರಿಸಲ್ಪಡುತ್ತವೆ. `;
+      }
+      detailedAnalysis += `ಈ ಮನೆಯು ${localizedPurushartha} ಪುರುಷಾರ್ಥ ಮತ್ತು ${localizedClassification} ವ್ಯಾಪ್ತಿಗೆ ಬರುತ್ತದೆ. ಆದ್ದರಿಂದ ಜಾತಕರ ${bhavaData.lifeDomain} ವಿಷಯಗಳಲ್ಲಿ ಇದು ನಿರ್ಣಾಯಕ ಪಾತ್ರ ವಹಿಸುತ್ತದೆ.`;
+    } else if (isMalayalam) {
+      detailedAnalysis = `${bhavaData.coreThemes}\n\nനിങ്ങളുടെ ജന്മ ലഗ്ന ജാതകത്തിൽ ഈ ${bhavaData.title} ${localizedSign} രാശിയാൽ ഭരിക്കപ്പെടുന്നു, ഇതിന്റെ അധിപൻ ${localizedLord} ആണ്. ഈ ഭാവം ${localizedElement} ഊർജ്ജത്താൽ നിയന്ത്രിക്കപ്പെടുന്നു. `;
+      if (planetsInHouse.length > 0) {
+        const pNames = planetsInHouse.map(p => `${getLocalizedPlanet(p.planet, language)} (${getLocalizedDignity(p.dignity, language)})`).join(', ');
+        detailedAnalysis += `ഈ പവിത്ര ഭാവത്തിൽ ${pNames} സ്ഥിതി ചെയ്യുന്നത് ഈ ഭാവത്തിന്റെ ഫലങ്ങൾക്ക് പ്രത്യേക ശക്തിയും ചൈതന്യവും നൽകുന്നു. `;
+      } else {
+        detailedAnalysis += `ഈ ഭാവത്തിൽ നേരിട്ട് ഗ്രഹങ്ങളൊന്നുമില്ല; അതിനാൽ ഇതിന്റെ ഫലങ്ങൾ രാശ്യാപനായ ${localizedLord} ഗ്രഹത്തിന്റെ സ്ഥിതിയാൽ നിയന്ത്രിക്കപ്പെടുന്നു. `;
+      }
+      detailedAnalysis += `ഈ ഭാവം ${localizedPurushartha} പുരുഷാർത്ഥത്തിലും ${localizedClassification} വിഭാഗത്തിലും ഉൾപ്പെടുന്നു. അതിനാൽ ജാതകന്റെ ${bhavaData.lifeDomain} കാര്യങ്ങളിൽ ഇത് നിർണ്ണായക പങ്കു വഹിക്കുന്നു.`;
+    } else if (isPunjabi) {
+      detailedAnalysis = `${bhavaData.coreThemes}\n\nਤੁਹਾਡੀ ਜਨਮ ਲਗਨ ਕੁੰਡਲੀ ਵਿੱਚ ਇਸ ${bhavaData.title} ਉੱਤੇ ${localizedSign} ਰਾਸ਼ੀ ਦਾ ਪ੍ਰਭਾਵ ਹੈ, ਜਿਸਦੇ ਸੁਆਮੀ ਗ੍ਰਹਿ ${localizedLord} ਹਨ। ਇਹ ਭਾਵ ${localizedElement} ਤੱਤ ਦੀ ਊਰਜਾ ਨਾਲ ਚੱਲਦਾ ਹੈ। `;
+      if (planetsInHouse.length > 0) {
+        const pNames = planetsInHouse.map(p => `${getLocalizedPlanet(p.planet, language)} (${getLocalizedDignity(p.dignity, language)})`).join(', ');
+        detailedAnalysis += `ਇਸ ਪਵਿੱਤਰ ਭਾਵ ਵਿੱਚ ${pNames} ਦੀ ਮੌਜੂਦਗੀ ਇਸ ਭਾਵ ਦੇ ਕਾਰਕਤੱਤਾਂ ਨੂੰ ਵਿਸ਼ੇਸ਼ ਬਲ ਅਤੇ ਊਰਜਾ ਪ੍ਰਦਾਨ ਕਰਦੀ ਹੈ। `;
+      } else {
+        detailedAnalysis += `ਇਸ ਭਾਵ ਵਿੱਚ ਕੋਈ ਪ੍ਰਤੱਖ ਗ੍ਰਹਿ ਸਥਿਤ ਨਹੀਂ ਹੈ; ਇਸ ਲਈ ਇਸਦੇ ਫਲ ਮੁੱਖ ਤੌਰ 'ਤੇ ਰਾਸ਼ੀ ਸੁਆਮੀ ${localizedLord} ਦੀ ਸਥਿਤੀ ਦੁਆਰਾ ਨਿਯੰਤਰਿਤ ਹੁੰਦੇ ਹਨ। `;
+      }
+      detailedAnalysis += `ਇਹ ਭਾਵ ${localizedPurushartha} ਪੁਰਸ਼ਾਰਥ ਅਤੇ ${localizedClassification} ਦੀ ਸ਼੍ਰੇਣੀ ਵਿੱਚ ਆਉਂਦਾ ਹੈ। ਇਸ ਲਈ ਜਾਤਕ ਦੇ ${bhavaData.lifeDomain} ਨਾਲ ਜੁੜੇ ਪਹਿਲੂਆਂ ਵਿੱਚ ਇਹ ਅਹਿਮ ਭੂਮਿਕਾ ਨਿਭਾਉਂਦਾ ਹੈ।`;
+    } else if (isOdia) {
+      detailedAnalysis = `${bhavaData.coreThemes}\n\nଆପଣଙ୍କ ଜନ୍ମ ଲଗ୍ନ କୁଣ୍ଡଳୀରେ ଏହି ${bhavaData.title} ଉପରେ ${localizedSign} ରାଶିର ପ୍ରଭାବ ରହିଛି, ଯାହାର ଅଧିପତି ଗ୍ରହ ${localizedLord} ଅଟନ୍ତି। ଏହି ଭାବ ${localizedElement} ଶକ୍ତି ଦ୍ୱାରା ପରିଚାଳିତ। `;
+      if (planetsInHouse.length > 0) {
+        const pNames = planetsInHouse.map(p => `${getLocalizedPlanet(p.planet, language)} (${getLocalizedDignity(p.dignity, language)})`).join(', ');
+        detailedAnalysis += `ଏହି ପବିତ୍ର ଭାବରେ ${pNames}ଙ୍କ ପ୍ରତ୍ୟକ୍ଷ ଉପସ୍ଥିତି ଏହି ଭାବର କାରକତ୍ୱକୁ ବିଶେଷ ବଳ ଓ ସକ୍ରିୟତା ପ୍ରଦାନ କରେ। `;
+      } else {
+        detailedAnalysis += `ଏହି ଭାବରେ କୌଣସି ପ୍ରତ୍ୟକ୍ଷ ଗ୍ରହ ନାହାନ୍ତି; ତେଣୁ ଏହାର ଫଳ ମୁଖ୍ୟତଃ ରାଶିପତି ${localizedLord}ଙ୍କ ସ୍ଥିତି ଓ ଶୁଭ ଦୃଷ୍ଟି ଦ୍ୱାରା ନିୟନ୍ତ୍ରିତ। `;
+      }
+      detailedAnalysis += `ଏହି ଭାବ ${localizedPurushartha} ପୁରୁଷାର୍ଥ ଏବଂ ${localizedClassification} ଶ୍ରେଣୀରେ ଆସେ। ତେଣୁ ଜାତକଙ୍କ ${bhavaData.lifeDomain} କ୍ଷେତ୍ରରେ ଏହା ଅତ୍ୟନ୍ତ ନିର୍ଣ୍ଣାୟକ ଭୂମିକା ଗ୍ରହଣ କରେ।`;
     } else {
-      detailedAnalysis = `${cfg.coreThemesHi}\n\nआपकी जन्म लग्न कुण्डली में इस ${cfg.sanskritName} पर ${localizedSign} राशि का प्रभाव है, जिसके अधिपति ग्रह ${localizedLord} हैं। यह भाव तत्त्व रूप में ${localizedElement} ऊर्जा से संचालित है। `;
-
+      // Hindi default
+      detailedAnalysis = `${bhavaData.coreThemes}\n\nआपकी जन्म लग्न कुण्डली में इस ${bhavaData.title} पर ${localizedSign} राशि का प्रभाव है, जिसके अधिपति ग्रह ${localizedLord} हैं। यह भाव तत्त्व रूप में ${localizedElement} ऊर्जा से संचालित है। `;
       if (planetsInHouse.length > 0) {
         const pNames = planetsInHouse.map(p => `${getLocalizedPlanet(p.planet, language)} (${getLocalizedDignity(p.dignity, language)})`).join(', ');
         detailedAnalysis += `इस पावन भाव में ${pNames} की प्रत्यक्ष उपस्थिति इस भाव के कारकतत्वों को असाधारण बल व विशिष्ट सक्रियता प्रदान करती है। `;
       } else {
         detailedAnalysis += `इस भाव में वर्तमान में कोई प्रत्यक्ष ग्रह स्थित नहीं है, अतः इसका मुख्य संचालन राशि स्वामी ${localizedLord} की स्थिति तथा शुभ ग्रहों की दृष्टियों द्वारा नियंत्रित होता है। `;
       }
-
-      detailedAnalysis += `यह भाव ${localizedPurushartha} पुरुषार्थ तथा ${localizedClassification} की श्रेणी में आता है। अतः जातक के ${cfg.lifeDomain} से जुड़े समस्त आयामों में यह भाव अत्यंत निर्णायक व प्रभावशाली भूमिका निभाता है।`;
+      detailedAnalysis += `यह भाव ${localizedPurushartha} पुरुषार्थ तथा ${localizedClassification} की श्रेणी में आता है। अतः जातक के ${bhavaData.lifeDomain} से जुड़े समस्त आयामों में यह भाव अत्यंत निर्णायक व प्रभावशाली भूमिका निभाता है।`;
     }
 
     // Dynamic boons, cautions, and remedies strictly localized
-    let boons: string[] = [];
-    let cautions: string[] = [];
-    let remedies: string[] = [];
-
-    if (isEnglish) {
-      boons = [...cfg.baseBoons];
-      cautions = [...cfg.baseCautions];
-      remedies = [...cfg.baseRemedies];
-    } else if (isMarathi && mrCfg) {
-      boons = [...mrCfg.baseBoons];
-      cautions = [...mrCfg.baseCautions];
-      remedies = [...mrCfg.baseRemedies];
-    } else {
-      boons = [...cfg.baseBoonsHi];
-      cautions = [...cfg.baseCautionsHi];
-      remedies = [...cfg.baseRemediesHi];
-    }
+    let boons = [...bhavaData.baseBoons];
+    let cautions = [...bhavaData.baseCautions];
+    let remedies = [...bhavaData.baseRemedies];
 
     if (planetsInHouse.length > 0) {
       for (const p of planetsInHouse) {
         const planetLabel = getLocalizedPlanet(p.planet, language);
         if (p.dignity.includes('Exalted') || p.dignity.includes('Own') || p.dignity.includes('Moolatrikona')) {
-          if (isEnglish) {
-            boons.unshift(`Auspicious dignity of ${planetLabel} significantly magnifies the boons and fruits of this house.`);
-          } else if (isMarathi) {
-            boons.unshift(`${planetLabel} यांची शुभ व बलवान स्थिती या भावाच्या फळांमध्ये असाधारण वृद्धी घडवून आणते.`);
-          } else {
-            boons.unshift(`${planetLabel} की शुभ व उच्च स्थिति इस भाव के फलों में असाधारण वृद्धि करती है।`);
-          }
+          if (isEnglish) boons.unshift(`Auspicious dignity of ${planetLabel} significantly magnifies the boons and fruits of this house.`);
+          else if (isMarathi) boons.unshift(`${planetLabel} यांची शुभ व बलवान स्थिती या भावाच्या फळांमध्ये असाधारण वृद्धी घडवून आणते.`);
+          else if (isGujarati) boons.unshift(`${planetLabel} ની શુભ અને બળવાન સ્થિતિ આ ભાવના ફળોમાં વૃદ્ધિ કરે છે.`);
+          else if (isBengali) boons.unshift(`${planetLabel}-এর শুভ ও উচ্চ অবস্থান এই ভাবের শুভ ফলকে বহুগুণ বৃদ্ধি করে।`);
+          else if (isTamil) boons.unshift(`${planetLabel} கிரகத்தின் சுப பலம் இந்த வீட்டின் நற்பலன்களை பன்மடங்கு அதிகரிக்கிறது.`);
+          else if (isTelugu) boons.unshift(`${planetLabel} యొక్క శుభ మరియు ఉచ్ఛ స్థితి ఈ స్థానపు ఫలితాలను గణనీయంగా పెంచుతుంది.`);
+          else if (isKannada) boons.unshift(`${planetLabel} ಅವರ ಶುಭ ಮತ್ತು ಉಚ್ಚ ಸ್ಥಿತಿಯು ಈ ಭಾವದ ಸತ್ಫಲಗಳನ್ನು ಹೆಚ್ಚಿಸುತ್ತದೆ.`);
+          else if (isMalayalam) boons.unshift(`${planetLabel} ഗ്രഹത്തിന്റെ ഉച്ചസ്ഥിതി ഈ ഭാവത്തിന്റെ ശുഭഫലങ്ങളെ വർദ്ധിപ്പിക്കുന്നു.`);
+          else if (isPunjabi) boons.unshift(`${planetLabel} ਦੀ ਸ਼ੁਭ ਅਤੇ ਉੱਚ ਸਥਿਤੀ ਇਸ ਭਾਵ ਦੇ ਫਲਾਂ ਵਿੱਚ ਵਾਧਾ ਕਰਦੀ ਹੈ।`);
+          else if (isOdia) boons.unshift(`${planetLabel}ଙ୍କ ଶୁଭ ଓ ଉଚ୍ଚ ସ୍ଥିତି ଏହି ଭାବର ଶୁଭ ଫଳକୁ ବୃଦ୍ଧି କରେ।`);
+          else boons.unshift(`${planetLabel} की शुभ व उच्च स्थिति इस भाव के फलों में असाधारण वृद्धि करती है।`);
         } else if (p.dignity.includes('Debilitated') || p.dignity.includes('Enemy')) {
-          if (isEnglish) {
-            cautions.unshift(`Dignity of ${planetLabel} advises conscious patience and mindfulness in matters governed by this house.`);
-          } else if (isMarathi) {
-            cautions.unshift(`${planetLabel} यांची स्थिती या भावाशी संबंधित विषयात विशेष सावधगिरी व संयम बाळगण्याची प्रेरणा देते.`);
-          } else {
-            cautions.unshift(`${planetLabel} की स्थिति इस भाव से संबंधित मामलों में सचेत व धैर्यवान रहने की प्रेरणा देती है।`);
-          }
+          if (isEnglish) cautions.unshift(`Dignity of ${planetLabel} advises conscious patience and mindfulness in matters governed by this house.`);
+          else if (isMarathi) cautions.unshift(`${planetLabel} यांची स्थिती या भावाशी संबंधित विषयात विशेष सावधगिरी व संयम बाळगण्याची प्रेरणा देते.`);
+          else if (isGujarati) cautions.unshift(`${planetLabel} ની સ્થિતિ આ ભાવ સંબંધિત બાબતોમાં ધૈર્ય અને સાવધાની રાખવાની સલાહ આપે છે.`);
+          else if (isBengali) cautions.unshift(`${planetLabel}-এর অবস্থান এই ভাব সংক্রান্ত বিষয়ে ধৈর্য ও সতর্কতা অবলম্বনের নির্দেশ দেয়।`);
+          else if (isTamil) cautions.unshift(`${planetLabel} கிரகத்தின் நிலை இந்த வீடு சார்ந்த விஷயங்களில் பொறுமையும் கவனமும் தேவை என்பதை உணர்த்துகிறது.`);
+          else if (isTelugu) cautions.unshift(`${planetLabel} యొక్క స్థితి ఈ స్థానానికి సంబంధించిన విషయాలలో ఓర్పు మరియు జాగరూకత అవసరమని సూచిస్తుంది.`);
+          else if (isKannada) cautions.unshift(`${planetLabel} ಅವರ ಸ್ಥಿತಿಯು ಈ ಭಾವಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ವಿಷಯಗಳಲ್ಲಿ ತಾಳ್ಮೆ ಮತ್ತು ಜಾಗರೂಕತೆಯನ್ನು ಸೂಚಿಸುತ್ತದೆ.`);
+          else if (isMalayalam) cautions.unshift(`${planetLabel} ഗ്രഹത്തിന്റെ സ്ഥിതി ഈ ഭാവവുമായി ബന്ധപ്പെട്ട കാര്യങ്ങളിൽ ക്ഷമയും ജാഗ്രതയും പാലിക്കാൻ നിർദ്ദേശിക്കുന്നു.`);
+          else if (isPunjabi) cautions.unshift(`${planetLabel} ਦੀ ਸਥਿਤੀ ਇਸ ਭਾਵ ਨਾਲ ਸੰਬੰਧਿਤ ਮਾਮਲਿਆਂ ਵਿੱਚ ਧੀਰਜ ਅਤੇ ਸਾਵਧਾਨੀ ਰੱਖਣ ਦੀ ਸਲਾਹ ਦਿੰਦੀ ਹੈ।`);
+          else if (isOdia) cautions.unshift(`${planetLabel}ଙ୍କ ସ୍ଥିତି ଏହି ଭାବ ସମ୍ବନ୍ଧୀୟ ବିଷୟରେ ଧୈର୍ଯ୍ୟ ଓ ସତର୍କତା ଅବଲମ୍ବନ କରିବାକୁ ପ୍ରେରଣା ଦିଏ।`);
+          else cautions.unshift(`${planetLabel} की स्थिति इस भाव से संबंधित मामलों में सचेत व धैर्यवान रहने की प्रेरणा देती है।`);
         }
       }
     }
 
-    const houseDisplayName = isEnglish
-      ? cfg.englishTitle
-      : isMarathi && mrCfg
-        ? mrCfg.title
-        : cfg.sanskritName;
-
-    const houseLifeDomain = isEnglish
-      ? cfg.lifeDomain
-      : isMarathi && mrCfg
-        ? mrCfg.lifeDomain
-        : cfg.lifeDomain;
-
     return {
       houseNumber,
-      name: houseDisplayName,
-      sanskritName: houseDisplayName,
+      name: bhavaData.title,
+      sanskritName: bhavaData.title,
       rashiNumber,
       rashiName: localizedSign,
       rashiSanskrit: localizedSign,
@@ -2529,9 +2587,9 @@ export const calculate12BhavasDetailedAnalysis = (
       element: localizedElement,
       classification: localizedClassification,
       purushartha: localizedPurushartha,
-      karakaPlanet: cfg.karakaPlanet,
-      bodyParts: cfg.bodyParts,
-      lifeDomain: houseLifeDomain,
+      karakaPlanet: localizedKaraka,
+      bodyParts: bhavaData.bodyParts,
+      lifeDomain: bhavaData.lifeDomain,
       planets: planetsInHouse,
       detailedAnalysis,
       boons: boons.slice(0, 3),

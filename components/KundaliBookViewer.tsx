@@ -13,6 +13,8 @@ import {
   getLocalizedSign,
   getLocalizedHouse,
   getLocalizedDignity,
+  getLocalizedPaya,
+  getLocalizedElement,
   stripAsterisksAndMarkdown
 } from '../services/kundaliLocalization';
 
@@ -209,7 +211,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
 
     const lines = reportText.split('\n');
     const chapters: ParsedChapter[] = [];
-    let curTitle = language === 'English' ? 'Cosmic Personality & Soul Blueprint' : 'व्यक्तित्व एवं आत्मकारक स्वरूप';
+    let curTitle = locale.chapterLabels.ch1Title;
     let curLines: string[] = [];
 
     const flush = () => {
@@ -217,7 +219,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
       const content = stripAsterisksAndMarkdown(rawContent);
       if (content || chapters.length === 0) {
         const clean = stripAsterisksAndMarkdown(curTitle.replace(/^[#\d\.\s\-\*]+/, '').trim()) || 
-          (language === 'English' ? 'Astrological Synthesis' : 'ज्योतिषीय विश्लेषण');
+          locale.bhavaPillars.analysisTitle;
         
         // Scan for strengths, cautions, remedies without asterisks
         const strengths: string[] = [];
@@ -550,7 +552,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                 {locale.cover.nativeName}
               </span>
               <div className="text-xl sm:text-3xl font-cinzel font-black tracking-wider text-amber-900 dark:text-amber-100">
-                {stripAsterisksAndMarkdown(details.name) || (language === 'English' ? 'Jataka (Seeker)' : 'जातक')}
+                {stripAsterisksAndMarkdown(details.name) || locale.cover.defaultNativeName}
               </div>
             </div>
 
@@ -665,18 +667,10 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
             {/* Ascendant Lagna Foundation Card */}
             <div className="p-4 rounded-2xl border border-amber-500/20 bg-amber-500/[0.03] text-xs leading-relaxed text-stone-700 dark:text-slate-300">
               <strong className="text-amber-600 dark:text-amber-400 block mb-1.5 text-xs font-devanagari font-bold">
-                {language === 'English'
-                  ? `Ascendant Sign: ${getLocalizedSign(RASHI_NAMES_EN[(analysis.lagnaSign || 1) - 1], language)} (Lagna House 1)`
-                  : language === 'Marathi'
-                  ? `जन्म लग्न राशी: ${getLocalizedSign(RASHI_NAMES_EN[(analysis.lagnaSign || 1) - 1], language)} (प्रथम भाव / लग्न स्थान)`
-                  : `जन्म लग्न राशि: ${getLocalizedSign(RASHI_NAMES_EN[(analysis.lagnaSign || 1) - 1], language)} (प्रथम भाव / लग्न केन्द्र)`}
+                {locale.lagnaCard.titleTemplate(getLocalizedSign(RASHI_NAMES_EN[(analysis.lagnaSign || 1) - 1], language))}
               </strong>
               <p className="leading-relaxed">
-                {language === 'English'
-                  ? `The Ascendant (Lagna) represents the physical incarnation, biological temperament, vitality, and primary orientation of consciousness. With ${getLocalizedSign(RASHI_NAMES_EN[(analysis.lagnaSign || 1) - 1], language)} rising at the eastern horizon during birth, your life operates with innate purpose, distinct individuality, and continuous evolution. Detailed planetary longitudes and dignities are presented on the subsequent page.`
-                  : language === 'Marathi'
-                  ? `जन्म लग्न हे आत्म्याचे स्थूल रूप, प्रकृती, शारीरिक तेज आणि विचारसरणीचे मूळ केंद्र आहे. आपल्या जन्माच्या वेळी पूर्व क्षितिजावर ${getLocalizedSign(RASHI_NAMES_EN[(analysis.lagnaSign || 1) - 1], language)} राशीचा उदय झाल्यामुळे आपल्या व्यक्तिमत्त्वात दृढ आत्मविश्वास आणि स्वतंत्र विचारसरणी दिसून येते. सर्व नवग्रहांचे स्पष्ट अंश, राशी व स्थिती पुढील पानावर सविस्तर दिली आहे.`
-                  : `जन्म लग्न जातक के स्थूल शरीर, आरोग्य, जीवन ऊर्जा एवं दृष्टिकोण का मुख्य आधार है। जन्म समय पूर्व क्षितिज पर ${getLocalizedSign(RASHI_NAMES_EN[(analysis.lagnaSign || 1) - 1], language)} राशि के उदय से व्यक्तित्व में विशिष्ट आभा, दृढ संकल्प एवं स्वाभाविक तेज का संचार होता है। संपूर्ण नवग्रहों की स्पष्ट स्थिति, राशि व बलाबल आगामी पृष्ठ पर प्रस्तुत है।`}
+                {locale.lagnaCard.descTemplate(getLocalizedSign(RASHI_NAMES_EN[(analysis.lagnaSign || 1) - 1], language))}
               </p>
             </div>
           </div>
@@ -758,18 +752,10 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
             {/* Planetary Dispositions Insight Card */}
             <div className="p-4 rounded-2xl border border-amber-500/20 bg-amber-500/[0.03] text-xs leading-relaxed text-stone-700 dark:text-slate-300">
               <strong className="text-amber-600 dark:text-amber-400 block mb-1 font-devanagari font-bold">
-                {language === 'English'
-                  ? 'Planetary Dignity & Cosmic Strength (Shadbala Matrix):'
-                  : language === 'Marathi'
-                  ? 'ग्रह स्पष्ट व ग्रहावस्था विश्लेषण:'
-                  : 'ग्रह स्पष्ट एवं ग्रह बलाबल समीक्षा:'}
+                {locale.sphutaCard.title}
               </strong>
               <p>
-                {language === 'English'
-                  ? 'In authentic Vedic Jyotish, planetary strength (Bala) and dignity determine the potency with which a Graha delivers its karmic results. Planets in Exaltation (Uchcha) or Own Sign (Swakshetra) bestow heightened boons with ease, while planets in Debilitation (Neecha) or Enemy Signs encourage conscious discipline, patience, and classical remedial propitiation.'
-                  : language === 'Marathi'
-                  ? 'वैदिक ज्योतिष शास्त्रानुसार ग्रहांचे अंश, राशी आणि अवस्था यावरून ग्रह किती सामर्थ्याने फळे देणार हे निश्चित होते. उच्च किंवा स्वराशीतील ग्रह शुभ फळांची सहज वृद्धी करतात, तर नीच किंवा शत्रू राशीतील ग्रह जातकाला संयम, परिश्रम आणि वैदिक उपायांची प्रेरणा देतात.'
-                  : 'वैदिक ज्योतिष में ग्रहों की स्पष्ट स्थिति एवं गरिमा यह निर्धारित करती है कि ग्रह अपने कारकतत्वों का फल किस तीव्रता से प्रदान करेंगे। उच्च अथवा स्वराशि में स्थित ग्रह शुभ फलों में सहज वृद्धि करते हैं, जबकि नीच या शत्रु राशि के ग्रह धैर्य एवं शास्त्रीय उपायों की आवश्यकता रेखांकित करते हैं।'}
+                {locale.sphutaCard.desc}
               </p>
             </div>
           </div>
@@ -812,42 +798,42 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                 <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                   <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">{locale.panchanga.varna}</span>
                   <p className="font-bold text-sm mt-0.5">{stripAsterisksAndMarkdown(avakahadaData.varna)}</p>
-                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Spiritual Temperament' : language === 'Marathi' ? 'आत्मिक प्रवृत्ती' : 'आत्मिक प्रकृति'}</p>
+                  <p className="text-[9px] opacity-75">{locale.panchanga.varnaDesc}</p>
                 </div>
                 <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                   <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">{locale.panchanga.vashya}</span>
                   <p className="font-bold text-sm mt-0.5">{stripAsterisksAndMarkdown(avakahadaData.vashya)}</p>
-                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Dominance & Alignment' : language === 'Marathi' ? 'प्रभाव व सामंजस्य' : 'प्रभाव व सामंजस्य'}</p>
+                  <p className="text-[9px] opacity-75">{locale.panchanga.vashyaDesc}</p>
                 </div>
                 <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                   <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">{locale.panchanga.yoni}</span>
-                  <p className="font-bold text-sm mt-0.5">{stripAsterisksAndMarkdown(avakahadaData.yoni)} {avakahadaData.yoniAnimal ? `(${stripAsterisksAndMarkdown(avakahadaData.yoniAnimal)})` : ''}</p>
-                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Instinctive Nature' : language === 'Marathi' ? 'प्रवृत्ती व स्वभाव' : 'प्रवृत्तिमूलक स्वभाव'}</p>
+                  <p className="font-bold text-sm mt-0.5">{stripAsterisksAndMarkdown(avakahadaData.yoni, language)}{language === 'English' && avakahadaData.yoniAnimal ? ` (${stripAsterisksAndMarkdown(avakahadaData.yoniAnimal).split(' - ')[0]})` : ''}</p>
+                  <p className="text-[9px] opacity-75">{locale.panchanga.yoniDesc}</p>
                 </div>
                 <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                   <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">{locale.panchanga.gana}</span>
-                  <p className="font-bold text-sm mt-0.5">{stripAsterisksAndMarkdown(avakahadaData.gana)}</p>
-                  <p className="text-[9px] opacity-85 leading-snug break-words">{stripAsterisksAndMarkdown(avakahadaData.ganaDescription)}</p>
+                  <p className="font-bold text-sm mt-0.5">{stripAsterisksAndMarkdown(avakahadaData.gana, language)}</p>
+                  <p className="text-[9px] opacity-85 leading-snug break-words">{language === 'English' ? stripAsterisksAndMarkdown(avakahadaData.ganaDescription) : ''}</p>
                 </div>
                 <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                   <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">{locale.panchanga.nadi}</span>
-                  <p className="font-bold text-sm mt-0.5">{stripAsterisksAndMarkdown(avakahadaData.nadi)} {avakahadaData.nadiAyurveda ? `(${stripAsterisksAndMarkdown(avakahadaData.nadiAyurveda)})` : ''}</p>
-                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Bio-Energetic Pulse' : language === 'Marathi' ? 'आरोग्य ऊर्जा' : 'जैविक ऊर्जा'}</p>
+                  <p className="font-bold text-sm mt-0.5">{stripAsterisksAndMarkdown(avakahadaData.nadi, language)}{language === 'English' && avakahadaData.nadiAyurveda ? ` (${stripAsterisksAndMarkdown(avakahadaData.nadiAyurveda).split(' - ')[0]})` : ''}</p>
+                  <p className="text-[9px] opacity-75">{locale.panchanga.nadiDesc}</p>
                 </div>
                 <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                   <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">{locale.panchanga.paya}</span>
-                  <p className="font-bold text-sm mt-0.5">{stripAsterisksAndMarkdown(avakahadaData.paya)}</p>
-                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Foundational Leg' : language === 'Marathi' ? 'पायाभूत आधार' : 'आधारभूत स्थिति'}</p>
+                  <p className="font-bold text-sm mt-0.5">{getLocalizedPaya(avakahadaData.paya, language)}</p>
+                  <p className="text-[9px] opacity-75">{locale.panchanga.payaDesc}</p>
                 </div>
                 <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                   <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">{locale.panchanga.element}</span>
-                  <p className="font-bold text-sm mt-0.5">{stripAsterisksAndMarkdown(avakahadaData.tatva)}</p>
-                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Elemental Core' : language === 'Marathi' ? 'मूलभूत तत्त्व' : 'मूलभूत ऊर्जा'}</p>
+                  <p className="font-bold text-sm mt-0.5">{getLocalizedElement(avakahadaData.tatva, language)}</p>
+                  <p className="text-[9px] opacity-75">{locale.panchanga.elementDesc}</p>
                 </div>
                 <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                   <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">{locale.panchanga.tithi}</span>
-                  <p className="font-bold text-sm mt-0.5">{stripAsterisksAndMarkdown(avakahadaData.paksha)} {stripAsterisksAndMarkdown(avakahadaData.tithi)}</p>
-                  <p className="text-[9px] opacity-75">Yoga: {stripAsterisksAndMarkdown(avakahadaData.yoga)}</p>
+                  <p className="font-bold text-sm mt-0.5">{stripAsterisksAndMarkdown(avakahadaData.paksha, language)} {stripAsterisksAndMarkdown(avakahadaData.tithi, language)}</p>
+                  <p className="text-[9px] opacity-75">{language === 'English' ? 'Yoga:' : 'योग:'} {stripAsterisksAndMarkdown(avakahadaData.yoga, language)}</p>
                 </div>
               </div>
 
@@ -863,14 +849,14 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                       {avakahadaData.manglikStatus.isManglik 
                         ? `${locale.panchanga.manglikActive} (${avakahadaData.manglikStatus.severity})`
                         : locale.panchanga.manglikNirdosha}
-                      {avakahadaData.manglikStatus.hasParihara && ` • ${language === 'English' ? 'Parihara (Nullification) Present' : language === 'Marathi' ? 'दोष परिहार उपस्थित' : 'परिहार उपस्थित'}`}
+                      {avakahadaData.manglikStatus.hasParihara && ` • ${locale.panchanga.pariharaText}`}
                     </p>
                   </div>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-xs font-black uppercase flex-shrink-0 ${
                   avakahadaData.manglikStatus.isManglik ? 'bg-orange-500/20 text-orange-400 border border-orange-500/40' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                 }`}>
-                  {avakahadaData.manglikStatus.isManglik ? (language === 'English' ? 'Caution' : language === 'Marathi' ? 'सावधान' : 'सचेत') : (language === 'English' ? 'Auspicious' : language === 'Marathi' ? 'शुभ' : 'शुभ')}
+                  {avakahadaData.manglikStatus.isManglik ? locale.panchanga.cautionBadge : locale.panchanga.auspiciousBadge}
                 </span>
               </div>
 
@@ -930,32 +916,32 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                   <span className="text-xl">🕉️</span>
                   <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">{getLocalizedPurushartha('Dharma', language)}</span>
                 </div>
-                <h4 className="font-bold text-xs mt-1">{language === 'English' ? 'Dharma (H 1,5,9)' : language === 'Marathi' ? 'धर्म (भाव १,५,९)' : 'धर्म (भाव १,५,९)'}</h4>
-                <p className="text-[9px] opacity-75 mt-0.5">{language === 'English' ? 'Soul purpose & moral code' : language === 'Marathi' ? 'आत्मिक हेतू व कर्तव्यनिष्ठा' : 'आत्मिक उद्देश्य व नैतिक निष्ठा'}</p>
+                <h4 className="font-bold text-xs mt-1">{locale.purusharthaDetails.dharmaTitle}</h4>
+                <p className="text-[9px] opacity-75 mt-0.5">{locale.purusharthaDetails.dharmaDesc}</p>
               </div>
               <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                 <div className="flex items-center justify-between">
                   <span className="text-xl">💰</span>
                   <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{getLocalizedPurushartha('Artha', language)}</span>
                 </div>
-                <h4 className="font-bold text-xs mt-1">{language === 'English' ? 'Artha (H 2,6,10)' : language === 'Marathi' ? 'अर्थ (भाव २,६,१०)' : 'अर्थ (भाव २,६,१०)'}</h4>
-                <p className="text-[9px] opacity-75 mt-0.5">{language === 'English' ? 'Wealth, vocation & resources' : language === 'Marathi' ? 'धन, कारकीर्द व संचित संपत्ती' : 'धन, आजीविका व संचित कोष'}</p>
+                <h4 className="font-bold text-xs mt-1">{locale.purusharthaDetails.arthaTitle}</h4>
+                <p className="text-[9px] opacity-75 mt-0.5">{locale.purusharthaDetails.arthaDesc}</p>
               </div>
               <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                 <div className="flex items-center justify-between">
                   <span className="text-xl">💖</span>
                   <span className="text-[10px] font-bold text-pink-600 dark:text-pink-400">{getLocalizedPurushartha('Kama', language)}</span>
                 </div>
-                <h4 className="font-bold text-xs mt-1">{language === 'English' ? 'Kama (H 3,7,11)' : language === 'Marathi' ? 'काम (भाव ३,७,११)' : 'काम (भाव ३,७,११)'}</h4>
-                <p className="text-[9px] opacity-75 mt-0.5">{language === 'English' ? 'Desires, love & kinship' : language === 'Marathi' ? 'इच्छा, नातेसंबंध व प्रेम' : 'कामना, प्रेम व अभिलाषा'}</p>
+                <h4 className="font-bold text-xs mt-1">{locale.purusharthaDetails.kamaTitle}</h4>
+                <p className="text-[9px] opacity-75 mt-0.5">{locale.purusharthaDetails.kamaDesc}</p>
               </div>
               <div className={`p-3 rounded-xl border ${cardBgClass}`}>
                 <div className="flex items-center justify-between">
                   <span className="text-xl">🌊</span>
                   <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400">{getLocalizedPurushartha('Moksha', language)}</span>
                 </div>
-                <h4 className="font-bold text-xs mt-1">{language === 'English' ? 'Moksha (H 4,8,12)' : language === 'Marathi' ? 'मोक्ष (भाव ४,८,१२)' : 'मोक्ष (भाव ४,८,१२)'}</h4>
-                <p className="text-[9px] opacity-75 mt-0.5">{language === 'English' ? 'Liberation & spiritual peace' : language === 'Marathi' ? 'मुक्ती, अध्यात्म व मनःशांती' : 'मुक्ति, अध्यात्म व आत्म-शांति'}</p>
+                <h4 className="font-bold text-xs mt-1">{locale.purusharthaDetails.mokshaTitle}</h4>
+                <p className="text-[9px] opacity-75 mt-0.5">{locale.purusharthaDetails.mokshaDesc}</p>
               </div>
             </div>
 
@@ -979,13 +965,11 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
 
             <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.03] text-xs leading-relaxed text-stone-700 dark:text-slate-300">
               <strong className="text-amber-600 dark:text-amber-400 block mb-1">
-                {language === 'English' ? 'Astrological Insight:' : language === 'Marathi' ? 'ज्योतिषीय दृष्टी:' : 'ज्योतिषीय दृष्टि:'}
+                {locale.insightCard.title}
               </strong>
-              {language === 'English'
-                ? 'The planetary dispositions in your Janma Kundali reflect accumulated karmic predispositions. Harmonious planetary alignment across the four Purusharthas indicates that conscious action, ethical dedication, and timely remedies bring balance and fruition.'
-                : language === 'Marathi'
-                ? 'आपल्या जन्म कुंडलीतील ग्रहांची स्थिती संचित प्रारब्ध कर्मांचे प्रतिबिंब आहे. चार पुरुषार्थांमध्ये ग्रहांचा सुसंवाद दर्शवतो की योग्य कर्म, नीतिमत्ता आणि वेळेवर केलेले वैदिक उपाय जीवनातील सर्व उद्दिष्टे साध्य करतात.'
-                : 'आपकी जन्म पत्रिका में ग्रहों की स्थिति संचित प्रारब्ध कर्मों का दर्पण है। चारों पुरुषार्थों में ग्रहों का संतुलन यह दर्शाता है कि समयबद्ध कर्तव्य पालन, नैतिक आचरण एवं शास्त्रीय उपायों द्वारा जीवन के समस्त क्षेत्रों में संतुलन व सिद्धि प्राप्त होती है।'}
+              <p>
+                {locale.insightCard.desc}
+              </p>
             </div>
           </div>
 
@@ -1027,7 +1011,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                 <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 mb-2 flex items-center justify-between">
                   <span>⏳ {locale.mahadasha.title}</span>
                   <span className="text-[9px] font-normal text-stone-500 dark:text-slate-400">
-                    {language === 'English' ? 'Current Period Marked Active' : language === 'Marathi' ? 'चालू महादशेवर विशेष शिक्का' : 'सक्रिय महादशा पर विशेष मुहर'}
+                    {locale.mahadasha.activeBadge}
                   </span>
                 </h4>
                 <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-1.5 sm:gap-2">
@@ -1187,12 +1171,12 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                   <div className="p-2 rounded-xl bg-amber-500/[0.04] border border-amber-500/15">
                     <span className="text-[8px] uppercase tracking-wider block font-bold text-amber-600 dark:text-amber-400">{locale.bhavaPillars.lord}</span>
                     <span className="font-bold text-xs leading-snug block">{getLocalizedPlanet(bhava.rashiLord, language)}</span>
-                    <span className="text-[8px] text-stone-500 dark:text-slate-400">{language === 'English' ? 'Ruler Planet' : 'राशि स्वामी'}</span>
+                    <span className="text-[8px] text-stone-500 dark:text-slate-400">{locale.bhavaPillars.rulerLabel}</span>
                   </div>
                   <div className="p-2 rounded-xl bg-amber-500/[0.04] border border-amber-500/15">
                     <span className="text-[8px] uppercase tracking-wider block font-bold text-amber-600 dark:text-amber-400">{locale.bhavaPillars.karaka}</span>
                     <span className="font-bold text-xs leading-snug block">{getLocalizedPlanet(bhava.karakaPlanet, language)}</span>
-                    <span className="text-[8px] text-stone-500 dark:text-slate-400">{language === 'English' ? 'Significator' : 'स्थिर कारक'}</span>
+                    <span className="text-[8px] text-stone-500 dark:text-slate-400">{locale.bhavaPillars.karakaLabel}</span>
                   </div>
                   <div className="p-2 rounded-xl bg-amber-500/[0.04] border border-amber-500/15">
                     <span className="text-[8px] uppercase tracking-wider block font-bold text-amber-600 dark:text-amber-400">{locale.bhavaPillars.anatomy}</span>
@@ -1409,9 +1393,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                   <strong className="text-amber-600 dark:text-amber-400 block mb-0.5 text-[11px]">
                     {locale.bhavaPillars.counselTitle}
                   </strong>
-                  {language === 'English'
-                    ? `The ruler of this house is ${getLocalizedPlanet(bhava.rashiLord, language)} and natural significator is ${getLocalizedPlanet(bhava.karakaPlanet, language)}. Diligent adherence to these classical upayas balances transit challenges and promotes auspicious fruition across ${stripAsterisksAndMarkdown(bhava.lifeDomain)}.`
-                    : `इस भाव के अधिपति ${getLocalizedPlanet(bhava.rashiLord, language)} हैं एवं नैसर्गिक कारक ${getLocalizedPlanet(bhava.karakaPlanet, language)} हैं। उल्लिखित वैदिक उपायों का निष्ठापूर्वक पालन करने से नकारात्मक गोचर शांत होते हैं तथा ${stripAsterisksAndMarkdown(bhava.lifeDomain)} में शुभता व उन्नति की प्राप्ति होती है।`}
+                  {locale.counsel.counselTemplate(getLocalizedPlanet(bhava.rashiLord, language), getLocalizedPlanet(bhava.karakaPlanet, language), stripAsterisksAndMarkdown(bhava.lifeDomain))}
                 </div>
               </>
             )}
@@ -1534,7 +1516,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
             {locale.chapterLabels.epilogueTitle}
           </span>
           <h3 className={`text-xl sm:text-2xl font-devanagari font-bold mt-1 ${textTitleClass}`}>
-            {language === 'English' ? 'Sacred Mantras & Astrological Colophon' : 'वैदिक महामन्त्र एवं अन्तिम परामर्श'}
+            {locale.epilogue.headerTitle}
           </h3>
           <div className="w-24 h-0.5 bg-gradient-to-r from-transparent via-amber-500 to-transparent mx-auto mt-2"></div>
         </div>
@@ -1544,7 +1526,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
           {/* Maha Mrityunjaya Mantra */}
           <div className={`p-4 rounded-2xl border ${cardBgClass}`}>
             <span className="text-[9px] uppercase font-bold tracking-widest text-amber-600 dark:text-amber-400 block mb-1">
-              महामृत्युंजय मन्त्र (Life Vitality & Protection)
+              {locale.epilogue.mantra1Label}
             </span>
             <p className="font-devanagari text-sm font-bold text-amber-800 dark:text-amber-200 leading-relaxed">
               ॐ त्र्यम्बकं यजामहे सुगन्धिं पुष्टिवर्धनम्।<br />
@@ -1555,7 +1537,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
           {/* Gayatri Mantra */}
           <div className={`p-4 rounded-2xl border ${cardBgClass}`}>
             <span className="text-[9px] uppercase font-bold tracking-widest text-amber-600 dark:text-amber-400 block mb-1">
-              गायत्री मन्त्र (Intellectual Illumination)
+              {locale.epilogue.mantra2Label}
             </span>
             <p className="font-devanagari text-sm font-bold text-amber-800 dark:text-amber-200 leading-relaxed">
               ॐ भूर्भुवः स्वः तत्सवितुर्वरेण्यं भर्गो देवस्य धीमहि धियो यो नः प्रचोदयात्॥
@@ -1564,18 +1546,18 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
 
           {/* Astrological Verification Seal */}
           <div className="p-4 rounded-2xl border-2 border-amber-500/40 bg-amber-500/[0.05] flex items-center justify-around">
-            <div className="w-16 h-16 rounded-full border-2 border-dashed border-amber-500 flex items-center justify-center font-devanagari text-xs font-black text-amber-700 dark:text-amber-300">
-              प्रमाणित<br />ज्योतिष
+            <div className="w-16 h-16 rounded-full border-2 border-dashed border-amber-500 flex items-center justify-center font-devanagari text-xs font-black text-amber-700 dark:text-amber-300 text-center px-1">
+              {locale.epilogue.sealBadge}
             </div>
             <div className="text-left">
               <h5 className="font-cinzel font-bold text-xs uppercase tracking-wider text-amber-900 dark:text-amber-200">
-                Vedic Astrology Bureau Seal
+                {locale.epilogue.sealTitle}
               </h5>
               <p className="text-[10px] text-stone-500 dark:text-slate-400">
-                Cast under {KUNDALI_SYSTEMS.find(s => s.id === system)?.name} Calculations
+                {locale.epilogue.sealCalculations(KUNDALI_SYSTEMS.find(s => s.id === system)?.name || 'Vedic')}
               </p>
               <p className="text-[9px] font-mono text-amber-600 dark:text-amber-400 mt-1">
-                Ref ID: WMS-{Date.now().toString().slice(-6)}
+                {locale.epilogue.refIdPrefix}{Date.now().toString().slice(-6)}
               </p>
             </div>
           </div>

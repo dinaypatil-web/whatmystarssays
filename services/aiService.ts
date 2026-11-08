@@ -2,6 +2,8 @@ import { GoogleGenAI } from "@google/genai";
 import { BirthDetails, MatchmakingDetails, Timeframe, Language, ChatMessage, KundaliResponse, KundaliSystem, PlanetaryTransitInfo } from "../types";
 import { StorageService } from "./storageService";
 import { calculateAshtakootMilan, calculateMoonDetails, calculateSaadesatiPhases, calculateAvakahadaDetails, calculatePlanetaryPositions, ensureValidKundaliChart } from "./astrologyHelper";
+import { getLocalizedPlanet, getLocalizedSign, getKundaliLocale } from "./kundaliLocalization";
+import { getLocalizedBhavaData } from "./bhavaLocalization";
 
 // ---------------------------------------------------------------------------
 // ACTIVE GEMINI MODELS & MULTI-KEY ROTATION
@@ -599,11 +601,11 @@ const generateOfflineKundali = (
   const lagnaSign = ((sunSign - 1 + Math.floor(hoursSinceSunrise / 2)) % 12) + 1;
 
   const moonSignName = moonCalc?.rashi.name || 'Taurus';
-  const moonSignSanskrit = moonCalc?.rashi.sanskrit || 'वृषभ (Vrishabha)';
+  const moonSignLocalized = getLocalizedSign(moonSignName, language);
   const nakshatraName = moonCalc?.nakshatra.name || 'Rohini';
   const nakshatraSanskrit = moonCalc?.nakshatra.sanskrit || 'रोहिणी';
-  const starLord = moonCalc?.nakshatra.lord || 'Moon';
-  const subLord = 'Jupiter';
+  const starLord = getLocalizedPlanet(moonCalc?.nakshatra.lord || 'Moon', language);
+  const subLord = getLocalizedPlanet('Jupiter', language);
 
   // Compute authentic natal planetary positions
   const planetaryPositions = calculatePlanetaryPositions({}, lagnaSign, details.dob, details.tob);
@@ -629,7 +631,7 @@ const generateOfflineKundali = (
     const endYear = yr + d.years;
     yr = endYear;
     return {
-      planet: language === 'Hindi' ? `${d.sanskrit} (${d.planet})` : d.planet,
+      planet: getLocalizedPlanet(d.planet, language),
       startYear,
       endYear,
       durationYears: d.years,
@@ -637,320 +639,122 @@ const generateOfflineKundali = (
     };
   });
 
-  const RASHI_NAMES_HI = [
-    'मेष', 'वृषभ', 'मिथुन', 'कर्क',
-    'सिंह', 'कन्या', 'तुला', 'वृश्चिक',
-    'धनु', 'मकर', 'कुम्भ', 'मीन'
-  ];
-  const RASHI_NAMES_MR = [
-    'मेष', 'वृषभ', 'मिथुन', 'कर्क',
-    'सिंह', 'कन्या', 'तूळ', 'वृश्चिक',
-    'धनु', 'मकर', 'कुंभ', 'मीन'
-  ];
-  const lagnaName = RASHI_NAMES_HI[lagnaSign - 1];
-  const lagnaNameMr = RASHI_NAMES_MR[lagnaSign - 1];
+  const localizedLagnaSign = getLocalizedSign(lagnaSign, language);
+  const locale = getKundaliLocale(language);
+  const seekerName = details.name || locale.cover.defaultNativeName;
 
-  const isMarathi = language === 'Marathi';
-  const isHindi = language === 'Hindi';
+  const bhavaSections = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(h => {
+    const data = getLocalizedBhavaData(h, language);
+    return `### ${data.title}
+${data.coreThemes}
+- ${locale.bhavaPillars.boonsTitle} ${data.baseBoons.join(' • ')}
+- ${locale.bhavaPillars.cautionsTitle} ${data.baseCautions.join(' • ')}
+- ${locale.bhavaPillars.upayasTitle} ${data.baseRemedies.join(' • ')}`;
+  }).join('\n\n');
 
-  const report = isMarathi
-    ? `# लग्न व आत्मकारक जीवन स्वरूप
-जातक ${details.name || 'जिज्ञासू'} यांचा जन्म शुभ ${lagnaNameMr} लग्नात झाला आहे. आपली जन्म चंद्र राशी ${moonSignName} असून पावन ${nakshatraName} नक्षत्रात जन्म झाला आहे. लग्न स्वामीचा प्रभाव आपल्या व्यक्तिमत्त्वात दृढ आत्मविश्वास, नैतिक निष्ठा, अफाट इच्छाशक्ती आणि स्वाभाविक नेतृत्वगुणांचे सिंचन करतो. आपले मन संवेदनशील, दूरदर्शी आणि सकारात्मक दृष्टिकोनाने परिपूर्ण आहे.
+  const careerTitles: Record<Language, string> = {
+    English: 'Career, Profession & Wealth Mastery',
+    Marathi: 'आजीविका, व्यवसाय व आर्थिक प्रगती',
+    Gujarati: 'કારકિર્દી, વ્યવસાય અને આર્થિક સમૃદ્ધિ',
+    Bengali: 'জীবিকা, কর্ম ও আর্থিক সমৃদ্ধি',
+    Tamil: 'தொழில், வேலைவாய்ப்பு மற்றும் நிதி வளம்',
+    Telugu: 'వృత్తి, ఉద్యోగం మరియు ఆర్థిక అభివృద్ధి',
+    Kannada: 'ಉದ್ಯೋಗ, ವೃತ್ತಿ ಮತ್ತು ಆರ್ಥಿಕ ಸಮೃದ್ಧಿ',
+    Malayalam: 'തൊഴിൽ, ഉപജീവനം, സാമ്പത്തിക അഭിവൃദ്ധി',
+    Punjabi: 'ਰੋਜ਼ਗਾਰ, ਵਪਾਰ ਅਤੇ ਆਰਥਿਕ ਤਰੱਕੀ',
+    Odia: 'ଜୀବିକା, ବ୍ୟବସାୟ ଓ ଆର୍ଥିକ ସମୃଦ୍ଧି',
+    Hindi: 'आजीविका, कर्म एवं आर्थिक समृद्धि'
+  };
 
-## द्वादश भाव सखोल विश्लेषण
-### प्रथम भाव - तनु भाव
-प्रथम भाव आपले शरीर, आरोग्य, स्वाभिमान आणि जीवन ऊर्जेचे प्रतिनिधित्व करतो. लग्नाचे बळ आपल्याला संकटांवर मात करण्याचे धाडस प्रदान करते.
-- शुभ फल: उत्कृष्ट बौद्धिक प्रतिभा, प्रभावी व्यक्तिमत्त्व, आकर्षक तेज आणि स्वतंत्र निर्णय घेण्याची क्षमता.
-- सतर्कता: अतिपरिश्रम किंवा अनियमित दिनचर्येमुळे डोकेदुखी अथवा मानसिक तणाव टाळावा.
-- वैदिक उपाय: दररोज सकाळी तांब्याच्या पात्रातून सूर्याला अर्घ्य द्यावे व ॐ घृणि सूर्याय नमः चा जप करावा.
+  const marriageTitles: Record<Language, string> = {
+    English: 'Marriage, Partnerships & Relationships',
+    Marathi: 'विवाह व दांपत्य जीवन',
+    Gujarati: 'વિવાહ અને દાંપત્ય જીવન',
+    Bengali: 'বিবাহ ও দাম্পত্য সম্পর্ক',
+    Tamil: 'திருமணம் மற்றும் குடும்ப வாழ்க்கை',
+    Telugu: 'వివాహం మరియు వైవాహిక జీవితం',
+    Kannada: 'ವಿವಾಹ ಮತ್ತು ಕೌಟುಂಬಿಕ ಸಾಮರಸ್ಯ',
+    Malayalam: 'വിവാഹവും കുടുംബ ജീവിതവും',
+    Punjabi: 'ਵਿਆਹ ਅਤੇ ਸੁਖੀ ਗ੍ਰਹਿਸਥੀ',
+    Odia: 'ବିବାହ ଓ ଦାମ୍ପତ୍ୟ ସମ୍ପର୍କ',
+    Hindi: 'विवाह, प्रेम एवं संबंध सामंजस्य'
+  };
 
-### द्वितीय भाव - धन भाव
-द्वितीय भाव वाणी, संचित धन, कौटुंबिक संपत्ती आणि सुसंस्कारांचे प्रतीक आहे.
-- शुभ फल: शिस्तबद्ध आर्थिक नियोजन, दीर्घकालीन संपत्तीची निर्मिती आणि कुटुंबात आदर.
-- सतर्कता: अनपेक्षित खर्च किंवा सट्टेबाजी आणि जोखमीच्या व्यवहारांपासून दूर राहा.
-- वैदिक उपाय: शुक्रवारी महालक्ष्मी स्तोत्राचे पठण करावे किंवा गाईला चारा खाऊ घालावा.
+  const healthTitles: Record<Language, string> = {
+    English: 'Vitality, Physical Well-being & Ayurveda',
+    Marathi: 'आरोग्य व शारीरिक जीवन ऊर्जा',
+    Gujarati: 'આરોગ્ય, જીવનશક્તિ અને આયુર્વેદ',
+    Bengali: 'স্বাস্থ্য, জীবনীশক্তি ও আয়ুর্বেদ',
+    Tamil: 'உடல் நலம் மற்றும் ஆயுர்வேத நலன்',
+    Telugu: 'ఆరోగ్యం మరియు శారీరక జీవన శక్తి',
+    Kannada: 'ಆರೋಗ್ಯ ಮತ್ತು ಶಾರೀರಿಕ ಚೈತನ್ಯ',
+    Malayalam: 'ആരോഗ്യം, ജീവശക്തി, ആയുർവേദം',
+    Punjabi: 'ਸਿਹਤ ਅਤੇ ਸਰੀਰਕ ਊਰਜਾ',
+    Odia: 'ସ୍ୱାସ୍ଥ୍ୟ, ଜୀବନଶକ୍ତି ଓ ଆୟୁର୍ବେଦ',
+    Hindi: 'स्वास्थ्य, जीवन शक्ति एवं आयुर्वेद'
+  };
 
-### तृतीय भाव - सहज भाव
-तृतीय भाव पराक्रम, धाडस, संपर्क कला आणि लहान भावंडांचे स्थान आहे.
-- शुभ फल: अफाट धैर्य, प्रभावी संवाद कौशल्य, तांत्रिक व लेखन कौशल्यात यश.
-- सतर्कता: अतिउतावळेपणात सहकाऱ्यांशी मतभेद होऊ देऊ नका.
-- वैदिक उपाय: मंगळवारी हनुमान चालिसाचे पठण करावे आणि लाल चंदनाचा टिळा लावावा.
+  const yogaTitles: Record<Language, string> = {
+    English: 'Classical Vedic Remedies & Spiritual Upayas',
+    Marathi: 'ग्रह योग व शास्त्रीय वैदिक उपाय',
+    Gujarati: 'ગ્રહ યોગ અને શાસ્ત્રીય વૈદિક ઉપાયો',
+    Bengali: 'গ্রহ যোগ ও শাস্ত্রীয় বৈদিক প্রতিকার',
+    Tamil: 'கிரக யோகங்கள் மற்றும் வேத பரிகாரங்கள்',
+    Telugu: 'గ్రహ యోగాలు మరియు వైదిక పరిహారాలు',
+    Kannada: 'ಗ್ರಹ ಯೋಗಗಳು ಮತ್ತು ವೈದಿಕ ಪರಿಹಾರಗಳು',
+    Malayalam: 'ഗ്രഹ യോഗങ്ങളും വൈദಿಕ പരിഹാരങ്ങളും',
+    Punjabi: 'ਗ੍ਰਹਿ ਯੋਗ ਅਤੇ ਵੈਦਿਕ ਉਪਾਅ',
+    Odia: 'ଗ୍ରହ ଯୋଗ ଓ ବୈଦିକ ଉପାୟ',
+    Hindi: 'ग्रह योग, दोष एवं शास्त्रीय उपाय'
+  };
 
-### चतुर्थ भाव - सुख भाव
-चतुर्थ भाव मातृसुख, घर, जमीन, वाहन आणि अंतःकरणातील शांततेचे केंद्र आहे.
-- शुभ फल: मातेचे आशीर्वाद, स्वतःचे घर व वाहनांचे सुख आणि समाधानी कौटुंबिक वातावरण.
-- सतर्कता: भावुकतेच्या भरात स्वतःला एकाकी समजू नका.
-- वैदिक उपाय: दररोज मातेच्या चरणांना स्पर्श करून आशीर्वाद घ्यावेत.
+  const introParagraphs: Record<Language, string> = {
+    English: `The native ${seekerName} was born under the auspicious ascendant of ${localizedLagnaSign}. The natal Moon occupies ${moonSignLocalized} in the sacred constellation of ${nakshatraName}. The ascendant lord bestows acute intellect, moral steadfastness, and an innate capacity for visionary leadership. Your mind operates with profound sensitivity and philosophical depth.`,
+    Marathi: `जातक ${seekerName} यांचा जन्म शुभ ${localizedLagnaSign} लग्नात झाला आहे. आपली जन्म चंद्र राशी ${moonSignLocalized} असून पावन ${nakshatraName} नक्षत्रात जन्म झाला आहे. लग्न स्वामीचा प्रभाव आपल्या व्यक्तिमत्त्वात दृढ आत्मविश्वास, नैतिक निष्ठा, अफाट इच्छाशक्ती आणि स्वाभाविक नेतृत्वगुणांचे सिंचन करतो. आपले मन संवेदनशील, दूरदर्शी आणि सकारात्मक दृष्टिकोनाने परिपूर्ण आहे.`,
+    Gujarati: `જાતક ${seekerName} નો જન્મ શુભ ${localizedLagnaSign} લગ્નમાં થયો છે. આપની જન્મ ચંદ્ર રાશિ ${moonSignLocalized} અને પાવન ${nakshatraName} નક્ષત્ર છે. લગ્ન સ્વામીનો પ્રભાવ આપના વ્યક્તિત્વમાં આત્મવિશ્વાસ, નૈતિક નિષ્ઠા અને સ્વાભાવિક નેતૃત્વ ગુણોનું સિંચન કરે છે. આપનું મન સંવેદનશીલ અને દૂરદર્શી છે.`,
+    Bengali: `জাতক ${seekerName}-এর জন্ম শুভ ${localizedLagnaSign} লগ্নে হয়েছে। আপনার জন্ম চন্দ্র রাশি ${moonSignLocalized} এবং পবিত্র ${nakshatraName} নক্ষত্রে অবস্থান করছে। লগ্ন পতির প্রভাব আপনার ব্যক্তিত্বে আত্মবিশ্বাস, নৈতিক নিষ্ঠা ও নেতৃত্বগুণের বিকাশ ঘটায়। আপনার মন অত্যন্ত সংবেদনশীল ও দূরদর্শী।`,
+    Tamil: `ஜாதகர் ${seekerName} சுப ${localizedLagnaSign} லக்னத்தில் பிறந்துள்ளார். உங்கள் சந்திர ராசி ${moonSignLocalized} மற்றும் ஜென்ம நட்சத்திரம் ${nakshatraName} ஆகும். லக்னாதிபதியின் அருள் உங்கள் ஆளுமையில் தன்னம்பிக்கை, நேர்மை மற்றும் தலைமைத்துவ பண்புகளை வழங்குகிறது.`,
+    Telugu: `జాతకుడు ${seekerName} శుభ ${localizedLagnaSign} లగ్నంలో జన్మించారు. మీ చంద్ర రాశి ${moonSignLocalized} మరియు జన్మ నక్షత్రం ${nakshatraName}. లగ్నాధిపతి ప్రభావం మీ వ్యక్తిత్వంలో ఆత్మవిశ్వాసం, ధర్మనిష్ఠ మరియు నాయకత్వ లక్షణాలను పెంపొందిస్తుంది.`,
+    Kannada: `ಜಾತಕ ${seekerName} ಅವರು ಶುಭ ${localizedLagnaSign} ಲಗ್ನದಲ್ಲಿ ಜನಿಸಿದ್ದಾರೆ. ನಿಮ್ಮ ಚಂದ್ರ ರಾಶಿ ${moonSignLocalized} ಮತ್ತು ಪವಿತ್ರ ${nakshatraName} ನಕ್ಷತ್ರವಾಗಿದೆ. ಲಗ್ನಾಧಿಪತಿಯ ಪ್ರಭಾವವು ನಿಮ್ಮಲ್ಲಿ ಆತ್ಮವಿಶ್ವಾಸ, ಧರ್ಮನಿಷ್ಠೆ ಮತ್ತು ನಾಯಕತ್ವ ಗುಣಗಳನ್ನು ತುಂಬುತ್ತದೆ.`,
+    Malayalam: `ജാതകൻ ${seekerName} ശുഭകരമായ ${localizedLagnaSign} ലഗ്നത്തിൽ ജനിച്ചിരിക്കുന്നു. നിങ്ങളുടെ ചന്ദ്ര രാശി ${moonSignLocalized} ഉം ജന്മ നക്ഷത്രം ${nakshatraName} ഉം ആണ്. ലഗ്നാധിപന്റെ സ്വാധീനം ആത്മവിശ്വാസവും നേതൃത്വഗുണങ്ങളും നൽകുന്നു.`,
+    Punjabi: `ਜਾਤਕ ${seekerName} ਦਾ ਜਨਮ ਸ਼ੁਭ ${localizedLagnaSign} ਲਗਨ ਵਿੱਚ ਹੋਇਆ ਹੈ। ਤੁਹਾਡੀ ਚੰਦਰ ਰਾਸ਼ੀ ${moonSignLocalized} ਅਤੇ ਜਨਮ ਨਕਸ਼ਤਰ ${nakshatraName} ਹੈ। ਲਗਨ ਸੁਆਮੀ ਦਾ ਪ੍ਰਭਾਵ ਤੁਹਾਡੇ ਵਿੱਚ ਆਤਮਵਿਸ਼ਵਾਸ ਅਤੇ ਨੇਤ੍ਰਿਤਵ ਦੇ ਗੁਣ ਭਰਦਾ ਹੈ।`,
+    Odia: `ଜାତକ ${seekerName}ଙ୍କ ଜନ୍ମ ଶୁଭ ${localizedLagnaSign} ଲଗ୍ନରେ ହୋଇଛି। ଆପଣଙ୍କ ଚନ୍ଦ୍ର ରାଶି ${moonSignLocalized} ଏବଂ ଜନ୍ମ ନକ୍ଷତ୍ର ${nakshatraName} ଅଟେ। ଲଗ୍ନାଧିପତିଙ୍କ ପ୍ରଭାବ ବ୍ୟକ୍ତିତ୍ୱରେ ଆତ୍ମବିଶ୍ୱାସ ଓ ନେତୃତ୍ୱ ଗୁଣ ପ୍ରଦାନ କରେ।`,
+    Hindi: `जातक ${seekerName} का जन्म शुभ ${localizedLagnaSign} लग्न में हुआ है। आपका जन्म चन्द्रमा ${moonSignLocalized} राशि में तथा पावन ${nakshatraName} नक्षत्र में स्थित है। लग्न स्वामी का प्रभाव आपके व्यक्तित्व में उच्च आत्मबल, नैतिक निष्ठा, दृढ इच्छाशक्ति तथा स्वाभाविक नेतृत्व क्षमता का संचार करता है। आपका मन संवेदनशील, दूरदर्शी और दार्शनिक दृष्टिकोण से परिपूर्ण है।`
+  };
 
-### पंचम भाव - बुद्धी भाव
-पंचम भाव पूर्वजन्मातील संचित पुण्य, उच्च शिक्षण, सर्जनशीलता आणि संतती सुखाचे स्थान आहे.
-- शुभ फल: तीक्ष्ण स्मरणशक्ती, ज्ञानसाधनेत यश, संशोधन व कलात्मक कामांत विशेष प्रगती.
-- सतर्कता: अनपेक्षित प्रलोभनांमध्ये किंवा जुगारात पैसे गुंतवू नका.
-- वैदिक उपाय: दररोज गायत्री मंत्राचा एकाग्रतेने १०८ वेळा जप करावा.
+  const report = `# ${locale.chapterLabels.ch1Part1Title}
+${introParagraphs[language] || introParagraphs.English}
 
-### षष्ठ भाव - सेवा भाव
-षष्ठ भाव स्पर्धा, नोकरी, आरोग्य आणि संकटांवर विजय मिळवण्याचे स्थान आहे.
-- शुभ फल: स्पर्धा परीक्षांमध्ये यश, विरोधकांवर विजय आणि उत्तम कार्यक्षमता.
-- सतर्कता: पोटाच्या आरोग्याची काळजी घ्या; अनावश्यक कर्ज घेणे टाळा.
-- वैदिक उपाय: पक्ष्यांना धान्य टाकावे आणि गरजूंना मदत करावी.
+## ${locale.footers.bhavaFooter}
+${bhavaSections}
 
-### सप्तम भाव - जाया भाव
-सप्तम भाव वैवाहिक जीवन, जोडीदार आणि व्यावसायिक भागीदारीचे केंद्र आहे.
-- शुभ फल: गुणी, प्रेमळ आणि समजूतदार जीवनसाथीची साथ; भागीदारीत यश.
-- सतर्कता: संवादातील दुरावा किंवा अहंकारामुळे वाद निर्माण होऊ देऊ नका.
-- वैदिक उपाय: शुक्रवारी देवी लक्ष्मीची पूजा करून पांढरी मिठाई अर्पण करावी.
+## ${careerTitles[language] || careerTitles.English}
+${language === 'English'
+  ? `The alignment of the 10th house of Karma with the 2nd and 11th houses indicates distinguished achievements in strategic, executive, academic, administrative, or technological sectors.\n- ${locale.bhavaPillars.boonsTitle} Executive leadership, ethical professional standing, and sustained lifetime prestige.\n- ${locale.bhavaPillars.cautionsTitle} Resist taking unilateral responsibilities without establishing proper team accountability.\n- ${locale.bhavaPillars.upayasTitle} Keep a consecrated Shree Yantra at your workspace and offer charity on Wednesdays.`
+  : language === 'Marathi'
+  ? `दशम आणि द्वितीय भावाचा परस्पर संबंध दर्शवतो की आपल्या कारकीर्दीत बौद्धिक आणि व्यवस्थापकीय कौशल्याला मोठे महत्त्व असेल. प्रशासन, व्यवस्थापन, वित्त, शिक्षण किंवा तंत्रज्ञान क्षेत्रात आपल्याला विशेष प्रतिष्ठा मिळेल.\n- ${locale.bhavaPillars.boonsTitle} व्यावसायिक नेतृत्व, कायमस्वरूपी संपत्तीची निर्मिती आणि प्रतिष्ठित पद.\n- ${locale.bhavaPillars.cautionsTitle} भागीदार निवडताना किंवा करारांवर स्वाक्षरी करताना कायदेशीर सल्ला आवर्जून घ्या.\n- ${locale.bhavaPillars.upayasTitle} आपल्या कामाच्या ठिकाणी श्रीयंत्राची स्थापना करावी.`
+  : `दशम व द्वितीय भाव का संबंध यह दर्शाता है कि आपकी आजीविका में बौद्धिक, रणनीतिक तथा संगठनात्मक कौशल की प्रमुख भूमिका रहेगी। शासन, प्रबंधन, वित्त, परामर्श, शिक्षा अथवा तकनीकी उद्यम में आपकी विशिष्ट प्रतिष्ठा बनेगी।\n- ${locale.bhavaPillars.boonsTitle} व्यावसायिक नेतृत्व, स्थायी धन संग्रह तथा प्रतिष्ठित पदों की प्राप्ति।\n- ${locale.bhavaPillars.cautionsTitle} साझेदारी अथवा अनियोजित अनुबंधों में बिना कानूनी परामर्श के हस्ताक्षर न करें।\n- ${locale.bhavaPillars.upayasTitle} कार्यस्थल पर श्रीयंत्र की स्थापना करें एवं बुधवार को हरी मूंग का दान करें।`}
 
-### अष्टम भाव - गूढ भाव
-अष्टम भाव आयुष्य, गूढ विद्या, अंतर्ज्ञान आणि अचानक घडणाऱ्या घटनांचे स्थान आहे.
-- शुभ फल: दीर्घायुष्य, गूढ शास्त्रे, संशोधन आणि अध्यात्मात सखोल गती.
-- सतर्कता: वाहन सावकाश चालवावे आणि अनोळखी जोखमींपासून सावध राहावे.
-- वैदिक उपाय: महामृत्युंजय मंत्राचा नित्य ११ किंवा १०८ वेळा जप करावा.
+## ${marriageTitles[language] || marriageTitles.English}
+${language === 'English'
+  ? `The 7th house and Venus aspects confirm a devoted, intellectually attuned, and culturally grounded partner. Mature communication and mutual reverence will deepen marital bliss across the decades.\n- ${locale.bhavaPillars.boonsTitle} Empathic soul bond, shared life philosophy, and domestic stability.\n- ${locale.bhavaPillars.cautionsTitle} Consciously practice calm patience during planetary transit stress periods.\n- ${locale.bhavaPillars.upayasTitle} Offer sweet milk preparation (Kheer) to deities on Fridays and share with family.`
+  : language === 'Marathi'
+  ? `सप्तमेश व शुक्र यांची स्थिती दर्शवते की आपल्याला निष्ठावान, सुविद्य आणि समजूतदार जीवनसाथी लाभेल. परस्पर विश्वास आणि खुला संवाद आपल्या वैवाहिक जीवनात अखंड गोडवा टिकवून ठेवेल.\n- ${locale.bhavaPillars.boonsTitle} सुखी गृहस्थ जीवन, कौटुंबिक प्रतिष्ठा आणि परस्पर आदर.\n- ${locale.bhavaPillars.cautionsTitle} कामाच्या तणावाखाली जोडीदारावर राग काढणे टाळावे.\n- ${locale.bhavaPillars.upayasTitle} शुक्रवारी खीर बनवून सहकुटुंब प्रसाद ग्रहण करावा.`
+  : `सप्तमेश और शुक्र की स्थिति एक निष्ठावान, बौद्धिक एवं संवेदनशील जीवनसाथी के आगमन का संकेत देती है। परस्पर विश्वास और परिपक्व संवाद आपके वैवाहिक जीवन को चिरस्थायी माधुर्य प्रदान करेगा।\n- ${locale.bhavaPillars.boonsTitle} गृहस्थ जीवन में सौहार्द, पारिवारिक प्रतिष्ठा में वृद्धि और साझा जीवन लक्ष्य।\n- ${locale.bhavaPillars.cautionsTitle} गोचर के दबाव में संवेदनशील विषयों पर अनावश्यक वाद-विवाद से बचें।\n- ${locale.bhavaPillars.upayasTitle} शुक्रवार को खीर का भोग लगाकर परिवार सहित प्रसाद ग्रहण करें।`}
 
-### नवम भाव - भाग्य भाव
-नवम भाव धर्म, भाग्य, वडील, गुरु आणि ईश्वरीय कृपेचे सर्वश्रेष्ठ स्थान आहे.
-- शुभ फल: भाग्योदयाच्या उत्तम संधी, विद्वान गुरुंचे मार्गदर्शन आणि उच्च नैतिक प्रतिष्ठा.
-- सतर्कता: वडिलधाऱ्या व्यक्तींचा किंवा गुरुंचा अनादर कधीही करू नका.
-- वैदिक उपाय: गुरुवारी भगवान विष्णूंची पूजा करून पिवळे फूल अर्पण करावे.
+## ${healthTitles[language] || healthTitles.English}
+${language === 'English'
+  ? `Your bio-energetic constitution is grounded in a healthy Vata-Pitta equilibrium. Maintaining rhythmic sleep intervals and balanced hydration sustains your natural recuperative stamina.\n- ${locale.bhavaPillars.boonsTitle} Robust baseline vitality, swift recovery from illness, and mental stamina under pressure.\n- ${locale.bhavaPillars.cautionsTitle} Guard against digestive heat or neck/shoulder stiffness during high-intensity periods.\n- ${locale.bhavaPillars.upayasTitle} Consume pure water stored in a copper vessel in the morning and practice daily Pranayama.`
+  : language === 'Marathi'
+  ? `लग्न व षष्ठ भावाच्या विश्लेषणानुसार आपली प्रकृती वात-पित्त प्रधान आहे. मेंदूची व विचारांची गती वेगवान असल्याने पचनसंस्था व मज्जासंस्थेची काळजी घेणे आवश्यक आहे.\n- ${locale.bhavaPillars.boonsTitle} उत्तम रोगप्रतिकारशक्ती, नैसर्गिक शारीरिक संतुलन.\n- ${locale.bhavaPillars.cautionsTitle} तेलकट किंवा अवेळी जेवण टाळावे; पुरेशी झोप घ्यावी.\n- ${locale.bhavaPillars.upayasTitle} दररोज सकाळी प्राणायाम आणि सूर्यनमस्कार करावेत.`
+  : `लग्न व षष्ठ भाव के समीकरण के अनुसार आपकी प्रकृति वात-पित्त प्रधान है। मानसिक सक्रियता उच्च रहने के कारण स्नायु तंत्र और पाचन तंत्र को नियमित रखना अत्यंत आवश्यक है।\n- ${locale.bhavaPillars.boonsTitle} सुदृढ़ जीवन शक्ति, त्वरित रोगमुक्ति तथा प्राकृतिक शारीरिक संतुलन।\n- ${locale.bhavaPillars.cautionsTitle} गरिष्ठ भोजन तथा अत्यधिक मानसिक परिश्रम से एसिडिटी व अनिद्रा की संभावना।\n- ${locale.bhavaPillars.upayasTitle} तांबे के पात्र में रखा जल प्रातः पिएं तथा अनुलोम-विलोम प्राणायाम का नित्य अभ्यास करें।`}
 
-### दशम भाव - कर्म भाव
-दशम भाव कारकीर्द, व्यवसाय, सामाजिक मान-सन्मान आणि अधिकारांचे सर्वोच्च स्थान आहे.
-- शुभ फल: उच्च पद, प्रशासकीय कौशल्य, व्यवसायात मोठी भरभराट आणि समाजात नावलौकिक.
-- सतर्कता: कामाच्या ठिकाणी सहकाऱ्यांशी उद्धटपणा टाळावा.
-- वैदिक उपाय: दररोज सकाळी सूर्याला नमस्कार करावा व ज्येष्ठांचा आदर करावा.
-
-### एकादश भाव - लाभ भाव
-एकादश भाव नियमित उत्पन्न, इच्छापूर्ती, मित्रमंडळी आणि धनलाभाचे स्थान आहे.
-- शुभ फल: उत्पन्नाचे अनेक मार्ग, मित्रांचे सहकार्य, मनोकामना पूर्ण होण्याचे योग.
-- सतर्कता: पैशांच्या व्यवहारात स्पष्टता आणि पारदर्शकता ठेवावी.
-- वैदिक उपाय: बुधवारी गणपतीला दुर्वा अर्पण करून मोदकाचा नैवेद्य दाखवावा.
-
-### द्वादश भाव - मोक्ष भाव
-द्वादश भाव मोक्ष, परदेश गमन, दानधर्म, ध्यान आणि अध्यात्माचे स्थान आहे.
-- शुभ फल: परदेश प्रवासाचे योग, परोपकारी वृत्ती आणि ध्यानात मन रमणे.
-- सतर्कता: अनावश्यक खर्चांवर नियंत्रण ठेवावे; पुरेशी झोप घ्यावी.
-- वैदिक उपाय: गरजू व्यक्तींना वस्त्र किंवा अन्नदान करावे.
-
-## आजीविका, व्यवसाय व आर्थिक प्रगती
-दशम आणि द्वितीय भावाचा परस्पर संबंध दर्शवतो की आपल्या कारकीर्दीत बौद्धिक आणि व्यवस्थापकीय कौशल्याला मोठे महत्त्व असेल. प्रशासन, व्यवस्थापन, वित्त, शिक्षण किंवा तंत्रज्ञान क्षेत्रात आपल्याला विशेष प्रतिष्ठा मिळेल.
-- शुभ फल: व्यावसायिक नेतृत्व, कायमस्वरूपी संपत्तीची निर्मिती आणि प्रतिष्ठित पद.
-- सतर्कता: भागीदार निवडताना किंवा करारांवर स्वाक्षरी करताना कायदेशीर सल्ला आवर्जून घ्या.
-- वैदिक उपाय: आपल्या कामाच्या ठिकाणी श्रीयंत्राची स्थापना करावी.
-
-## विवाह व दांपत्य जीवन
-सप्तमेश व शुक्र यांची स्थिती दर्शवते की आपल्याला निष्ठावान, सुविद्य आणि समजूतदार जीवनसाथी लाभेल. परस्पर विश्वास आणि खुला संवाद आपल्या वैवाहिक जीवनात अखंड गोडवा टिकवून ठेवेल.
-- शुभ फल: सुखी गृहस्थ जीवन, कौटुंबिक प्रतिष्ठा आणि परस्पर आदर.
-- सतर्कता: कामाच्या तणावाखाली जोडीदारावर राग काढणे टाळावे.
-- वैदिक उपाय: शुक्रवारी खीर बनवून सहकुटुंब प्रसाद ग्रहण करावा.
-
-## आरोग्य व शारीरिक जीवन ऊर्जा
-लग्न व षष्ठ भावाच्या विश्लेषणानुसार आपली प्रकृती वात-पित्त प्रधान आहे. मेंदूची व विचारांची गती वेगवान असल्याने पचनसंस्था व मज्जासंस्थेची काळजी घेणे आवश्यक आहे.
-- शुभ फल: उत्तम रोगप्रतिकारशक्ती, नैसर्गिक शारीरिक संतुलन.
-- सतर्कता: तेलकट किंवा अवेळी जेवण टाळावे; पुरेशी झोप घ्यावी.
-- वैदिक उपाय: दररोज सकाळी प्राणायाम आणि सूर्यनमस्कार करावेत.
-
-## ग्रह योग व शास्त्रीय वैदिक उपाय
-आपल्या जन्म पत्रिकेत शुभ ग्रहांच्या दृष्टींमुळे उत्तम राजयोग व धनयोगाची पार्श्वभूमी तयार होत आहे.
-1. मूळ वैदिक मंत्र: दररोज सकाळी ॐ नमो भगवते वासुदेवाय किंवा महामृत्युंजय मंत्राचा जप करावा.
-2. शुभ रत्न: योग्य ज्योतिषी सल्ल्याने भाग्योदयासाठी योग्य रत्न परिधान करावे.
-3. सेवा व दान: शनिवारी गरजूंना अन्न किंवा वस्त्र दान करावे आणि गोसेवा करावी.`
-    : isHindi
-    ? `# लग्न एवं आत्मकारक जीवन स्वरूप (Ascendant & Soul Blueprint)
-जातक ${details.name || 'जिज्ञासु'} का जन्म शुभ ${lagnaName} लग्न में हुआ है। आपका जन्म चन्द्रमा ${moonSignSanskrit} राशि में तथा पावन ${nakshatraSanskrit} नक्षत्र में स्थित है। लग्न स्वामी का प्रभाव आपके व्यक्तित्व में उच्च आत्मबल, नैतिक निष्ठा, दृढ इच्छाशक्ति तथा स्वाभाविक नेतृत्व क्षमता का संचार करता है। आपका मन संवेदनशील, दूरदर्शी और दार्शनिक दृष्टिकोण से परिपूर्ण है।
-
-## द्वादश भाव विस्तृत फलकथन (12 Bhavas Deep Analysis)
-### प्रथम भाव - तनु भाव (Health, Self & Vitality)
-प्रथम भाव आपके शरीर, आरोग्य, आत्मसम्मान और जीवन ऊर्जा का प्रतिनिधित्व करता है। लग्न का बल आपको जीवन में संघर्षों के सम्मुख अडिग रहने का साहस प्रदान करता है।
-- शुभ फल: उत्कृष्ट बौद्धिक प्रतिभा, प्रभावशाली व्यक्तित्व, सम्मोहक आभा तथा स्वतंत्र निर्णय लेने की क्षमता।
-- सतर्कता: अति-परिश्रम या अनियमित दिनचर्या से मानसिक तनाव या सिरदर्द की सम्भावना।
-- वैदिक उपाय: प्रातःकाल सूर्य देव को तांबे के लोटे से अर्घ्य दें एवं ॐ घृणि सूर्याय नमः का जाप करें।
-
-### द्वितीय भाव - धन भाव (Wealth, Assets & Family)
-द्वितीय भाव वाणी, संचित कोष, पारिवारिक सम्पदा एवं संस्कार का द्योतक है।
-- शुभ फल: विवेकपूर्ण वित्तीय नियोजन, दीर्घकालिक परिसम्पत्तियों का निर्माण तथा कुटुम्ब में सम्मान।
-- सतर्कता: आकस्मिक व्ययों अथवा सट्टा/जोखिम भरे सौदों से दूरी बनाए रखें।
-- वैदिक उपाय: शुक्रवार को श्री सूक्त का पाठ करें अथवा गाय को हरा चारा खिलाएं।
-
-### तृतीय भाव - सहज भाव (Courage, Siblings & Skills)
-तृतीय भाव पराक्रम, भुजा-बल, संचार तथा अनुज भ्राता-भगिनी का भाव है।
-- शुभ फल: अदम्य साहस, प्रभावशाली संप्रेषण कला, तकनीकी व लेखन कौशल में निपुणता।
-- सतर्कता: अत्यधिक उतावलेपन में सहकर्मियों से मतभेद उत्पन्न न होने दें।
-- वैदिक उपाय: मंगलवार को हनुमान चालीसा का पाठ करें एवं लाल चंदन का तिलक लगाएं।
-
-### चतुर्थ भाव - सुख भाव (Mother, Property & Inner Peace)
-चतुर्थ भाव मातृ-सुख, गृह, भूमि, वाहन एवं आंतरिक शांति का केंद्र है।
-- शुभ फल: मातृकृपा, स्थाई संपत्ति व वाहन सुख तथा शांत घरेलू वातावरण।
-- सतर्कता: भावुकता के अतिरेक में स्वयं को एकाकी महसूस करने से बचें।
-- वैदिक उपाय: माता के चरण स्पर्श कर नित्य आशीर्वाद लें एवं चांदी का चौकोर टुकड़ा अपने पास रखें।
-
-### पंचम भाव - पुत्र एवं बुद्धि भाव (Intellect, Progeny & Punya)
-पंचम भाव पूर्वजन्म संचित पुण्य, उच्च विद्या, रचनात्मक प्रतिभा एवं संतान सुख का भाव है।
-- शुभ फल: तीव्र स्मरण शक्ति, मंत्र-दीक्षा में सिद्धि, शोध व सृजनात्मक कार्यों में सफलता।
-- सतर्कता: सट्टा, शेयर अथवा अनिर्धारित प्रलोभनों में धन विनियोजन न करें।
-- वैदिक उपाय: नित्य गायत्री मंत्र की 1 माला (108 बार) का शांत मन से जप करें।
-
-### षष्ठ भाव - अरि भाव (Work, Resilience & Immunity)
-षष्ठ भाव रोग, ऋण, शत्रु तथा दैनिक सेवा का क्षेत्र है। यह उपचय भाव जीवन में विजय दिलाता है।
-- शुभ फल: प्रतिस्पर्धी परीक्षाओं में सफलता, शत्रुओं पर विजय, उत्कृष्ट रोग-प्रतिरोधक क्षमता।
-- सतर्कता: पाचन तंत्र एवं उदर स्वास्थ्य का ध्यान रखें; ऋण लेने में सतर्कता बरतें।
-- वैदिक उपाय: पक्षियों को सप्तधान्य डालें एवं शनिवार को काले तिल का दान करें।
-
-### सप्तम भाव - जाया भाव (Marriage & Partnerships)
-सप्तम भाव जीवनसाथी, दांपत्य सामंजस्य एवं व्यापारिक साझेदारियों का दर्पण है।
-- शुभ फल: गुणवान, निष्ठावान व समझदार जीवनसाथी का सानिध्य, व्यापारिक अनुबंधों में लाभ।
-- सतर्कता: अहंकार अथवा संवादहीनता को दांपत्य जीवन में स्थान न दें।
-- वैदिक उपाय: शुक्रवार को देवी दुर्गा अथवा लक्ष्मी नारायण मंदिर में सुगंधित श्वेत पुष्प अर्पित करें।
-
-### अष्टम भाव - रन्ध्र भाव (Longevity, Research & Transformation)
-अष्टम भाव आयु, गूढ़ रहस्य, अंतर्ज्ञान तथा आकस्मिक परिवर्तनों का द्योतक है।
-- शुभ फल: दीर्घायु योग, गुप्त ज्ञान, अध्यात्म एवं शोध कार्यों में अद्भुत अंतर्दृष्टि।
-- सतर्कता: वाहन सावधानीपूर्वक चलाएं और अज्ञात जोखिमों से बचें।
-- वैदिक उपाय: महामृत्युंजय मंत्र का नित्य ११ अथवा २१ बार पाठ करें।
-
-### नवम भाव - भाग्य भाव (Dharma, Fortune & Higher Wisdom)
-नवम भाव धर्म, पिता, गुरु, तीर्थयात्रा एवं ईश्वरीय अनुग्रह का सर्वोत्तम त्रिकोण है।
-- शुभ फल: भाग्योदय के उत्तम अवसर, विद्वानों का सानिध्य, उच्च शिक्षा एवं नैतिक प्रतिष्ठा।
-- सतर्कता: पारम्परिक मान्यताओं व गुरुजनों के प्रति अनादर की भावना न आने दें।
-- वैदिक उपाय: बृहस्पतिवार को भगवान विष्णु को पीले पुष्प व बेसन के लड्डू का भोग लगाएं।
-
-### दशम भाव - कर्म भाव (Career, Fame & Authority)
-दशम भाव पद-प्रतिष्ठा, व्यवसाय, प्रशासनिक क्षमता और समाज में प्रतिष्ठा का चरम केंद्र है।
-- शुभ फल: उच्च पद, प्रशासनिक व प्रबंधकीय सामर्थ्य, कर्मक्षेत्र में निरंतर उन्नति।
-- सतर्कता: कार्यक्षेत्र में अत्यधिक एकाधिकार की प्रवृत्ति से बचें।
-- वैदिक उपाय: नित्य सूर्योदय के समय गायत्री जप करें एवं बुजुर्गों का आदर करें।
-
-### एकादश भाव - लाभ भाव (Income, Desires & Networks)
-एकादश भाव सर्वतोमुखी लाभ, आय के विविध स्रोत एवं सामाजिक संपर्क का उपचय भाव है।
-- शुभ फल: नियमित आय, मित्रों का सहयोग, अभिलाषाओं की पूर्ति तथा सामाजिक मान।
-- सतर्कता: मित्रों अथवा परिचितों के साथ लेन-देन में लिखित औपचारिकताएं रखें।
-- वैदिक उपाय: बुधवार को गणेश जी को दूर्वा चढ़ाएं एवं ॐ गं गणपतये नमः का जप करें।
-
-### द्वादश भाव - व्यय भाव (Moksha, Spirituality & Global Ties)
-द्वादश भाव मोक्ष, आध्यात्मिक एकांत, विदेश यात्रा तथा विवेकपूर्ण व्यय का भाव है।
-- शुभ फल: विदेश संपर्क से लाभ, परोपकारी स्वभाव, ध्यान व समाधि में सहज रुचि।
-- सतर्कता: अनिद्रा अथवा व्यर्थ के व्यय पर नियंत्रण रखें।
-- वैदिक उपाय: शयनकक्ष में कपूर जलाएं एवं जरूरतमंदों को कम्बल या वस्त्र दान करें।
-
-## आजीविका, कर्म एवं आर्थिक समृद्धि (Career & Wealth Destiny)
-दशम व द्वितीय भाव का संबंध यह दर्शाता है कि आपकी आजीविका में बौद्धिक, रणनीतिक तथा संगठनात्मक कौशल की प्रमुख भूमिका रहेगी। शासन, प्रबंधन, वित्त, परामर्श, शिक्षा अथवा तकनीकी उद्यम में आपकी विशिष्ट प्रतिष्ठा बनेगी।
-- शुभ फल: व्यावसायिक नेतृत्व, स्थायी धन संग्रह तथा प्रतिष्ठित पदों की प्राप्ति।
-- सतर्कता: साझेदारी अथवा अनियोजित अनुबंधों में बिना कानूनी परामर्श के हस्ताक्षर न करें।
-- वैदिक उपाय: कार्यस्थल पर श्रीयंत्र की स्थापना करें एवं बुधवार को हरी मूंग का दान करें।
-
-## विवाह, प्रेम एवं संबंध सामंजस्य (Marriage & Relationships)
-सप्तमेश और शुक्र की स्थिति एक निष्ठावान, बौद्धिक एवं संवेदनशील जीवनसाथी के आगमन का संकेत देती है। परस्पर विश्वास और परिपक्व संवाद आपके वैवाहिक जीवन को चिरस्थायी माधुर्य प्रदान करेगा।
-- शुभ फल: गृहस्थ जीवन में सौहार्द, पारिवारिक प्रतिष्ठा में वृद्धि और साझा जीवन लक्ष्य।
-- सतर्कता: गोचर के दबाव में संवेदनशील विषयों पर अनावश्यक वाद-विवाद से बचें।
-- वैदिक उपाय: शुक्रवार को खीर का भोग लगाकर परिवार सहित प्रसाद ग्रहण करें।
-
-## स्वास्थ्य, जीवन शक्ति एवं आयुर्वेद (Vitality & Ayurveda)
-लग्न व षष्ठ भाव के समीकरण के अनुसार आपकी प्रकृति वात-पित्त प्रधान है। मानसिक सक्रियता उच्च रहने के कारण स्नायु तंत्र और पाचन तंत्र को नियमित रखना अत्यंत आवश्यक है।
-- शुभ फल: सुदृढ़ जीवन शक्ति, त्वरित रोगमुक्ति तथा प्राकृतिक शारीरिक संतुलन।
-- सतर्कता: गरिष्ठ भोजन तथा अत्यधिक मानसिक परिश्रम से एसिडिटी व अनिद्रा की संभावना।
-- वैदिक उपाय: तांबे के पात्र में रखा जल प्रातः पिएं तथा अनुलोम-विलोम प्राणायाम का नित्य अभ्यास करें।
-
-## ग्रह योग, दोष एवं शास्त्रीय उपाय (Auspicious Yogas & Vedic Remedies)
-आपकी जन्म पत्रिका में शुभ ग्रह दृष्टि एवं त्रिकोण-केंद्र संबंधों से राजयोग तथा धनयोग की पृष्ठभूमि निर्मित हो रही है।
-1. मूल वैदिक मन्त्र: नित्य प्रातः ॐ नमो भगवते वासुदेवाय (१०८ बार) अथवा महामृत्युंजय मन्त्र का जप करें।
-2. शुभ रत्न परामर्श: लग्न बल बढ़ाने हेतु ज्योतिषी परामर्शोपरांत उचित रत्न (पुखराज अथवा माणिक्य) धारण करें।
-3. कल्याणकारी दान: शनिवार को असहायों को अन्न-वस्त्र का दान करें एवं गौ सेवा करें।`
-    : `# Executive Overview & Janma Lagna
-The native ${details.name || 'Seeker'} was born under the auspicious Ascendant (Lagna) Sign of ${lagnaName} with the Moon placed gracefully in ${moonSignName} in the sacred Nakshatra of ${nakshatraName}. This planetary disposition reflects a profound soul with high intellectual determination, moral clarity, disciplined willpower, and natural leadership acumen.
-
-## Comprehensive 12 Bhava (House-by-House) Detailed Predictions
-### House 1 - Tanu Bhava (Personality, Health & Vitality)
-The 1st house governs the physical constitution, core vitality, temperament, and soul orientation.
-- Favorable Boons: Commanding persona, keen mental clarity, moral integrity, and resilience under pressure.
-- Mindful Cautions: Avoid excessive self-criticism or burning the candle at both ends during stressful phases.
-- Actionable Upayas: Offer water to the rising Sun every morning and chant Om Suryaya Namaha 108 times.
-
-### House 2 - Dhana Bhava (Wealth, Family & Speech)
-The 2nd house governs financial accumulation, familial legacy, values, and articulation.
-- Favorable Boons: Disciplined financial foresight, consistent asset building, and eloquent speech.
-- Mindful Cautions: Beware of impulsive speculative investments during planetary retrograde cycles.
-- Actionable Upayas: Chant the Shree Suktam on Friday evenings and support educational welfare.
-
-### House 3 - Sahaja Bhava (Courage, Initiative & Siblings)
-The 3rd house represents innate valor, enterprise, communication skills, and sibling bonds.
-- Favorable Boons: Energetic initiative, versatile writing and negotiation talents, and steadfast courage.
-- Mindful Cautions: Guard against impatient reactions when working with slower-paced teams.
-- Actionable Upayas: Chant Hanuman Chalisa on Tuesdays and wear natural sandalwood paste.
-
-### House 4 - Sukha Bhava (Mother, Real Estate & Emotional Happiness)
-The 4th house governs maternal blessings, home environment, vehicles, and peace of mind.
-- Favorable Boons: Deep maternal guidance, stable real estate assets, and a serene domestic sanctuary.
-- Mindful Cautions: Prevent emotional overwhelm by establishing healthy mental boundaries.
-- Actionable Upayas: Seek the blessings of maternal elders and maintain a clean silver item in the home.
-
-### House 5 - Putra & Buddhi Bhava (Intellect, Progeny & Past Karma)
-The 5th house reflects Purva Punya (accumulated good karma), creative spark, and higher intelligence.
-- Favorable Boons: Acute strategic intellect, successful academic pursuits, and creative distinction.
-- Mindful Cautions: Avoid speculative gambling or shortcuts that compromise ethical standards.
-- Actionable Upayas: Meditate with the sacred Gayatri Mantra for 108 repetitions at sunrise.
-
-### House 6 - Ari Bhava (Competitions, Health Defense & Service)
-The 6th house is an Upachaya house representing competitive triumph, daily diligence, and overcoming obstacles.
-- Favorable Boons: Supreme competitive stamina, legal and vocational victory, and strong immunity.
-- Mindful Cautions: Maintain regular dietary routines to safeguard digestive tract and gut health.
-- Actionable Upayas: Feed seven mixed grains (Sapta Dhanya) to wild birds on Saturdays.
-
-### House 7 - Yuvati Bhava (Marriage, Romance & Partnerships)
-The 7th house anchors the marital sanctuary, life partner qualities, and contractual alliances.
-- Favorable Boons: Enduring marital loyalty, a principled and supportive partner, and thriving alliances.
-- Mindful Cautions: Practice active listening and avoid unilateral decision-making in partnership affairs.
-- Actionable Upayas: Light a fragrant ghee lamp before the Divine Mother on Friday evenings.
-
-### House 8 - Randhra Bhava (Longevity, Mysticism & Transformation)
-The 8th house governs longevity, esoteric knowledge, research acumen, and psychological rebirth.
-- Favorable Boons: Exceptional longevity, keen intuition, and powerful transformational resilience.
-- Mindful Cautions: Drive mindfully and avoid engaging in unverified occult or extreme physical risks.
-- Actionable Upayas: Recite the Maha Mrityunjaya Mantra (11 or 21 times) daily for universal protection.
-
-### House 9 - Bhagya Bhava (Dharma, Good Fortune & Higher Wisdom)
-The 9th house is the most auspicious Trikona, governing divine grace, pilgrimage, and mentors.
-- Favorable Boons: Abundant karmic luck, spiritual wisdom, respected mentors, and ethical triumphs.
-- Mindful Cautions: Avoid rigid ideological dogmatism; honor differing philosophical perspectives.
-- Actionable Upayas: Offer yellow flowers and worship Lord Vishnu on Thursday mornings.
-
-### House 10 - Karma Bhava (Career, Vocation & Executive Authority)
-The 10th house is the zenith of professional accomplishment, public recognition, and worldly impact.
-- Favorable Boons: Rapid career ascension, high credibility in leadership, and executive respect.
-- Mindful Cautions: Guard against workplace burnout by delegating operational tasks effectively.
-- Actionable Upayas: Honor father figures and engage in disciplined daily morning work rituals.
-
-### House 11 - Labha Bhava (Gains, Social Networks & Aspirations)
-The 11th house signifies all forms of income growth, elder siblings, influential friends, and wish fulfillment.
-- Favorable Boons: Diversified income streams, influential friends, and real fulfillment of major life goals.
-- Mindful Cautions: Maintain transparent legal terms with financial acquaintances to prevent misunderstandings.
-- Actionable Upayas: Worship Lord Ganesha with green grass (Durva) and offer modaks on Wednesdays.
-
-### House 12 - Vyaya Bhava (Moksha, Foreign Lands & Liberation)
-The 12th house oversees spiritual transcendence, foreign connections, dreams, and charitable release.
-- Favorable Boons: High spiritual intuition, success in foreign or remote projects, and detachment from ego.
-- Mindful Cautions: Monitor sleep hygiene and curb expenditure on unnecessary non-essential items.
-- Actionable Upayas: Donate blankets or warm clothing to the needy during winter cycles.
-
-## Career, Karma & Professional Vocation
-The strong alignment between the 10th house of Karma and the 2nd/11th houses of wealth indicates distinguished achievements in strategic, executive, academic, administrative, or technological sectors.
-- Favorable Boons: Executive leadership, ethical professional standing, and sustained lifetime prestige.
-- Mindful Cautions: Resist taking unilateral responsibilities without establishing proper team accountability.
-- Actionable Upayas: Keep a consecrated Shree Yantra at your workspace and offer charity on Wednesdays.
-
-## Marriage, Partnerships & Relationships
-The 7th house and Venus aspects confirm a devoted, intellectually attuned, and culturally grounded partner. Mature communication and mutual reverence will deepen marital bliss across the decades.
-- Favorable Boons: Empathic soul bond, shared life philosophy, and domestic stability.
-- Mindful Cautions: Consciously practice calm patience during planetary transit stress periods.
-- Actionable Upayas: Offer sweet milk preparation (Kheer) to deities on Fridays and share with family.
-
-## Vitality, Physical Well-being & Ayurveda
-Your bio-energetic constitution is grounded in a healthy Vata-Pitta equilibrium. Maintaining rhythmic sleep intervals and balanced hydration sustains your natural recuperative stamina.
-- Favorable Boons: Robust baseline vitality, swift recovery from illness, and mental stamina under pressure.
-- Mindful Cautions: Guard against digestive heat or neck/shoulder stiffness during high-intensity periods.
-- Actionable Upayas: Consume pure water stored in a copper vessel in the morning and practice daily Pranayama.
-
-## Classical Vedic Remedies & Spiritual Upayas
-1. Sacred Protective Mantra: Daily chanting of Om Namo Bhagavate Vasudevaya (108 times) for peace and prosperity.
-2. Auspicious Gemstone: Consult your astrological chart before setting Yellow Sapphire or Ruby in sacred gold.
-3. Charitable Daan: Feed stray cows and support shelter animals on Saturdays to harmonize karmic transits.`;
+## ${yogaTitles[language] || yogaTitles.English}
+${language === 'English'
+  ? `1. Sacred Protective Mantra: Daily chanting of Om Namo Bhagavate Vasudevaya (108 times) for peace and prosperity.\n2. Auspicious Gemstone: Consult your astrological chart before setting Yellow Sapphire or Ruby in sacred gold.\n3. Charitable Daan: Feed stray cows and support shelter animals on Saturdays to harmonize karmic transits.`
+  : language === 'Marathi'
+  ? `1. मूळ वैदिक मंत्र: दररोज सकाळी ॐ नमो भगवते वासुदेवाय किंवा महामृत्युंजय मंत्राचा जप करावा.\n2. शुभ रत्न: योग्य ज्योतिषी सल्ल्याने भाग्योदयासाठी योग्य रत्न परिधान करावे.\n3. सेवा व दान: शनिवारी गरजूंना अन्न किंवा वस्त्र दान करावे आणि गोसेवा करावी.`
+  : `1. मूल वैदिक मन्त्र: नित्य प्रातः ॐ नमो भगवते वासुदेवाय (१०८ बार) अथवा महामृत्युंजय मन्त्र का जप करें।\n2. शुभ रत्न: योग्य ज्योतिषी परामर्श अनुसार भाग्योदय हेतु अनुकूल रत्न धारण करें।\n3. सेवा एवं दान: शनिवार को निर्धनों को भोजन व वस्त्र का दान करें तथा गौसेवा करें।`}`;
 
   const avakahada = calculateAvakahadaDetails(
     details.dob,
@@ -966,7 +770,7 @@ Your bio-energetic constitution is grounded in a healthy Vata-Pitta equilibrium.
     starLord,
     subLord,
     nakshatra: nakshatraName,
-    moonSign: moonSignName,
+    moonSign: moonSignLocalized,
     system,
     mahadashas,
     saadesatiCycles: exactSaadesati,
