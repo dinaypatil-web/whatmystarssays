@@ -272,16 +272,70 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
     return chapters;
   }, [analysis.report]);
 
-  // Define the ordered Book Pages
+  // Dedicated Separate Pages for Each of the 12 Bhavas.
+  // If details overflow from a single page, an additional page is automatically added to accommodate it.
+  const bhavaPages = useMemo(() => {
+    const pages: Array<{
+      bhava: BhavaDetailedAnalysis;
+      part: 1 | 2;
+      totalParts: 1 | 2;
+      pageTitle: string;
+      chapterNumber: number;
+    }> = [];
+
+    bhavasDetailed.forEach((b, bIdx) => {
+      const chapterNumber = bIdx + 5; // e.g. House 1 is Chapter 5, House 12 is Chapter 16
+      // If detailed analysis is substantial or has resident planets or full 9-point pillars,
+      // it cleanly spans across 2 dedicated pages so nothing is cramped or clipped.
+      const isDetailedOverflowing =
+        b.detailedAnalysis.length > 240 ||
+        b.planets.length > 0 ||
+        (b.boons.length + b.cautions.length + b.remedies.length) >= 5;
+
+      if (isDetailedOverflowing) {
+        // Part 1: Cosmic Coordinates & Deep Astrological Narrative
+        pages.push({
+          bhava: b,
+          part: 1,
+          totalParts: 2,
+          pageTitle: `${b.sanskritName} • स्वरूप एवं विश्लेषण`,
+          chapterNumber
+        });
+        // Part 2: Added page to cleanly accommodate Boons, Cautions & Vedic Upayas
+        pages.push({
+          bhava: b,
+          part: 2,
+          totalParts: 2,
+          pageTitle: `${b.sanskritName} • फलकथन एवं वैदिक उपाय`,
+          chapterNumber
+        });
+      } else {
+        // Fits comfortably on 1 dedicated page
+        pages.push({
+          bhava: b,
+          part: 1,
+          totalParts: 1,
+          pageTitle: b.sanskritName,
+          chapterNumber
+        });
+      }
+    });
+
+    return pages;
+  }, [bhavasDetailed]);
+
+  // Page index offsets:
   // Page 0: Royal Book Cover
   // Page 1: Janma Kundali Chart & Graha Sphuta
   // Page 2: Avakahada Chakra & Birth Panchanga
   // Page 3: Navagraha Matrix & Purushartha Life Pillars
-  // Page 4: Dwadasha Bhava (12 Houses) Comprehensive Codex
-  // Page 5: Vimshottari Mahadasha Timeline & Shani Sade Sati
-  // Page 6+: Parsed AI Chapters (Personality, Career, Wealth, Marriage, Remedies)
+  // Page 4: Vimshottari Mahadasha Timeline & Shani Sade Sati
+  // Pages 5 .. (5 + bhavaPages.length - 1): Separate Dedicated Pages for each Bhava!
+  // Pages (5 + bhavaPages.length) .. : Dynamic AI Chapters
   // Last Page: Epilogue, Vedic Mantras & Certified Seal
-  const totalPages = 7 + Math.max(1, parsedChapters.length);
+  const bhavaStartPage = 5;
+  const aiChaptersStartPage = bhavaStartPage + bhavaPages.length;
+  const totalPages = aiChaptersStartPage + Math.max(1, parsedChapters.length) + 1;
 
   // Jump to next spread or page
   const handleNext = () => {
@@ -490,7 +544,10 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                     lagnaSign={analysis.lagnaSign || 1}
                     onSelectHouse={(h) => {
                       setSelectedBhava(h);
-                      setCurrentPage(4);
+                      const targetIdx = bhavaPages.findIndex(bp => bp.bhava.houseNumber === h);
+                      if (targetIdx !== -1) {
+                        setCurrentPage(bhavaStartPage + targetIdx);
+                      }
                     }}
                   />
                 </div>
@@ -801,190 +858,8 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
       );
     }
 
-    // Page 4: Dwadasha Bhava (12 Houses) Comprehensive Vedic Codex
+    // Page 4: Vimshottari Mahadasha Timeline & Shani Sade Sati
     if (pageIdx === 4) {
-      const activeBhava = bhavasDetailed.find(b => b.houseNumber === selectedBhava) || bhavasDetailed[0];
-      return (
-        <div className="relative h-full flex flex-col justify-between p-6 sm:p-10 select-none">
-          <BookBorderFlourish theme={bookTheme} />
-
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-3 pt-2">
-            <div>
-              <span className="text-[9px] font-black uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400">
-                अध्याय ४ • Chapter IV
-              </span>
-              <h3 className={`text-base sm:text-xl font-devanagari font-bold ${textTitleClass}`}>
-                द्वादश भाव विस्तृत संहिता (12 Houses Comprehensive Codex)
-              </h3>
-            </div>
-            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30">
-              {activeBhava.classification.split('(')[0]?.trim()}
-            </span>
-          </div>
-
-          <div className="space-y-3 my-auto overflow-y-auto max-h-[580px] no-scrollbar pr-1">
-            {/* 12-House Ornate Selector Tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1.5 border-b border-amber-500/10">
-              {bhavasDetailed.map((b) => {
-                const isSelected = b.houseNumber === selectedBhava;
-                const hasPlanets = b.planets.length > 0;
-                return (
-                  <button
-                    key={b.houseNumber}
-                    onClick={() => setSelectedBhava(b.houseNumber)}
-                    className={`flex-shrink-0 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all relative ${
-                      isSelected
-                        ? 'bg-amber-500 text-amber-950 font-black shadow-md ring-1 ring-amber-400 scale-105'
-                        : `${cardBgClass} hover:bg-amber-500/10 hover:border-amber-500/30`
-                    }`}
-                  >
-                    <span>भाव {b.houseNumber}</span>
-                    {hasPlanets && (
-                      <span className={`ml-1 text-[9px] px-1 rounded-full ${isSelected ? 'bg-amber-950/20 text-amber-950' : 'bg-amber-500/20 text-amber-500'}`}>
-                        {b.planets.length}🪐
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Active Bhava Master Card */}
-            <div className={`p-4 rounded-2xl border ${cardBgClass} space-y-3`}>
-              {/* Bhava Title Banner */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-500/20 pb-2.5">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">🏛️</span>
-                    <h4 className="text-sm sm:text-base font-devanagari font-black text-amber-700 dark:text-amber-300">
-                      {activeBhava.sanskritName}
-                    </h4>
-                  </div>
-                  <p className="text-[10px] text-stone-500 dark:text-slate-400 font-cinzel tracking-wider mt-0.5">
-                    {activeBhava.name}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="px-2 py-0.5 rounded-lg text-[9px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                    {activeBhava.purushartha}
-                  </span>
-                  <span className="px-2 py-0.5 rounded-lg text-[9px] font-bold bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30">
-                    {activeBhava.element}
-                  </span>
-                </div>
-              </div>
-
-              {/* 4 Core Attributes Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                <div className="p-2 rounded-xl bg-amber-500/[0.04] border border-amber-500/15">
-                  <span className="text-[8px] uppercase tracking-wider block font-bold text-amber-600 dark:text-amber-400">राशि (Sign)</span>
-                  <span className="font-bold text-xs leading-snug block">{activeBhava.rashiSanskrit}</span>
-                </div>
-                <div className="p-2 rounded-xl bg-amber-500/[0.04] border border-amber-500/15">
-                  <span className="text-[8px] uppercase tracking-wider block font-bold text-amber-600 dark:text-amber-400">भावेश (Lord)</span>
-                  <span className="font-bold text-xs leading-snug block">{activeBhava.rashiLordSanskrit}</span>
-                </div>
-                <div className="p-2 rounded-xl bg-amber-500/[0.04] border border-amber-500/15">
-                  <span className="text-[8px] uppercase tracking-wider block font-bold text-amber-600 dark:text-amber-400">कारक (Karaka)</span>
-                  <span className="font-bold text-xs leading-snug block">{activeBhava.karakaPlanet}</span>
-                </div>
-                <div className="p-2 rounded-xl bg-amber-500/[0.04] border border-amber-500/15">
-                  <span className="text-[8px] uppercase tracking-wider block font-bold text-amber-600 dark:text-amber-400">शरीर अंग (Anatomy)</span>
-                  <span className="font-semibold text-[10px] leading-tight block truncate" title={activeBhava.bodyParts}>{activeBhava.bodyParts}</span>
-                </div>
-              </div>
-
-              {/* Resident Grahas in this House */}
-              <div className="p-2.5 rounded-xl bg-amber-500/[0.03] border border-amber-500/15 flex items-center justify-between gap-2">
-                <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5 flex-shrink-0">
-                  <span>🪐</span>
-                  <span>स्थित ग्रह (Planets in House):</span>
-                </span>
-                <div className="flex flex-wrap items-center gap-1.5 justify-end">
-                  {activeBhava.planets.length > 0 ? (
-                    activeBhava.planets.map(p => (
-                      <span key={p.planet} className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/30 flex items-center gap-1">
-                        <span>{p.icon}</span>
-                        <span>{p.planet}</span>
-                        <span className="text-[8px] opacity-75">({p.dignity.split(' ')[0]})</span>
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-[10px] text-stone-500 dark:text-slate-400 italic">
-                      कोई प्रत्यक्ष ग्रह नहीं (Governed by {activeBhava.rashiLordSanskrit})
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Detailed Astrological Narrative */}
-              <div className="text-xs leading-relaxed text-stone-800 dark:text-slate-200 whitespace-pre-line p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-amber-500/10">
-                {activeBhava.detailedAnalysis}
-              </div>
-
-              {/* 3 Pillars: Boons, Cautions, Upayas */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                {/* Boons */}
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
-                  <span className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-400 block mb-1">
-                    🌟 शुभ फल (Favorable Boons)
-                  </span>
-                  <ul className="text-[10px] space-y-1">
-                    {activeBhava.boons.map((b, i) => (
-                      <li key={i} className="flex items-start gap-1">
-                        <span className="text-emerald-500 flex-shrink-0">•</span>
-                        <span className="leading-tight">{b}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Cautions */}
-                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
-                  <span className="text-[9px] font-black uppercase text-amber-600 dark:text-amber-400 block mb-1">
-                    ⚠️ सतर्कता (Mindful Cautions)
-                  </span>
-                  <ul className="text-[10px] space-y-1">
-                    {activeBhava.cautions.map((c, i) => (
-                      <li key={i} className="flex items-start gap-1">
-                        <span className="text-amber-500 flex-shrink-0">•</span>
-                        <span className="leading-tight">{c}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Upayas */}
-                <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30">
-                  <span className="text-[9px] font-black uppercase text-purple-600 dark:text-purple-400 block mb-1">
-                    🪔 वैदिक उपाय (Actionable Upayas)
-                  </span>
-                  <ul className="text-[10px] space-y-1">
-                    {activeBhava.remedies.map((r, i) => (
-                      <li key={i} className="flex items-start gap-1">
-                        <span className="text-purple-500 flex-shrink-0">•</span>
-                        <span className="leading-tight">{r}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-between border-t border-amber-500/20 pt-2 text-[10px] font-mono text-stone-500 dark:text-slate-400 px-4">
-            <span>द्वादश भाव विस्तृत संहिता</span>
-            <span>— पृष्ठ ५ —</span>
-            <span>भाव {activeBhava.houseNumber} विश्लेषण</span>
-          </div>
-        </div>
-      );
-    }
-
-    // Page 5: Vimshottari Mahadasha Timeline & Shani Sade Sati
-    if (pageIdx === 5) {
       return (
         <div className="relative h-full flex flex-col justify-between p-6 sm:p-10 select-none">
           <BookBorderFlourish theme={bookTheme} />
@@ -993,7 +868,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
           <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-4 pt-2">
             <div>
               <span className="text-[9px] font-black uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400">
-                अध्याय ५ • Chapter V
+                अध्याय ४ • Chapter IV
               </span>
               <h3 className={`text-base sm:text-xl font-devanagari font-bold ${textTitleClass}`}>
                 विंशोत्तरी महादशा काल चक्र एवं साढ़ेसाती
@@ -1077,15 +952,339 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
           {/* Footer */}
           <div className="flex items-center justify-between border-t border-amber-500/20 pt-2 text-[10px] font-mono text-stone-500 dark:text-slate-400 px-4">
             <span>महादशा एवं साढ़ेसाती</span>
-            <span>— पृष्ठ ६ —</span>
+            <span>— पृष्ठ ५ —</span>
             <span>कालचक्र संहिता</span>
           </div>
         </div>
       );
     }
 
-    // Dynamic AI Life Chapters (Page 6 onwards)
-    const chapterOffset = pageIdx - 6;
+    // Pages 5 .. (5 + bhavaPages.length - 1): DEDICATED SEPARATE PAGES FOR EACH BHAVA
+    // If details overflow from a single page, an extra continuation page (Part 2) is automatically inserted.
+    if (pageIdx >= bhavaStartPage && pageIdx < aiChaptersStartPage) {
+      const bhavaPageIdx = pageIdx - bhavaStartPage;
+      const { bhava, part, totalParts, pageTitle, chapterNumber } = bhavaPages[bhavaPageIdx];
+      const hasPlanets = bhava.planets.length > 0;
+
+      return (
+        <div className="relative h-full flex flex-col justify-between p-6 sm:p-10 select-none">
+          <BookBorderFlourish theme={bookTheme} />
+
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-2 pt-1">
+            <div>
+              <span className="text-[9px] font-black uppercase tracking-[0.22em] text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                <span>अध्याय {chapterNumber} • CHAPTER {chapterNumber}</span>
+                {totalParts > 1 && (
+                  <span className="bg-amber-500/20 text-amber-800 dark:text-amber-300 px-1.5 py-0.2 rounded font-mono text-[8px] font-bold">
+                    भाग {part}/{totalParts}
+                  </span>
+                )}
+              </span>
+              <h3 className={`text-base sm:text-lg font-devanagari font-bold ${textTitleClass}`}>
+                {pageTitle}
+              </h3>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] font-mono text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30">
+                {bhava.classification.split('(')[0]?.trim()}
+              </span>
+              <span className="text-[9px] font-mono text-sky-600 dark:text-sky-400 px-2 py-0.5 rounded-full border border-sky-500/30 hidden sm:inline">
+                {bhava.purushartha.split('(')[0]?.trim()}
+              </span>
+            </div>
+          </div>
+
+          {/* 12-House Quick Mini Navigator */}
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-1 border-b border-amber-500/10 mb-2">
+            <span className="text-[8px] font-mono font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mr-1 flex-shrink-0">
+              भाव चयन:
+            </span>
+            {bhavasDetailed.map((b) => {
+              const isThisHouse = b.houseNumber === bhava.houseNumber;
+              const targetIdx = bhavaPages.findIndex(bp => bp.bhava.houseNumber === b.houseNumber);
+              const hasP = b.planets.length > 0;
+              return (
+                <button
+                  key={b.houseNumber}
+                  onClick={() => {
+                    setSelectedBhava(b.houseNumber);
+                    if (targetIdx !== -1) {
+                      setCurrentPage(bhavaStartPage + targetIdx);
+                    }
+                  }}
+                  className={`flex-shrink-0 px-2 py-0.5 rounded-md text-[9px] font-bold transition-all ${
+                    isThisHouse
+                      ? 'bg-amber-500 text-amber-950 font-black shadow-sm ring-1 ring-amber-400 scale-105'
+                      : 'bg-amber-500/10 hover:bg-amber-500/20 text-stone-700 dark:text-slate-300'
+                  }`}
+                  title={`${b.sanskritName} (${b.name})`}
+                >
+                  <span>भाव {b.houseNumber}</span>
+                  {hasP && <span className="ml-0.5 text-[8px] opacity-80">🪐</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Page Content Body */}
+          <div className="space-y-2.5 my-auto overflow-y-auto max-h-[580px] no-scrollbar pr-1">
+            {/* PART 1 or SINGLE PAGE: Celestial Coordinates, Occupant Grahas & Exhaustive Analysis */}
+            {part === 1 && (
+              <>
+                {/* 4 Core Attributes Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <div className="p-2 rounded-xl bg-amber-500/[0.04] border border-amber-500/15">
+                    <span className="text-[8px] uppercase tracking-wider block font-bold text-amber-600 dark:text-amber-400">राशि (Sign)</span>
+                    <span className="font-bold text-xs leading-snug block">{bhava.rashiSanskrit}</span>
+                    <span className="text-[8px] text-stone-500 dark:text-slate-400">Sign #{bhava.rashiNumber}</span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-amber-500/[0.04] border border-amber-500/15">
+                    <span className="text-[8px] uppercase tracking-wider block font-bold text-amber-600 dark:text-amber-400">भावेश (Lord)</span>
+                    <span className="font-bold text-xs leading-snug block">{bhava.rashiLordSanskrit}</span>
+                    <span className="text-[8px] text-stone-500 dark:text-slate-400">Ruler Planet</span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-amber-500/[0.04] border border-amber-500/15">
+                    <span className="text-[8px] uppercase tracking-wider block font-bold text-amber-600 dark:text-amber-400">स्थिर कारक (Karaka)</span>
+                    <span className="font-bold text-xs leading-snug block">{bhava.karakaPlanet}</span>
+                    <span className="text-[8px] text-stone-500 dark:text-slate-400">Natural Significator</span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-amber-500/[0.04] border border-amber-500/15">
+                    <span className="text-[8px] uppercase tracking-wider block font-bold text-amber-600 dark:text-amber-400">शरीर अंग (Anatomy)</span>
+                    <span className="font-semibold text-[10px] leading-tight block truncate" title={bhava.bodyParts}>{bhava.bodyParts}</span>
+                    <span className="text-[8px] text-stone-500 dark:text-slate-400">{bhava.element}</span>
+                  </div>
+                </div>
+
+                {/* Life Domain / Karakatva Overview */}
+                <div className="p-2.5 rounded-xl bg-amber-500/[0.03] border border-amber-500/15 text-xs flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🏛️</span>
+                    <div>
+                      <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">
+                        जीवन क्षेत्र एवं कारकत्व (Life Domain & Significations):
+                      </span>
+                      <p className="text-[11px] font-medium text-stone-700 dark:text-slate-300 leading-snug">
+                        {bhava.lifeDomain}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-200 border border-amber-500/30 flex-shrink-0">
+                    {bhava.purushartha}
+                  </span>
+                </div>
+
+                {/* Occupying Grahas in this Bhava */}
+                <div className="p-2.5 rounded-xl bg-amber-500/[0.03] border border-amber-500/15 flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5 flex-shrink-0">
+                    <span>🪐</span>
+                    <span>स्थित ग्रह (Occupying Grahas):</span>
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5 justify-end">
+                    {hasPlanets ? (
+                      bhava.planets.map(p => (
+                        <span key={p.planet} className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/30 flex items-center gap-1 shadow-sm">
+                          <span>{p.icon}</span>
+                          <span>{p.planet}</span>
+                          <span className="text-[8px] opacity-75">({p.dignity.split(' ')[0]})</span>
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[10px] text-stone-500 dark:text-slate-400 italic">
+                        कोई प्रत्यक्ष ग्रह स्थित नहीं (संपूर्ण प्रभाव भावेश {bhava.rashiLordSanskrit} एवं दृष्टियों पर आधारित)
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Detailed Astrological Narrative */}
+                <div className="p-3.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-amber-500/15 space-y-2">
+                  <h4 className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                    <span>📜</span>
+                    <span>गहन ज्योतिषीय विश्लेषण (In-depth Astrological Synthesis):</span>
+                  </h4>
+                  <div className="text-xs leading-relaxed text-stone-800 dark:text-slate-200 whitespace-pre-line font-serif sm:text-[13px]">
+                    {bhava.detailedAnalysis}
+                  </div>
+                </div>
+
+                {/* Continuation Callout for Overflowed Content (Part 2) */}
+                {totalParts > 1 ? (
+                  <div className="p-2.5 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/25 flex items-center justify-between text-xs text-amber-900 dark:text-amber-200">
+                    <span className="text-[10px] font-medium flex items-center gap-1.5">
+                      <span>✨</span>
+                      <span>विस्तृत विवरण जारी: इस भाव के <strong>शुभ फल</strong>, <strong>सतर्कता</strong> एवं <strong>वैदिक उपाय</strong> आगामी पृष्ठ पर देखें।</span>
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage(pageIdx + 1)}
+                      className="px-2 py-1 rounded-lg bg-amber-500 text-amber-950 text-[10px] font-bold hover:bg-amber-400 transition-all flex items-center gap-0.5 flex-shrink-0 ml-2"
+                    >
+                      <span>भाग २</span>
+                      <span>›</span>
+                    </button>
+                  </div>
+                ) : (
+                  /* Single Page Mode: Compact 3 Pillars */
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs pt-1">
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                      <span className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-400 block mb-1">
+                        🌟 शुभ फल (Boons)
+                      </span>
+                      <ul className="text-[10px] space-y-1">
+                        {bhava.boons.map((b, i) => (
+                          <li key={i} className="flex items-start gap-1">
+                            <span className="text-emerald-500 flex-shrink-0">•</span>
+                            <span className="leading-tight">{b}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                      <span className="text-[9px] font-black uppercase text-amber-600 dark:text-amber-400 block mb-1">
+                        ⚠️ सतर्कता (Cautions)
+                      </span>
+                      <ul className="text-[10px] space-y-1">
+                        {bhava.cautions.map((c, i) => (
+                          <li key={i} className="flex items-start gap-1">
+                            <span className="text-amber-500 flex-shrink-0">•</span>
+                            <span className="leading-tight">{c}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30">
+                      <span className="text-[9px] font-black uppercase text-purple-600 dark:text-purple-400 block mb-1">
+                        🪔 वैदिक उपाय (Upayas)
+                      </span>
+                      <ul className="text-[10px] space-y-1">
+                        {bhava.remedies.map((r, i) => (
+                          <li key={i} className="flex items-start gap-1">
+                            <span className="text-purple-500 flex-shrink-0">•</span>
+                            <span className="leading-tight">{r}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* PART 2: Continuation Page for Boons, Cautions, Upayas & Divine Guidance */}
+            {part === 2 && (
+              <>
+                {/* Bhava Context Anchor Bar */}
+                <div className="p-2.5 rounded-xl bg-amber-500/[0.04] border border-amber-500/20 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🏛️</span>
+                    <div>
+                      <span className="font-bold text-amber-700 dark:text-amber-300 text-xs">
+                        {bhava.sanskritName} • भाव {bhava.houseNumber}
+                      </span>
+                      <span className="text-[10px] text-stone-500 dark:text-slate-400 ml-2">
+                        ({bhava.name})
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px]">
+                    <span className="px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/25">
+                      भावेश: <strong>{bhava.rashiLordSanskrit}</strong>
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/25">
+                      कारक: <strong>{bhava.karakaPlanet}</strong>
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3 Full-Column Pillars of Karmic Manifestation */}
+                <div className="space-y-3">
+                  {/* Boons */}
+                  <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5">
+                        <span>🌟</span>
+                        <span>शुभ फल एवं ग्रह कृपा (Favorable Boons & Cosmic Blessings):</span>
+                      </span>
+                      <span className="text-[9px] font-mono text-emerald-600 dark:text-emerald-400">
+                        {bhava.boons.length} बिंदु
+                      </span>
+                    </div>
+                    <ul className="text-xs space-y-1.5 text-stone-800 dark:text-slate-200">
+                      {bhava.boons.map((b, i) => (
+                        <li key={i} className="flex items-start gap-2 bg-emerald-500/5 p-2 rounded-xl border border-emerald-500/15">
+                          <span className="text-emerald-500 font-bold flex-shrink-0">✓</span>
+                          <span className="leading-snug">{b}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Cautions */}
+                  <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                        <span>⚠️</span>
+                        <span>सतर्कता एवं चुनौतियाँ (Mindful Cautions & Vulnerabilities):</span>
+                      </span>
+                      <span className="text-[9px] font-mono text-amber-600 dark:text-amber-400">
+                        {bhava.cautions.length} बिंदु
+                      </span>
+                    </div>
+                    <ul className="text-xs space-y-1.5 text-stone-800 dark:text-slate-200">
+                      {bhava.cautions.map((c, i) => (
+                        <li key={i} className="flex items-start gap-2 bg-amber-500/5 p-2 rounded-xl border border-amber-500/15">
+                          <span className="text-amber-500 font-bold flex-shrink-0">!</span>
+                          <span className="leading-snug">{c}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Upayas */}
+                  <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+                        <span>🪔</span>
+                        <span>वैदिक उपाय, मन्त्र एवं अनुष्ठान (Actionable Upayas & Mantras):</span>
+                      </span>
+                      <span className="text-[9px] font-mono text-purple-600 dark:text-purple-400">
+                        {bhava.remedies.length} उपचार
+                      </span>
+                    </div>
+                    <ul className="text-xs space-y-1.5 text-stone-800 dark:text-slate-200">
+                      {bhava.remedies.map((r, i) => (
+                        <li key={i} className="flex items-start gap-2 bg-purple-500/5 p-2 rounded-xl border border-purple-500/15">
+                          <span className="text-purple-500 font-bold flex-shrink-0">🪔</span>
+                          <span className="leading-snug">{r}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Astrological Synthesis & Divine Guidance */}
+                <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.03] text-xs leading-relaxed text-stone-700 dark:text-slate-300">
+                  <strong className="text-amber-600 dark:text-amber-400 block mb-0.5 text-[11px]">
+                    कर्म सिद्धि परामर्श (Karmic Fruition Counsel):
+                  </strong>
+                  इस {bhava.sanskritName} के अधिपति {bhava.rashiLordSanskrit} हैं एवं नैसर्गिक कारक {bhava.karakaPlanet} हैं। उल्लिखित वैदिक उपायों का निष्ठापूर्वक पालन करने से नकारात्मक गोचर शांत होते हैं तथा {bhava.lifeDomain} में शुभता व उन्नति की प्राप्ति होती है।
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between border-t border-amber-500/20 pt-2 text-[10px] font-mono text-stone-500 dark:text-slate-400 px-4">
+            <span>द्वादश भाव विस्तृत संहिता</span>
+            <span>— पृष्ठ {pageIdx + 1} —</span>
+            <span>भाव {bhava.houseNumber} {totalParts > 1 ? `(भाग ${part}/${totalParts})` : 'विश्लेषण'}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // Dynamic AI Life Chapters (Following dedicated Bhava pages)
+    const chapterOffset = pageIdx - aiChaptersStartPage;
     if (chapterOffset >= 0 && chapterOffset < parsedChapters.length) {
       const chapter = parsedChapters[chapterOffset];
       return (
@@ -1096,7 +1295,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
           <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-4 pt-2">
             <div>
               <span className="text-[9px] font-black uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400">
-                अध्याय {chapterOffset + 6} • Chapter {chapterOffset + 6}
+                अध्याय {bhavaPages.length + 5 + chapterOffset} • Chapter {bhavaPages.length + 5 + chapterOffset}
               </span>
               <h3 className={`text-base sm:text-xl font-devanagari font-bold ${textTitleClass} flex items-center gap-2`}>
                 <span>{chapter.icon}</span>
@@ -1419,11 +1618,15 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                   <option value={1}>Page 2: Janma Kundali & Chart</option>
                   <option value={2}>Page 3: Avakahada & Panchanga</option>
                   <option value={3}>Page 4: Navagraha & Purushartha</option>
-                  <option value={4}>Page 5: द्वादश भाव संहिता (12 Bhavas Codex)</option>
-                  <option value={5}>Page 6: Vimshottari Mahadasha & Sade Sati</option>
+                  <option value={4}>Page 5: Vimshottari Mahadasha & Sade Sati</option>
+                  {bhavaPages.map((bp, bpIdx) => (
+                    <option key={`bhava-pg-${bpIdx}`} value={bhavaStartPage + bpIdx}>
+                      Page {bhavaStartPage + bpIdx + 1}: भाव {bp.bhava.houseNumber} ({bp.bhava.rashiSanskrit}) {bp.totalParts > 1 ? `[भाग ${bp.part}/2]` : ''}
+                    </option>
+                  ))}
                   {parsedChapters.map((ch, idx) => (
-                    <option key={ch.id} value={idx + 6}>
-                      Page {idx + 7}: {ch.cleanTitle}
+                    <option key={ch.id} value={aiChaptersStartPage + idx}>
+                      Page {aiChaptersStartPage + idx + 1}: {ch.cleanTitle}
                     </option>
                   ))}
                   <option value={totalPages - 1}>Page {totalPages}: Epilogue & Mantras</option>
