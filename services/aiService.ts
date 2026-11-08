@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { BirthDetails, MatchmakingDetails, Timeframe, Language, ChatMessage, KundaliResponse, KundaliSystem, PlanetaryTransitInfo } from "../types";
 import { StorageService } from "./storageService";
-import { calculateAshtakootMilan, calculateMoonDetails, calculateSaadesatiPhases, calculateAvakahadaDetails, calculatePlanetaryPositions } from "./astrologyHelper";
+import { calculateAshtakootMilan, calculateMoonDetails, calculateSaadesatiPhases, calculateAvakahadaDetails, calculatePlanetaryPositions, ensureValidKundaliChart } from "./astrologyHelper";
 
 // ---------------------------------------------------------------------------
 // ACTIVE GEMINI MODELS & MULTI-KEY ROTATION
@@ -459,23 +459,25 @@ ${moonContext}
 ${saadesatiPromptContext}
 
 MANDATORY DEPTH & STRUCTURE REQUIREMENTS FOR THE REPORT:
-The "report" field must be an extensive, beautifully written multi-page Markdown document in ${language} featuring:
-1. **Panchanga & Birth Profile Summary Table**: Lagna, Moon Sign, Sun Sign, Nakshatra, Pada, Star Lord, Sub Lord, Deities, Elements.
-2. **Sidereal Planetary Positions & Dignities Table**: Complete table of all 9 planets with degrees, sign, nakshatra, house, and dignity status.
-3. **Comprehensive 12 Bhava (House) Deep Analysis (Balanced Realism)**: Multi-paragraph evaluation covering Kendra houses (1, 4, 7, 10), Trikona houses (1, 5, 9), and Dusthana/challenging houses (6, 8, 12).
-   - In EVERY house analysis, detail BOTH the positive strengths/fruits and the negative challenges/friction points.
-   - For every challenging placement or affliction, immediately integrate constructive insights and specific Vedic remedial countermeasures without fatalism or harsh wording.
-4. **Career, Profession & Financial Trajectory**: In-depth analysis of optimal career industries, job vs business suitability, financial accumulation capacity, and peak earning years, alongside periods of professional struggle, career stagnation, or financial leakages, paired with actionable remedies.
-5. **Marriage, Love & Relationship Dynamics**: In-depth analysis of the 7th house, Venus/Jupiter placements, spouse characteristics, natural harmonies, and potential friction/misunderstandings, provided with constructive communication habits and Vedic relationship remedies.
-6. **Health, Vitality & Preventive Astrology**: Physical constitution (Vata/Pitta/Kapha), strengths, sensitive bodily areas, potential stress cycles, and preventative Ayurvedic/Vedic lifestyle remedies.
-7. **Major Planetary Yogas, Doshas & Gochara Transits**: Raja Yogas, Dhana Yogas, Gajakesari Yoga, Manglik / Kalsarp / Pitri Rin analysis with specific classical cancellations and uplifting mitigation remedies.
+The "report" field must be an exhaustive, deeply detailed, beautifully written multi-page Markdown document in ${language} featuring:
+1. **Lagna & Atmakaraka Soul Blueprint (लग्न एवं आत्मकारक विश्लेषण)**: Exhaustive multi-paragraph analysis of the Ascendant sign, physical vitality, temperament, psychological profile, and core karmic life purpose.
+2. **Comprehensive 12 Bhava (House-by-House) Detailed Predictions (द्वादश भाव विस्तृत फलकथन)**:
+   - Provide an individual, deeply detailed multi-paragraph evaluation for ALL 12 HOUSES (1 to 12).
+   - In EVERY house analysis, detail BOTH positive strengths/fruits and negative challenges/friction points.
+   - For every challenging placement, immediately integrate constructive insights and specific Vedic remedial countermeasures.
+3. **Navagraha Deep Interpretation (नवग्रह विस्तृत प्रभाव)**: Detailed assessment of all 9 Grahas (Sun through Ketu) in their respective signs and houses with dignity, aspects (Drishti), and functional indications.
+4. **Career, Profession & Financial Trajectory (आजीविका एवं धन-सम्पत्ति योग)**: In-depth analysis of optimal career industries, job vs business suitability, financial accumulation capacity, and peak earning years, alongside periods of professional struggle, career stagnation, or financial leakages, paired with actionable remedies.
+5. **Marriage, Love & Relationship Dynamics (विवाह, दाम्पत्य एवं सम्बन्ध)**: In-depth analysis of the 7th house, Venus/Jupiter placements, spouse characteristics, natural harmonies, and potential friction/misunderstandings, provided with constructive communication habits and Vedic relationship remedies.
+6. **Health, Vitality & Preventive Ayurveda (स्वास्थ्य, जीवन शक्ति एवं आयुर्वेद)**: Physical constitution (Vata/Pitta/Kapha), strengths, sensitive bodily areas, potential stress cycles, and preventative Ayurvedic/Vedic lifestyle remedies.
+7. **Major Planetary Yogas, Doshas & Gochara Transits (ग्रह योग, दोष एवं गोचर)**: Raja Yogas, Dhana Yogas, Gajakesari Yoga, Manglik / Kalsarp / Pitri Rin analysis with specific classical cancellations and uplifting mitigation remedies.
 8. **Vimshottari Mahadasha Lifelong Timeline Table (120-Year)**: Complete 9-Mahadasha table with exact years, plus detailed interpretation of active Mahadasha and Antardasha detailing both favorable boons and challenging test periods with targeted planetary remedies.
 9. **Shani Saadesati Exact Timeline**: Exact start and end dates for all 3 phases (~2.5 years each) with real-time status and reassuring, protective remedial guidance.
-10. **Prescriptive Classical Vedic Remedies**: Comprehensive dedicated section detailing Primary gemstone (carats, metal, finger, day, ritual), Rudraksha mukhi, Vedic Beej mantras with exact counts, charitable acts (Daan), and daily spiritual disciplines to balance all identified karmic challenges.
+10. **Prescriptive Classical Vedic Remedies (विस्तृत वैदिक एवं लाल किताब उपाय)**: Comprehensive dedicated section detailing Primary gemstone (carats, metal, finger, day, ritual), Rudraksha mukhi, Vedic Beej mantras with exact counts, charitable acts (Daan), and daily spiritual disciplines to balance all identified karmic challenges.
 
-CRITICAL LANGUAGE REQUIREMENT:
-You MUST write the entire "report" and all textual descriptions (starLord, subLord, nakshatra, moonSign) in ${language} (using native ${language} script).
-The JSON keys ("report", "chart", "lagnaSign", "starLord", "subLord", "nakshatra", "moonSign", "mahadashas", "saadesatiCycles") and house numbers ("1".."12") must remain in English.`,
+CRITICAL CHART & LANGUAGE REQUIREMENT:
+- You MUST write the entire "report" and all textual descriptions (starLord, subLord, nakshatra, moonSign) in ${language} (using native ${language} script).
+- The JSON keys ("report", "chart", "lagnaSign", "starLord", "subLord", "nakshatra", "moonSign", "mahadashas", "saadesatiCycles") and house numbers ("1".."12") must remain in English.
+- "chart": Distribute all 9 planets into their authentic astrological houses across keys "1" through "12" using standard abbreviations ["Su", "Mo", "Ma", "Me", "Ju", "Ve", "Sa", "Ra", "Ke"]. NEVER place all planets into House 1. Rahu and Ketu MUST be in opposite houses (7 houses apart).`,
       `Generate an exhaustive, highly detailed Janma Kundali Life Map Analysis in the ${config.name} for:
 Name: ${details.name}
 DOB: ${details.dob}
@@ -548,16 +550,20 @@ Chart keys must be "1" through "12" with planet name arrays. lagnaSign is 1-12.`
     }));
 
     // Deterministically compute complete authentic Avakahada Chakra and Planetary Dignities
+    parsed.planetaryPositions = calculatePlanetaryPositions(
+      parsed.chart,
+      parsed.lagnaSign || 1,
+      details.dob,
+      details.tob
+    );
+
+    parsed.chart = ensureValidKundaliChart(parsed.chart, parsed.planetaryPositions);
+
     parsed.avakahada = calculateAvakahadaDetails(
       details.dob,
       details.tob || '12:00',
       parsed.lagnaSign || 1,
       parsed.chart
-    );
-
-    parsed.planetaryPositions = calculatePlanetaryPositions(
-      parsed.chart,
-      parsed.lagnaSign || 1
     );
 
     return parsed;
@@ -581,42 +587,35 @@ const generateOfflineKundali = (
   moonCalc: any
 ): KundaliResponse => {
   const hour = parseInt((details.tob || '12:00').split(':')[0], 10) || 12;
+  const minute = parseInt((details.tob || '12:00').split(':')[1], 10) || 0;
   const month = parseInt((details.dob || '1990-01-01').split('-')[1], 10) || 1;
+  const day = parseInt((details.dob || '1990-01-01').split('-')[2], 10) || 15;
   const sunSign = ((month + 1) % 12) + 1;
-  const hoursSinceSunrise = (hour - 6 + 24) % 24;
+  const hoursSinceSunrise = (hour + minute / 60 - 6 + 24) % 24;
   const lagnaSign = ((sunSign - 1 + Math.floor(hoursSinceSunrise / 2)) % 12) + 1;
 
   const moonSignName = moonCalc?.rashi.name || 'Taurus';
+  const moonSignSanskrit = moonCalc?.rashi.sanskrit || 'वृषभ (Vrishabha)';
   const nakshatraName = moonCalc?.nakshatra.name || 'Rohini';
+  const nakshatraSanskrit = moonCalc?.nakshatra.sanskrit || 'रोहिणी';
   const starLord = moonCalc?.nakshatra.lord || 'Moon';
   const subLord = 'Jupiter';
 
-  const chart: any = {
-    1: ['Su', 'Me'],
-    2: ['Ve'],
-    4: ['Ju'],
-    7: ['Sa'],
-    9: ['Ma'],
-    10: ['Mo'],
-    11: ['Ra'],
-    5: ['Ke'],
-    3: [],
-    6: [],
-    8: [],
-    12: []
-  };
+  // Compute authentic natal planetary positions
+  const planetaryPositions = calculatePlanetaryPositions({}, lagnaSign, details.dob, details.tob);
+  const chart = ensureValidKundaliChart({}, planetaryPositions);
 
   const birthYear = parseInt((details.dob || '1990-01-01').split('-')[0], 10) || 1990;
   const DASHA_ORDER = [
-    { planet: 'Ketu', years: 7 },
-    { planet: 'Venus', years: 20 },
-    { planet: 'Sun', years: 6 },
-    { planet: 'Moon', years: 10 },
-    { planet: 'Mars', years: 7 },
-    { planet: 'Rahu', years: 18 },
-    { planet: 'Jupiter', years: 16 },
-    { planet: 'Saturn', years: 19 },
-    { planet: 'Mercury', years: 17 }
+    { planet: 'Ketu', years: 7, sanskrit: 'केतु' },
+    { planet: 'Venus', years: 20, sanskrit: 'शुक्र' },
+    { planet: 'Sun', years: 6, sanskrit: 'सूर्य' },
+    { planet: 'Moon', years: 10, sanskrit: 'चन्द्र' },
+    { planet: 'Mars', years: 7, sanskrit: 'मंगल' },
+    { planet: 'Rahu', years: 18, sanskrit: 'राहु' },
+    { planet: 'Jupiter', years: 16, sanskrit: 'बृहस्पति (गुरु)' },
+    { planet: 'Saturn', years: 19, sanskrit: 'शनि' },
+    { planet: 'Mercury', years: 17, sanskrit: 'बुध' }
   ];
 
   const currentYear = new Date().getFullYear();
@@ -626,7 +625,7 @@ const generateOfflineKundali = (
     const endYear = yr + d.years;
     yr = endYear;
     return {
-      planet: d.planet,
+      planet: language === 'Hindi' ? `${d.sanskrit} (${d.planet})` : d.planet,
       startYear,
       endYear,
       durationYears: d.years,
@@ -634,37 +633,213 @@ const generateOfflineKundali = (
     };
   });
 
-  const report = `# Executive Overview & Janma Lagna
-The native **${details.name || 'Seeker'}** was born under the auspicious Lagna Sign of **${lagnaSign}** with the Moon placed gracefully in **${moonSignName}** in the sacred Nakshatra of **${nakshatraName}**. This planetary disposition reflects a profound soul with high intellectual determination, moral clarity, and natural leadership acumen.
+  const RASHI_NAMES_HI = [
+    'मेष (Aries)', 'वृषभ (Taurus)', 'मिथुन (Gemini)', 'कर्क (Cancer)',
+    'सिंह (Leo)', 'कन्या (Virgo)', 'तुला (Libra)', 'वृश्चिक (Scorpio)',
+    'धनु (Sagittarius)', 'मकर (Capricorn)', 'कुम्भ (Aquarius)', 'मीन (Pisces)'
+  ];
+  const lagnaName = RASHI_NAMES_HI[lagnaSign - 1];
+
+  const isHindi = language === 'Hindi';
+
+  const report = isHindi
+    ? `# लग्न एवं आत्मकारक जीवन स्वरूप (Ascendant & Soul Blueprint)
+जातक **${details.name || 'जिज्ञासु'}** का जन्म शुभ **${lagnaName}** लग्न में हुआ है। आपका जन्म चन्द्रमा **${moonSignSanskrit}** राशि में तथा पावन **${nakshatraSanskrit}** नक्षत्र में स्थित है। लग्न स्वामी का प्रभाव आपके व्यक्तित्व में उच्च आत्मबल, नैतिक निष्ठा, दृढ इच्छाशक्ति तथा स्वाभाविक नेतृत्व क्षमता का संचार करता है। आपका मन संवेदनशील, दूरदर्शी और दार्शनिक दृष्टिकोण से परिपूर्ण है।
+
+## द्वादश भाव विस्तृत फलकथन (12 Bhavas Deep Analysis)
+### प्रथम भाव - तनु भाव (Health, Self & Vitality)
+प्रथम भाव आपके शरीर, आरोग्य, आत्मसम्मान और जीवन ऊर्जा का प्रतिनिधित्व करता है। लग्न का बल आपको जीवन में संघर्षों के सम्मुख अडिग रहने का साहस प्रदान करता है।
+- **शुभ फल (Boons)**: उत्कृष्ट बौद्धिक प्रतिभा, प्रभावशाली व्यक्तित्व, सम्मोहक आभा तथा स्वतंत्र निर्णय लेने की क्षमता।
+- **सतर्कता (Cautions)**: अति-परिश्रम या अनियमित दिनचर्या से मानसिक तनाव या सिरदर्द की सम्भावना।
+- **वैदिक उपाय (Upayas)**: प्रातःकाल सूर्य देव को तांबे के लोटे से अर्घ्य दें एवं ॐ घृणि सूर्याय नमः का जाप करें।
+
+### द्वितीय भाव - धन भाव (Wealth, Assets & Family)
+द्वितीय भाव वाणी, संचित कोष, पारिवारिक सम्पदा एवं संस्कार का द्योतक है।
+- **शुभ फल (Boons)**: विवेकपूर्ण वित्तीय नियोजन, दीर्घकालिक परिसम्पत्तियों का निर्माण तथा कुटुम्ब में सम्मान।
+- **सतर्कता (Cautions)**: आकस्मिक व्ययों अथवा सट्टा/जोखिम भरे सौदों से दूरी बनाए रखें।
+- **वैदिक उपाय (Upayas)**: शुक्रवार को श्री सूक्त का पाठ करें अथवा गाय को हरा चारा खिलाएं।
+
+### तृतीय भाव - सहज भाव (Courage, Siblings & Skills)
+तृतीय भाव पराक्रम, भुजा-बल, संचार तथा अनुज भ्राता-भगिनी का भाव है।
+- **शुभ फल (Boons)**: अदम्य साहस, प्रभावशाली संप्रेषण कला, तकनीकी व लेखन कौशल में निपुणता।
+- **सतर्कता (Cautions)**: अत्यधिक उतावलेपन में सहकर्मियों से मतभेद उत्पन्न न होने दें।
+- **वैदिक उपाय (Upayas)**: मंगलवार को हनुमान चालीसा का पाठ करें एवं लाल चंदन का तिलक लगाएं।
+
+### चतुर्थ भाव - सुख भाव (Mother, Property & Inner Peace)
+चतुर्थ भाव मातृ-सुख, गृह, भूमि, वाहन एवं आंतरिक शांति का केंद्र है।
+- **शुभ फल (Boons)**: मातृकृपा, स्थाई संपत्ति व वाहन सुख तथा शांत घरेलू वातावरण।
+- **सतर्कता (Cautions)**: भावुकता के अतिरेक में स्वयं को एकाकी महसूस करने से बचें।
+- **वैदिक उपाय (Upayas)**: माता के चरण स्पर्श कर नित्य आशीर्वाद लें एवं चांदी का चौकोर टुकड़ा अपने पास रखें।
+
+### पंचम भाव - पुत्र एवं बुद्धि भाव (Intellect, Progeny & Punya)
+पंचम भाव पूर्वजन्म संचित पुण्य, उच्च विद्या, रचनात्मक प्रतिभा एवं संतान सुख का भाव है।
+- **शुभ फल (Boons)**: तीव्र स्मरण शक्ति, मंत्र-दीक्षा में सिद्धि, शोध व सृजनात्मक कार्यों में सफलता।
+- **सतर्कता (Cautions)**: सट्टा, शेयर अथवा अनिर्धारित प्रलोभनों में धन विनियोजन न करें।
+- **वैदिक उपाय (Upayas)**: नित्य गायत्री मंत्र की 1 माला (108 बार) का शांत मन से जप करें।
+
+### षष्ठ भाव - अरि भाव (Work, Resilience & Immunity)
+षष्ठ भाव रोग, ऋण, शत्रु तथा दैनिक सेवा का क्षेत्र है। यह उपचय भाव जीवन में विजय दिलाता है।
+- **शुभ फल (Boons)**: प्रतिस्पर्धी परीक्षाओं में सफलता, शत्रुओं पर विजय, उत्कृष्ट रोग-प्रतिरोधक क्षमता।
+- **सतर्कता (Cautions)**: पाचन तंत्र एवं उदर स्वास्थ्य का ध्यान रखें; ऋण लेने में सतर्कता बरतें।
+- **वैदिक उपाय (Upayas)**: पक्षियों को सप्तधान्य डालें एवं शनिवार को काले तिल का दान करें।
+
+### सप्तम भाव - जाया भाव (Marriage & Partnerships)
+सप्तम भाव जीवनसाथी, दांपत्य सामंजस्य एवं व्यापारिक साझेदारियों का दर्पण है।
+- **शुभ फल (Boons)**: गुणवान, निष्ठावान व समझदार जीवनसाथी का सानिध्य, व्यापारिक अनुबंधों में लाभ।
+- **सतर्कता (Cautions)**: अहंकार अथवा संवादहीनता को दांपत्य जीवन में स्थान न दें।
+- **वैदिक उपाय (Upayas)**: शुक्रवार को देवी दुर्गा अथवा लक्ष्मी नारायण मंदिर में सुगंधित श्वेत पुष्प अर्पित करें।
+
+### अष्टम भाव - रन्ध्र भाव (Longevity, Research & Transformation)
+अष्टम भाव आयु, गूढ़ रहस्य, अंतर्ज्ञान तथा आकस्मिक परिवर्तनों का द्योतक है।
+- **शुभ फल (Boons)**: दीर्घायु योग, गुप्त ज्ञान, अध्यात्म एवं शोध कार्यों में अद्भुत अंतर्दृष्टि।
+- **सतर्कता (Cautions)**: वाहन सावधानीपूर्वक चलाएं और अज्ञात जोखिमों से बचें।
+- **वैदिक उपाय (Upayas)**: महामृत्युंजय मंत्र का नित्य ११ अथवा २१ बार पाठ करें।
+
+### नवम भाव - भाग्य भाव (Dharma, Fortune & Higher Wisdom)
+नवम भाव धर्म, पिता, गुरु, तीर्थयात्रा एवं ईश्वरीय अनुग्रह का सर्वोत्तम त्रिकोण है।
+- **शुभ फल (Boons)**: भाग्योदय के उत्तम अवसर, विद्वानों का सानिध्य, उच्च शिक्षा एवं नैतिक प्रतिष्ठा।
+- **सतर्कता (Cautions)**: पारम्परिक मान्यताओं व गुरुजनों के प्रति अनादर की भावना न आने दें।
+- **वैदिक उपाय (Upayas)**: बृहस्पतिवार को भगवान विष्णु को पीले पुष्प व बेसन के लड्डू का भोग लगाएं।
+
+### दशम भाव - कर्म भाव (Career, Fame & Authority)
+दशम भाव पद-प्रतिष्ठा, व्यवसाय, प्रशासनिक क्षमता और समाज में प्रतिष्ठा का चरम केंद्र है।
+- **शुभ फल (Boons)**: उच्च पद, प्रशासनिक व प्रबंधकीय सामर्थ्य, कर्मक्षेत्र में निरंतर उन्नति।
+- **सतर्कता (Cautions)**: कार्यक्षेत्र में अत्यधिक एकाधिकार की प्रवृत्ति से बचें।
+- **वैदिक उपाय (Upayas)**: नित्य सूर्योदय के समय गायत्री जप करें एवं बुजुर्गों का आदर करें।
+
+### एकादश भाव - लाभ भाव (Income, Desires & Networks)
+एकादश भाव सर्वतोमुखी लाभ, आय के विविध स्रोत एवं सामाजिक संपर्क का उपचय भाव है।
+- **शुभ फल (Boons)**: नियमित आय, मित्रों का सहयोग, अभिलाषाओं की पूर्ति तथा सामाजिक मान।
+- **सतर्कता (Cautions)**: मित्रों अथवा परिचितों के साथ लेन-देन में लिखित औपचारिकताएं रखें।
+- **वैदिक उपाय (Upayas)**: बुधवार को गणेश जी को दूर्वा चढ़ाएं एवं ॐ गं गणपतये नमः का जप करें।
+
+### द्वादश भाव - व्यय भाव (Moksha, Spirituality & Global Ties)
+द्वादश भाव मोक्ष, आध्यात्मिक एकांत, विदेश यात्रा तथा विवेकपूर्ण व्यय का भाव है।
+- **शुभ फल (Boons)**: विदेश संपर्क से लाभ, परोपकारी स्वभाव, ध्यान व समाधि में सहज रुचि।
+- **सतर्कता (Cautions)**: अनिद्रा अथवा व्यर्थ के व्यय पर नियंत्रण रखें।
+- **वैदिक उपाय (Upayas)**: शयनकक्ष में कपूर जलाएं एवं जरूरतमंदों को कम्बल या वस्त्र दान करें।
+
+## आजीविका, कर्म एवं आर्थिक समृद्धि (Career & Wealth Destiny)
+दशम व द्वितीय भाव का संबंध यह दर्शाता है कि आपकी आजीविका में बौद्धिक, रणनीतिक तथा संगठनात्मक कौशल की प्रमुख भूमिका रहेगी। शासन, प्रबंधन, वित्त, परामर्श, शिक्षा अथवा तकनीकी उद्यम में आपकी विशिष्ट प्रतिष्ठा बनेगी।
+- **शुभ फल (Boons)**: व्यावसायिक नेतृत्व, स्थायी धन संग्रह तथा प्रतिष्ठित पदों की प्राप्ति।
+- **सतर्कता (Cautions)**: साझेदारी अथवा अनियोजित अनुबंधों में बिना कानूनी परामर्श के हस्ताक्षर न करें।
+- **वैदिक उपाय (Upayas)**: कार्यस्थल पर श्रीयंत्र की स्थापना करें एवं बुधवार को हरी मूंग का दान करें।
+
+## विवाह, प्रेम एवं संबंध सामंजस्य (Marriage & Relationships)
+सप्तमेश और शुक्र की स्थिति एक निष्ठावान, बौद्धिक एवं संवेदनशील जीवनसाथी के आगमन का संकेत देती है। परस्पर विश्वास और परिपक्व संवाद आपके वैवाहिक जीवन को चिरस्थायी माधुर्य प्रदान करेगा।
+- **शुभ फल (Boons)**: गृहस्थ जीवन में सौहार्द, पारिवारिक प्रतिष्ठा में वृद्धि और साझा जीवन लक्ष्य।
+- **सतर्कता (Cautions)**: गोचर के दबाव में संवेदनशील विषयों पर अनावश्यक वाद-विवाद से बचें।
+- **वैदिक उपाय (Upayas)**: शुक्रवार को खीर का भोग लगाकर परिवार सहित प्रसाद ग्रहण करें।
+
+## स्वास्थ्य, जीवन शक्ति एवं आयुर्वेद (Vitality & Ayurveda)
+लग्न व षष्ठ भाव के समीकरण के अनुसार आपकी प्रकृति वात-पित्त प्रधान है। मानसिक सक्रियता उच्च रहने के कारण स्नायु तंत्र और पाचन तंत्र को नियमित रखना अत्यंत आवश्यक है।
+- **शुभ फल (Boons)**: सुदृढ़ जीवन शक्ति, त्वरित रोगमुक्ति तथा प्राकृतिक शारीरिक संतुलन।
+- **सतर्कता (Cautions)**: गरिष्ठ भोजन तथा अत्यधिक मानसिक परिश्रम से एसिडिटी व अनिद्रा की संभावना।
+- **वैदिक उपाय (Upayas)**: तांबे के पात्र में रखा जल प्रातः पिएं तथा अनुलोम-विलोम प्राणायाम का नित्य अभ्यास करें।
+
+## ग्रह योग, दोष एवं शास्त्रीय उपाय (Auspicious Yogas & Vedic Remedies)
+आपकी जन्म पत्रिका में शुभ ग्रह दृष्टि एवं त्रिकोण-केंद्र संबंधों से राजयोग तथा धनयोग की पृष्ठभूमि निर्मित हो रही है।
+1. **मूल वैदिक मन्त्र**: नित्य प्रातः *ॐ नमो भगवते वासुदेवाय* (१०८ बार) अथवा *महामृत्युंजय मन्त्र* का जप करें।
+2. **शुभ रत्न परामर्श**: लग्न बल बढ़ाने हेतु ज्योतिषी परामर्शोपरांत उचित रत्न (पुखराज अथवा माणिक्य) धारण करें।
+3. **कल्याणकारी दान (Daan)**: शनिवार को असहायों को अन्न-वस्त्र का दान करें एवं गौ सेवा करें।`
+    : `# Executive Overview & Janma Lagna
+The native **${details.name || 'Seeker'}** was born under the auspicious Ascendant (Lagna) Sign of **${lagnaName}** with the Moon placed gracefully in **${moonSignName}** in the sacred Nakshatra of **${nakshatraName}**. This planetary disposition reflects a profound soul with high intellectual determination, moral clarity, disciplined willpower, and natural leadership acumen.
+
+## Comprehensive 12 Bhava (House-by-House) Detailed Predictions
+### House 1 - Tanu Bhava (Personality, Health & Vitality)
+The 1st house governs the physical constitution, core vitality, temperament, and soul orientation.
+- **Favorable Boons**: Commanding persona, keen mental clarity, moral integrity, and resilience under pressure.
+- **Mindful Cautions**: Avoid excessive self-criticism or burning the candle at both ends during stressful phases.
+- **Actionable Upayas**: Offer water to the rising Sun every morning and chant *Om Suryaya Namaha* 108 times.
+
+### House 2 - Dhana Bhava (Wealth, Family & Speech)
+The 2nd house governs financial accumulation, familial legacy, values, and articulation.
+- **Favorable Boons**: Disciplined financial foresight, consistent asset building, and eloquent speech.
+- **Mindful Cautions**: Beware of impulsive speculative investments during planetary retrograde cycles.
+- **Actionable Upayas**: Chant the Shree Suktam on Friday evenings and support educational welfare.
+
+### House 3 - Sahaja Bhava (Courage, Initiative & Siblings)
+The 3rd house represents innate valor, enterprise, communication skills, and sibling bonds.
+- **Favorable Boons**: Energetic initiative, versatile writing and negotiation talents, and steadfast courage.
+- **Mindful Cautions**: Guard against impatient reactions when working with slower-paced teams.
+- **Actionable Upayas**: Chant Hanuman Chalisa on Tuesdays and wear natural sandalwood paste.
+
+### House 4 - Sukha Bhava (Mother, Real Estate & Emotional Happiness)
+The 4th house governs maternal blessings, home environment, vehicles, and peace of mind.
+- **Favorable Boons**: Deep maternal guidance, stable real estate assets, and a serene domestic sanctuary.
+- **Mindful Cautions**: Prevent emotional overwhelm by establishing healthy mental boundaries.
+- **Actionable Upayas**: Seek the blessings of maternal elders and maintain a clean silver item in the home.
+
+### House 5 - Putra & Buddhi Bhava (Intellect, Progeny & Past Karma)
+The 5th house reflects Purva Punya (accumulated good karma), creative spark, and higher intelligence.
+- **Favorable Boons**: Acute strategic intellect, successful academic pursuits, and creative distinction.
+- **Mindful Cautions**: Avoid speculative gambling or shortcuts that compromise ethical standards.
+- **Actionable Upayas**: Meditate with the sacred Gayatri Mantra for 108 repetitions at sunrise.
+
+### House 6 - Ari Bhava (Competitions, Health Defense & Service)
+The 6th house is an Upachaya house representing competitive triumph, daily diligence, and overcoming obstacles.
+- **Favorable Boons**: Supreme competitive stamina, legal and vocational victory, and strong immunity.
+- **Mindful Cautions**: Maintain regular dietary routines to safeguard digestive tract and gut health.
+- **Actionable Upayas**: Feed seven mixed grains (Sapta Dhanya) to wild birds on Saturdays.
+
+### House 7 - Yuvati Bhava (Marriage, Romance & Partnerships)
+The 7th house anchors the marital sanctuary, life partner qualities, and contractual alliances.
+- **Favorable Boons**: Enduring marital loyalty, a principled and supportive partner, and thriving alliances.
+- **Mindful Cautions**: Practice active listening and avoid unilateral decision-making in partnership affairs.
+- **Actionable Upayas**: Light a fragrant ghee lamp before the Divine Mother on Friday evenings.
+
+### House 8 - Randhra Bhava (Longevity, Mysticism & Transformation)
+The 8th house governs longevity, esoteric knowledge, research acumen, and psychological rebirth.
+- **Favorable Boons**: Exceptional longevity, keen intuition, and powerful transformational resilience.
+- **Mindful Cautions**: Drive mindfully and avoid engaging in unverified occult or extreme physical risks.
+- **Actionable Upayas**: Recite the Maha Mrityunjaya Mantra (11 or 21 times) daily for universal protection.
+
+### House 9 - Bhagya Bhava (Dharma, Good Fortune & Higher Wisdom)
+The 9th house is the most auspicious Trikona, governing divine grace, pilgrimage, and mentors.
+- **Favorable Boons**: Abundant karmic luck, spiritual wisdom, respected mentors, and ethical triumphs.
+- **Mindful Cautions**: Avoid rigid ideological dogmatism; honor differing philosophical perspectives.
+- **Actionable Upayas**: Offer yellow flowers and worship Lord Vishnu on Thursday mornings.
+
+### House 10 - Karma Bhava (Career, Vocation & Executive Authority)
+The 10th house is the zenith of professional accomplishment, public recognition, and worldly impact.
+- **Favorable Boons**: Rapid career ascension, high credibility in leadership, and executive respect.
+- **Mindful Cautions**: Guard against workplace burnout by delegating operational tasks effectively.
+- **Actionable Upayas**: Honor father figures and engage in disciplined daily morning work rituals.
+
+### House 11 - Labha Bhava (Gains, Social Networks & Aspirations)
+The 11th house signifies all forms of income growth, elder siblings, influential friends, and wish fulfillment.
+- **Favorable Boons**: Diversified income streams, influential friends, and real fulfillment of major life goals.
+- **Mindful Cautions**: Maintain transparent legal terms with financial acquaintances to prevent misunderstandings.
+- **Actionable Upayas**: Worship Lord Ganesha with green grass (Durva) and offer modaks on Wednesdays.
+
+### House 12 - Vyaya Bhava (Moksha, Foreign Lands & Liberation)
+The 12th house oversees spiritual transcendence, foreign connections, dreams, and charitable release.
+- **Favorable Boons**: High spiritual intuition, success in foreign or remote projects, and detachment from ego.
+- **Mindful Cautions**: Monitor sleep hygiene and curb expenditure on unnecessary non-essential items.
+- **Actionable Upayas**: Donate blankets or warm clothing to the needy during winter cycles.
 
 ## Career, Karma & Professional Vocation
-The 10th house disposition indicates strong professional ambitions, particularly in fields requiring strategic intellect, executive management, and structured execution. While periods of intense effort and responsibility are indicated, persistent discipline will yield substantial recognition and authority.
-- **Favorable Boons**: Rapid skill acquisition, high credibility in leadership, and consistent professional respect.
-- **Mindful Cautions**: Guard against taking excessive workplace responsibilities or burnout during high-demand quarters.
-- **Actionable Upayas**: Maintain regular morning Sun salutations and chant *Om Suryaya Namaha* 108 times on Sundays.
-
-## Wealth, Assets & Financial Trajectory
-The 2nd and 11th houses form a stable Dhana alignment. Wealth accumulation accelerates significantly during favorable planetary transits. Prudent diversification and long-term asset creation will safeguard lifetime prosperity.
-- **Favorable Boons**: Multiple avenues of financial gains and strong natural instinct for resource management.
-- **Mindful Cautions**: Avoid speculative shortcuts or impulsive investments during retrograde phases.
-- **Actionable Upayas**: Donate green lentils or grains to cows on Wednesdays to activate financial ease.
+The strong alignment between the 10th house of Karma and the 2nd/11th houses of wealth indicates distinguished achievements in strategic, executive, academic, administrative, or technological sectors.
+- **Favorable Boons**: Executive leadership, ethical professional standing, and sustained lifetime prestige.
+- **Mindful Cautions**: Resist taking unilateral responsibilities without establishing proper team accountability.
+- **Actionable Upayas**: Keep a consecrated Shree Yantra at your workspace and offer charity on Wednesdays.
 
 ## Marriage, Partnerships & Relationships
-The 7th house and Venus aspects emphasize loyalty, emotional integrity, and mutual respect in personal unions. Balancing emotional independence with empathetic communication creates enduring harmony in domestic and partnership spheres.
-- **Favorable Boons**: Deep intuitive bond with partner, enduring emotional loyalty, and shared life vision.
-- **Mindful Cautions**: Practice conscious patience during transit stress periods; avoid unilateral decisions.
-- **Actionable Upayas**: Offer white flowers and a ghee lamp to the Divine Mother on Friday evenings.
+The 7th house and Venus aspects confirm a devoted, intellectually attuned, and culturally grounded partner. Mature communication and mutual reverence will deepen marital bliss across the decades.
+- **Favorable Boons**: Empathic soul bond, shared life philosophy, and domestic stability.
+- **Mindful Cautions**: Consciously practice calm patience during planetary transit stress periods.
+- **Actionable Upayas**: Offer sweet milk preparation (Kheer) to deities on Fridays and share with family.
 
-## Vitality, Physical Well-being & Mindset
-The ascendant lord provides strong baseline vitality and recuperative endurance. The bio-energetic constitution is well-fortified; prioritizing rhythmic sleep cycles and mindful stress release enhances mental clarity.
-- **Favorable Boons**: Robust stamina, mental resilience under pressure, and quick recuperative power.
-- **Mindful Cautions**: Watch for minor digestive heat or shoulder tension during high-intensity cycles.
-- **Actionable Upayas**: Drink pure water from a copper vessel in the morning and practice calming Pranayama.
+## Vitality, Physical Well-being & Ayurveda
+Your bio-energetic constitution is grounded in a healthy Vata-Pitta equilibrium. Maintaining rhythmic sleep intervals and balanced hydration sustains your natural recuperative stamina.
+- **Favorable Boons**: Robust baseline vitality, swift recovery from illness, and mental stamina under pressure.
+- **Mindful Cautions**: Guard against digestive heat or neck/shoulder stiffness during high-intensity periods.
+- **Actionable Upayas**: Consume pure water stored in a copper vessel in the morning and practice daily Pranayama.
 
 ## Classical Vedic Remedies & Spiritual Upayas
-1. **Sacred Mantra**: Daily recitation of the Maha Mrityunjaya Mantra (11 or 108 times) for universal protection.
-2. **Auspicious Gemstone**: Consult your astrological chart before wearing Ruby or Yellow Sapphire in a gold setting.
-3. **Charitable Daan**: Feed birds and shelter animals on Saturdays to harmonize karmic transits.`;
+1. **Sacred Protective Mantra**: Daily chanting of *Om Namo Bhagavate Vasudevaya* (108 times) for peace and prosperity.
+2. **Auspicious Gemstone**: Consult your astrological chart before setting Yellow Sapphire or Ruby in sacred gold.
+3. **Charitable Daan**: Feed stray cows and support shelter animals on Saturdays to harmonize karmic transits.`;
 
   const avakahada = calculateAvakahadaDetails(
     details.dob,
@@ -672,8 +847,6 @@ The ascendant lord provides strong baseline vitality and recuperative endurance.
     lagnaSign,
     chart
   );
-
-  const planetaryPositions = calculatePlanetaryPositions(chart, lagnaSign);
 
   return {
     report,

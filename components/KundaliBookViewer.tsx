@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { BirthDetails, Language, ChatMessage, KundaliResponse, KundaliSystem, MahadashaPeriod, SaadesatiPhase, AvakahadaDetails, PlanetaryPositionDetail } from '../types';
 import { KUNDALI_SYSTEMS } from '../constants';
+import { ensureValidKundaliChart } from '../services/astrologyHelper';
 import KundaliChart from './KundaliChart';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -202,24 +203,42 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
 
         for (const line of bLines) {
           const lower = line.toLowerCase();
-          if ((lower.includes('remedy') || lower.includes('upaya') || lower.includes('mantra') || lower.includes('gemstone') || lower.includes('उपाय')) && remedies.length < 3) {
+          if ((lower.includes('remedy') || lower.includes('upaya') || lower.includes('mantra') || lower.includes('gemstone') || lower.includes('उपाय') || lower.includes('मन्त्र') || lower.includes('मंत्र') || lower.includes('दान')) && remedies.length < 3) {
             remedies.push(line.replace(/^[-*]\s*/, '').replace(/\*\*/g, '').trim());
-          } else if ((lower.includes('caution') || lower.includes('delay') || lower.includes('challenge') || lower.includes('stress') || lower.includes('सतर्क')) && cautions.length < 3) {
+          } else if ((lower.includes('caution') || lower.includes('delay') || lower.includes('challenge') || lower.includes('stress') || lower.includes('सतर्क') || lower.includes('चुनौती') || lower.includes('बाधा') || lower.includes('कठिनाई')) && cautions.length < 3) {
             cautions.push(line.replace(/^[-*]\s*/, '').replace(/\*\*/g, '').trim());
-          } else if ((lower.includes('favor') || lower.includes('strength') || lower.includes('boon') || lower.includes('gain') || lower.includes('शुभ')) && strengths.length < 3) {
+          } else if ((lower.includes('favor') || lower.includes('strength') || lower.includes('boon') || lower.includes('gain') || lower.includes('शुभ') || lower.includes('वरदान') || lower.includes('लाभ') || lower.includes('सफलता')) && strengths.length < 3) {
             strengths.push(line.replace(/^[-*]\s*/, '').replace(/\*\*/g, '').trim());
           }
+        }
+
+        const lowerClean = clean.toLowerCase();
+        let icon = '📜';
+        if (lowerClean.includes('career') || lowerClean.includes('karma') || lowerClean.includes('कर्म') || lowerClean.includes('व्यवसाय') || lowerClean.includes('दशम भाव')) {
+          icon = '💼';
+        } else if (lowerClean.includes('marriage') || lowerClean.includes('love') || lowerClean.includes('विवाह') || lowerClean.includes('दाम्पत्य') || lowerClean.includes('सप्तम भाव')) {
+          icon = '💖';
+        } else if (lowerClean.includes('wealth') || lowerClean.includes('finance') || lowerClean.includes('धन') || lowerClean.includes('सम्पत्ति') || lowerClean.includes('द्वितीय भाव') || lowerClean.includes('एकादश भाव')) {
+          icon = '💰';
+        } else if (lowerClean.includes('health') || lowerClean.includes('vitality') || lowerClean.includes('स्वास्थ्य') || lowerClean.includes('आरोग्य') || lowerClean.includes('आयुर्वेद') || lowerClean.includes('षष्ठ भाव')) {
+          icon = '🩺';
+        } else if (lowerClean.includes('remed') || lowerClean.includes('upaya') || lowerClean.includes('उपाय') || lowerClean.includes('मन्त्र')) {
+          icon = '🪔';
+        } else if (lowerClean.includes('overview') || lowerClean.includes('lagna') || lowerClean.includes('लग्न') || lowerClean.includes('प्रथम भाव')) {
+          icon = '☀️';
+        } else if (lowerClean.includes('भाग्य') || lowerClean.includes('dharma') || lowerClean.includes('नवम भाव')) {
+          icon = '🕉️';
+        } else if (lowerClean.includes('सुख') || lowerClean.includes('चतुर्थ भाव')) {
+          icon = '🏡';
+        } else if (lowerClean.includes('पुत्र') || lowerClean.includes('बुद्धि') || lowerClean.includes('पंचम भाव')) {
+          icon = '💡';
         }
 
         chapters.push({
           id: `chap-${chapters.length}`,
           title: curTitle,
           cleanTitle: clean,
-          icon: clean.toLowerCase().includes('career') ? '💼' :
-                clean.toLowerCase().includes('marriage') || clean.toLowerCase().includes('love') ? '💖' :
-                clean.toLowerCase().includes('wealth') || clean.toLowerCase().includes('finance') ? '💰' :
-                clean.toLowerCase().includes('health') ? '🩺' :
-                clean.toLowerCase().includes('remed') ? '🪔' : '📜',
+          icon,
           content,
           strengths,
           cautions,
@@ -454,7 +473,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
               {/* North Indian Diamond Chart */}
               <div className="md:col-span-7 flex justify-center p-3 rounded-2xl bg-amber-500/[0.03] border border-amber-500/20">
                 <div className="scale-90 sm:scale-100 transform origin-center">
-                  <KundaliChart data={analysis.chart} lagnaSign={analysis.lagnaSign} />
+                  <KundaliChart data={ensureValidKundaliChart(analysis.chart, planetaryPositionsData)} lagnaSign={analysis.lagnaSign || 1} />
                 </div>
               </div>
 
@@ -496,21 +515,41 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-500/10">
-                    {planetaryPositionsData.map((pos) => (
-                      <tr key={pos.planet} className="hover:bg-amber-500/5">
-                        <td className="py-1 px-3 font-semibold flex items-center gap-1.5">
-                          <span>{pos.icon}</span>
-                          <span>{pos.planet} ({pos.planetSanskrit})</span>
-                        </td>
-                        <td className="py-1 px-3">{pos.sign}</td>
-                        <td className="py-1 px-3 font-mono font-bold">House {pos.house}</td>
-                        <td className="py-1 px-3">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 border border-amber-500/30">
-                            {pos.dignity}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {planetaryPositionsData.map((pos) => {
+                      const isHindi = language === 'Hindi';
+                      const cleanSanskrit = pos.planetSanskrit.replace(/•|\(|\)/g, ' ').replace(/\s+/g, ' ').trim();
+                      const sanskritHindiWord = cleanSanskrit.match(/[\u0900-\u097F]+/)?.[0] || pos.planet;
+                      const sanskritRomanWord = cleanSanskrit.match(/[a-zA-Z]+/)?.[0] || pos.planet;
+
+                      const planetDisplay = isHindi
+                        ? `${sanskritHindiWord} (${pos.planet})`
+                        : `${pos.planet} (${sanskritHindiWord || sanskritRomanWord})`;
+
+                      const cleanSignSanskrit = (pos.signSanskrit || '').replace(/•|\(|\)/g, ' ').replace(/\s+/g, ' ').trim();
+                      const signDisplay = isHindi
+                        ? `${cleanSignSanskrit || pos.sign} (${pos.sign})`
+                        : `${pos.sign}${cleanSignSanskrit ? ` (${cleanSignSanskrit})` : ''}`;
+
+                      const houseDisplay = isHindi
+                        ? `भाव ${pos.house} (H${pos.house})`
+                        : `House ${pos.house}`;
+
+                      return (
+                        <tr key={pos.planet} className="hover:bg-amber-500/5">
+                          <td className="py-1 px-3 font-semibold flex items-center gap-1.5">
+                            <span>{pos.icon}</span>
+                            <span>{planetDisplay}</span>
+                          </td>
+                          <td className="py-1 px-3">{signDisplay}</td>
+                          <td className="py-1 px-3 font-mono font-bold">{houseDisplay}</td>
+                          <td className="py-1 px-3">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 border border-amber-500/30">
+                              {pos.dignity}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -705,15 +744,26 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
 
             {/* Navagraha 9 Planetary Disposition Cards */}
             <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 sm:gap-2.5">
-              {planetaryPositionsData.slice(0, 9).map((pos) => (
-                <div key={pos.planet} className={`p-2.5 rounded-xl border ${cardBgClass} flex items-center gap-2`}>
-                  <span className="text-xl flex-shrink-0">{pos.icon}</span>
-                  <div className="min-w-0 flex-1">
-                    <span className="font-bold text-xs break-words block leading-snug">{pos.planet}</span>
-                    <span className="text-[9px] opacity-80 break-words block leading-snug">{pos.sign} • H{pos.house}</span>
+              {planetaryPositionsData.slice(0, 9).map((pos) => {
+                const isHindi = language === 'Hindi';
+                const cleanSanskrit = pos.planetSanskrit.replace(/•|\(|\)/g, ' ').replace(/\s+/g, ' ').trim();
+                const sanskritHindiWord = cleanSanskrit.match(/[\u0900-\u097F]+/)?.[0] || pos.planet;
+                const nameDisplay = isHindi ? `${sanskritHindiWord} (${pos.planet})` : `${pos.planet}`;
+                const cleanSignSanskrit = (pos.signSanskrit || '').replace(/•|\(|\)/g, ' ').replace(/\s+/g, ' ').trim();
+                const signDisplay = isHindi && cleanSignSanskrit
+                  ? `${cleanSignSanskrit} • भाव ${pos.house}`
+                  : `${pos.sign} • H${pos.house}`;
+
+                return (
+                  <div key={pos.planet} className={`p-2.5 rounded-xl border ${cardBgClass} flex items-center gap-2`}>
+                    <span className="text-xl flex-shrink-0">{pos.icon}</span>
+                    <div className="min-w-0 flex-1">
+                      <span className="font-bold text-xs break-words block leading-snug">{nameDisplay}</span>
+                      <span className="text-[9px] opacity-80 break-words block leading-snug">{signDisplay}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.03] text-xs leading-relaxed text-stone-700 dark:text-slate-300">

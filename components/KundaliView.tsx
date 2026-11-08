@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { BirthDetails, Language, ChatMessage, KundaliResponse, KundaliSystem, MahadashaPeriod, SaadesatiPhase } from '../types';
 import { getCoordinates, getKundaliAnalysis, askKundaliQuestion } from '../services/aiService';
 import { StorageService } from '../services/storageService';
-import { calculateMoonDetails, calculateSaadesatiPhases, calculateAvakahadaDetails, calculatePlanetaryPositions } from '../services/astrologyHelper';
+import { calculateMoonDetails, calculateSaadesatiPhases, calculateAvakahadaDetails, calculatePlanetaryPositions, ensureValidKundaliChart } from '../services/astrologyHelper';
 import { KUNDALI_SYSTEMS } from '../constants';
 import KundaliChart from './KundaliChart';
 import KundaliBookViewer from './KundaliBookViewer';
@@ -271,13 +271,19 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
   const planetaryPositionsData = useMemo(() => {
     if (!analysis) return [];
     if (analysis.planetaryPositions && analysis.planetaryPositions.length > 0) {
-      return analysis.planetaryPositions;
+      // Validate that planetary positions are not corrupted (e.g. all in house 1)
+      const houses = new Set(analysis.planetaryPositions.map(p => p.house));
+      if (houses.size > 1) {
+        return analysis.planetaryPositions;
+      }
     }
     return calculatePlanetaryPositions(
       analysis.chart,
-      analysis.lagnaSign || 1
+      analysis.lagnaSign || 1,
+      details.dob,
+      details.tob
     );
-  }, [analysis]);
+  }, [analysis, details]);
 
   useEffect(() => {
     scrollToBottom();
@@ -297,6 +303,15 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
             longitude: locationData.lng,
           };
           const result = await getKundaliAnalysis(enrichedDetails, language, system);
+          if (!result.planetaryPositions || new Set(result.planetaryPositions.map(p => p.house)).size <= 1) {
+            result.planetaryPositions = calculatePlanetaryPositions(
+              result.chart,
+              result.lagnaSign || 1,
+              enrichedDetails.dob,
+              enrichedDetails.tob
+            );
+          }
+          result.chart = ensureValidKundaliChart(result.chart, result.planetaryPositions);
           setAnalysis(result);
         } catch (err: any) {
           console.error("Kundali reload failed", err);
@@ -329,6 +344,15 @@ const KundaliView: React.FC<KundaliViewProps> = ({ language }) => {
         longitude: locationData.lng,
       };
       const result = await getKundaliAnalysis(enrichedDetails, language, system);
+      if (!result.planetaryPositions || new Set(result.planetaryPositions.map(p => p.house)).size <= 1) {
+        result.planetaryPositions = calculatePlanetaryPositions(
+          result.chart,
+          result.lagnaSign || 1,
+          enrichedDetails.dob,
+          enrichedDetails.tob
+        );
+      }
+      result.chart = ensureValidKundaliChart(result.chart, result.planetaryPositions);
       setAnalysis(result);
       StorageService.saveProfile(details);
       setProfiles(StorageService.getProfiles());
