@@ -623,33 +623,103 @@ export const CLASSIFICATION_TRANSLATIONS: Record<Language, Record<string, string
   }
 };
 
+const SANSKRIT_PLANETS: Record<string, string[]> = {
+  Sun: ['sun', 'surya', 'ravi', 'bhanu', 'aditya', 'सूर्य', 'रवि', 'दिनकर', 'भास्कर', 'ஞாயிறு', 'రవి', 'ಸೂರ್ಯ'],
+  Moon: ['moon', 'chandra', 'soma', 'indu', 'चन्द्र', 'चंद्र', 'सोम', 'ચંદ્ર', 'திங்கள்', 'చంద్రుడు', 'ಚಂದ್ರ'],
+  Mars: ['mars', 'mangal', 'kuja', 'angarak', 'मंगल', 'मंगळ', 'भौम', 'કુજ', 'செவ்வாய்', 'కుజుడు', 'ಮಂಗಳ'],
+  Mercury: ['mercury', 'budh', 'budha', 'बुध', 'सौम्य', 'புதன்', 'బుధుడు'],
+  Jupiter: ['jupiter', 'guru', 'brihaspati', 'गुरु', 'बृहस्पति', 'देवाचार्य', 'గురు', 'வியாழன்', 'ಗುರು'],
+  Venus: ['venus', 'shukra', 'bhrigu', 'शुक्र', 'दैत्यगुरु', 'શુક્ર', 'வெள்ளி', 'శుక్రుడు', 'ಶುಕ್ರ'],
+  Saturn: ['saturn', 'shani', 'शनि', 'शनी', 'शनैश्चर', 'मंद', 'சனி', 'శని', 'ಶನಿ'],
+  Rahu: ['rahu', 'राहु', 'तम', 'ராகு', 'రాహువు', 'ರಾಹು'],
+  Ketu: ['ketu', 'केतु', 'शिखी', 'கேது', 'కేతువు', 'ಕೇತು']
+};
+
 /**
  * Returns localized planet name without parentheses or nested duplicates.
  */
 export const getLocalizedPlanet = (planet: string, language: Language): string => {
-  const normPlanet = (planet || '').replace(/•|\(|\)/g, ' ').trim();
-  const matchedKey = Object.keys(PLANET_TRANSLATIONS.English).find(k => 
-    normPlanet.toLowerCase().includes(k.toLowerCase())
+  const normPlanet = (planet || '').replace(/•|\(|\)/g, ' ').toLowerCase().trim();
+  if (!normPlanet) return '';
+
+  // 1. Direct match with English keys
+  let matchedKey = Object.keys(PLANET_TRANSLATIONS.English).find(k =>
+    normPlanet.includes(k.toLowerCase())
   );
+
+  // 2. SANSKRIT & regional aliases
+  if (!matchedKey) {
+    for (const [key, aliases] of Object.entries(SANSKRIT_PLANETS)) {
+      if (aliases.some(a => normPlanet.includes(a.toLowerCase()))) {
+        matchedKey = key;
+        break;
+      }
+    }
+  }
+
+  // 3. Search across all languages in PLANET_TRANSLATIONS
+  if (!matchedKey) {
+    for (const langKey of Object.keys(PLANET_TRANSLATIONS) as Language[]) {
+      const mapping = PLANET_TRANSLATIONS[langKey];
+      for (const [pKey, transVal] of Object.entries(mapping)) {
+        if (normPlanet.includes(transVal.toLowerCase())) {
+          matchedKey = pKey;
+          break;
+        }
+      }
+      if (matchedKey) break;
+    }
+  }
+
   if (matchedKey) {
     return PLANET_TRANSLATIONS[language]?.[matchedKey] || PLANET_TRANSLATIONS.English[matchedKey];
   }
   return planet;
 };
 
+const SANSKRIT_RASHIS = [
+  'mesha', 'vrishabha', 'mithuna', 'karka',
+  'simha', 'kanya', 'tula', 'vrishchika',
+  'dhanu', 'makara', 'kumbha', 'meena'
+];
+
 /**
  * Returns localized zodiac sign name without parentheses.
+ * Robustly matches English names, Sanskrit names, and cross-language translated names.
  */
 export const getLocalizedSign = (sign: string | number, language: Language): string => {
-  let signIdx = 0;
+  let signIdx = -1;
   if (typeof sign === 'number') {
     signIdx = (sign - 1 + 12) % 12;
-  } else {
-    const sLower = (sign || '').toLowerCase().trim();
-    const foundIdx = RASHI_TRANSLATIONS.English.findIndex(s => sLower.includes(s.toLowerCase()));
-    signIdx = foundIdx !== -1 ? foundIdx : 0;
+  } else if (sign) {
+    const sLower = sign.toString().toLowerCase().trim();
+    // 1. Check English list
+    const enIdx = RASHI_TRANSLATIONS.English.findIndex(s => sLower.includes(s.toLowerCase()) || s.toLowerCase().includes(sLower));
+    if (enIdx !== -1) {
+      signIdx = enIdx;
+    } else {
+      // 2. Check Sanskrit names
+      const saIdx = SANSKRIT_RASHIS.findIndex(s => sLower.includes(s) || s.includes(sLower));
+      if (saIdx !== -1) {
+        signIdx = saIdx;
+      } else {
+        // 3. Check across all languages in RASHI_TRANSLATIONS (Hindi, Marathi, Gujarati, etc.)
+        for (const langKey of Object.keys(RASHI_TRANSLATIONS) as Language[]) {
+          const list = RASHI_TRANSLATIONS[langKey];
+          const lIdx = list.findIndex(item => sLower.includes(item.toLowerCase()) || item.toLowerCase().includes(sLower));
+          if (lIdx !== -1) {
+            signIdx = lIdx;
+            break;
+          }
+        }
+      }
+    }
   }
-  return RASHI_TRANSLATIONS[language]?.[signIdx] || RASHI_TRANSLATIONS.English[signIdx];
+
+  if (signIdx !== -1) {
+    return RASHI_TRANSLATIONS[language]?.[signIdx] || RASHI_TRANSLATIONS.English[signIdx];
+  }
+  return typeof sign === 'string' && sign.trim() ? sign : (RASHI_TRANSLATIONS[language]?.[0] || 'Aries');
 };
 
 /**

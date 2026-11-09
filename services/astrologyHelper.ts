@@ -528,6 +528,11 @@ export const calculateMoonDetails = (dob: string, tob: string = '12:00') => {
   const rashi = VEDIC_RASHIS[rashiIndex] || VEDIC_RASHIS[0];
   const nakshatra = VEDIC_NAKSHATRAS[nakshatraIndex] || VEDIC_NAKSHATRAS[0];
 
+  const degInSign = (siderealLong % 30);
+  const degInt = Math.floor(degInSign);
+  const minInt = Math.floor((degInSign - degInt) * 60);
+  const degree = `${degInt}° ${minInt.toString().padStart(2, '0')}'`;
+
   return {
     siderealLongitude: siderealLong,
     rashiIndex,
@@ -535,7 +540,49 @@ export const calculateMoonDetails = (dob: string, tob: string = '12:00') => {
     nakshatraIndex,
     nakshatra,
     pada,
-    degreesInSign: (siderealLong % 30).toFixed(2)
+    degree,
+    degreesInSign: degInSign.toFixed(2)
+  };
+};
+
+/**
+ * Calculates authentic sidereal Sun position from DOB and TOB.
+ * Uses high-precision Meeus solar perturbation series with Lahiri Ayanamsha.
+ */
+export const calculateSunDetails = (dob: string, tob: string = '12:00') => {
+  if (!dob) return null;
+  const parts = dob.split('-').map(Number);
+  if (parts.length < 3 || isNaN(parts[0])) return null;
+
+  const [y, m, d] = parts;
+  const [hh, mm] = (tob || '12:00').split(':').map(Number);
+  const hour = isNaN(hh) ? 12 : hh;
+  const minute = isNaN(mm) ? 0 : mm;
+
+  const utcDate = new Date(Date.UTC(y, m - 1, d, hour - 5, minute - 30));
+  const jd = 2440587.5 + utcDate.getTime() / 86400000;
+  const T = (jd - 2451545.0) / 36525;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+
+  const L0 = 280.46646 + 36000.76983 * T;
+  const M_sun = 357.52911 + 35999.05029 * T;
+  const C_sun = (1.914602 - 0.004817 * T) * Math.sin(toRad(M_sun)) + 0.019993 * Math.sin(toRad(2 * M_sun));
+  const tropicalSunLong = ((L0 + C_sun) % 360 + 360) % 360;
+  const ayanamsha = 23.856 + 0.01397 * ((utcDate.getTime() - Date.UTC(2000, 0, 1)) / (365.25 * 86400000));
+  const siderealSunLong = ((tropicalSunLong - ayanamsha) % 360 + 360) % 360;
+  const sunRashiIndex = Math.floor(siderealSunLong / 30);
+  const degInSign = (siderealSunLong % 30);
+
+  const degInt = Math.floor(degInSign);
+  const minInt = Math.floor((degInSign - degInt) * 60);
+  const degree = `${degInt}° ${minInt.toString().padStart(2, '0')}'`;
+
+  return {
+    siderealLongitude: siderealSunLong,
+    rashiIndex: sunRashiIndex,
+    rashi: VEDIC_RASHIS[sunRashiIndex] || VEDIC_RASHIS[0],
+    degree,
+    degreesInSign: degInSign.toFixed(2)
   };
 };
 
@@ -1483,7 +1530,8 @@ export const calculatePlanetaryPositions = (
     return 8; // Sagittarius (Dhanu)
   };
 
-  const sunRashiIdx = getSiderealSunRashi(birthMonth, birthDay);
+  const sunCalc = dob ? calculateSunDetails(dob, tob || '12:00') : null;
+  const sunRashiIdx = sunCalc ? sunCalc.rashiIndex : getSiderealSunRashi(birthMonth, birthDay);
 
   // Sidereal Moon calculation
   const moonCalc = dob ? calculateMoonDetails(dob, tob || '12:00') : null;
@@ -1524,17 +1572,21 @@ export const calculatePlanetaryPositions = (
     Ketu: ((ketuRashiIdx - lagnaIdx + 12) % 12) + 1
   };
 
-  // If foundHouses has fewer than 3 unique houses, or all planets landed in the same house (buggy AI output),
+  // If foundHouses has fewer than 4 unique houses, or all planets landed in the same house (buggy AI output),
   // we discard the clustered output and use authentic astronomical placements
   const foundUniqueHouses = new Set(Object.values(foundHouses));
-  const isFoundDataClustered = foundUniqueHouses.size <= 1;
+  const isFoundDataClustered = foundUniqueHouses.size < 4;
 
   const results: PlanetaryPositionDetail[] = [];
 
   for (const [planetName, meta] of Object.entries(PLANET_META)) {
     let house = astronomicalNatalHouses[planetName] || 1;
 
-    if (!isFoundDataClustered && foundHouses[planetName] !== undefined) {
+    // For Sun and Moon, the astronomical ephemeris calculated from date & time of birth is mathematically inviolable.
+    // Never allow an LLM's hallucinated chart to place Sun or Moon in a scientifically false sign/house.
+    if (dob && (planetName === 'Sun' || planetName === 'Moon' || planetName === 'Rahu' || planetName === 'Ketu')) {
+      house = astronomicalNatalHouses[planetName] || 1;
+    } else if (!isFoundDataClustered && foundHouses[planetName] !== undefined) {
       house = foundHouses[planetName];
     }
 
@@ -1568,10 +1620,17 @@ export const calculatePlanetaryPositions = (
     }
 
     // Calculate realistic astronomical degree in sign
-    const degSeed = Math.abs(Math.sin((daysSince2000 * 0.05 + signIdx * 7.3 + results.length * 3.7)) * 28.5);
-    const deg = Math.max(1, Math.min(29, Math.floor(degSeed)));
-    const min = Math.floor(Math.abs(Math.cos(daysSince2000 + results.length)) * 59);
-    const degree = `${deg}° ${min < 10 ? '0' + min : min}'`;
+    let degree = '15° 00\'';
+    if (planetName === 'Sun' && sunCalc) {
+      degree = sunCalc.degree;
+    } else if (planetName === 'Moon' && moonCalc) {
+      degree = moonCalc.degree;
+    } else {
+      const degSeed = Math.abs(Math.sin((daysSince2000 * 0.05 + signIdx * 7.3 + results.length * 3.7)) * 28.5);
+      const deg = Math.max(1, Math.min(29, Math.floor(degSeed)));
+      const min = Math.floor(Math.abs(Math.cos(daysSince2000 + results.length)) * 59);
+      degree = `${deg}° ${min < 10 ? '0' + min : min}'`;
+    }
 
     // Retrograde determination
     let isRetrograde = false;

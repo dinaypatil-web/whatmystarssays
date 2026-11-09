@@ -4,6 +4,7 @@ import { StorageService } from "./storageService";
 import {
   calculateAshtakootMilan,
   calculateMoonDetails,
+  calculateSunDetails,
   calculateSaadesatiPhases,
   calculateAvakahadaDetails,
   calculatePlanetaryPositions,
@@ -444,8 +445,12 @@ export const getKundaliAnalysis = async (
   const cached = StorageService.get<KundaliResponse>(langKey);
   if (cached) return { ...cached, system };
 
-  // Calculate deterministic astronomical moon anchor to prevent hallucinations across re-runs
+  // Calculate deterministic astronomical anchors to prevent hallucinations across re-runs
+  const sunCalc = calculateSunDetails(details.dob, details.tob);
   const moonCalc = calculateMoonDetails(details.dob, details.tob);
+  const sunContext = sunCalc
+    ? `Astronomical Sun Reference: Sun in ${sunCalc.rashi.name} (${sunCalc.rashi.sanskrit}), Degree: ${sunCalc.degree}, Sidereal Longitude: ${sunCalc.siderealLongitude.toFixed(2)}°.`
+    : '';
   const moonContext = moonCalc
     ? `Astronomical Moon Reference: Moon in ${moonCalc.rashi.name} (${moonCalc.rashi.sanskrit}), Nakshatra: ${moonCalc.nakshatra.name} (${moonCalc.nakshatra.sanskrit}), Pada ${moonCalc.pada}, Sidereal Longitude: ${moonCalc.siderealLongitude.toFixed(2)}°.`
     : '';
@@ -470,6 +475,7 @@ This is an authentic, high-precision, EXHAUSTIVE Life Blueprint Analysis using t
 
 ${BALANCED_PREDICTION_MANDATE}
 
+${sunContext}
 ${moonContext}
 ${saadesatiPromptContext}
 
@@ -568,6 +574,16 @@ Chart keys must be "1" through "12" with planet name arrays. lagnaSign is 1-12.`
       description: parsed.saadesatiCycles?.[idx]?.description || exact.description
     }));
 
+    // Deterministically enforce authentic astronomical Sun, Moon, and Nakshatra anchors
+    if (moonCalc) {
+      parsed.moonSign = moonCalc.rashi.name;
+      parsed.nakshatra = moonCalc.nakshatra.name;
+      parsed.starLord = moonCalc.nakshatra.lord;
+    }
+    if (sunCalc) {
+      parsed.sunSign = sunCalc.rashi.name;
+    }
+
     // Deterministically compute complete authentic Avakahada Chakra and Planetary Dignities
     parsed.planetaryPositions = calculatePlanetaryPositions(
       parsed.chart,
@@ -596,7 +612,18 @@ Chart keys must be "1" through "12" with planet name arrays. lagnaSign is 1-12.`
     parsed.practicalRemedies = calculatePracticalRemedies(parsed.planetaryPositions, parsed.lagnaSign || 1, parsed.doshas, language);
 
     const sunPos = parsed.planetaryPositions.find(p => p.planet === 'Sun');
-    if (sunPos) parsed.sunSign = getLocalizedSign(sunPos.sign, language);
+    if (sunPos) {
+      parsed.sunSign = sunPos.sign;
+    } else if (sunCalc) {
+      parsed.sunSign = sunCalc.rashi.name;
+    }
+
+    const moonPos = parsed.planetaryPositions.find(p => p.planet === 'Moon');
+    if (moonPos) {
+      parsed.moonSign = moonPos.sign;
+    } else if (moonCalc) {
+      parsed.moonSign = moonCalc.rashi.name;
+    }
 
     return parsed;
   });
@@ -605,7 +632,7 @@ Chart keys must be "1" through "12" with planet name arrays. lagnaSign is 1-12.`
   return result;
   } catch (err: any) {
     console.warn("Gemini AI API unavailable, engaging authentic Vedic astronomical engine fallback:", err);
-    const fallback = generateOfflineKundali(details, language, system, exactSaadesati, moonCalc);
+    const fallback = generateOfflineKundali(details, language, system, exactSaadesati, moonCalc, sunCalc);
     StorageService.save(langKey, fallback, 24);
     return fallback;
   }
@@ -616,21 +643,23 @@ const generateOfflineKundali = (
   language: Language,
   system: KundaliSystem,
   exactSaadesati: any[],
-  moonCalc: any
+  moonCalc: any,
+  sunCalc?: any
 ): KundaliResponse => {
+  const activeSunCalc = sunCalc || calculateSunDetails(details.dob, details.tob || '12:00');
+  const activeMoonCalc = moonCalc || calculateMoonDetails(details.dob, details.tob || '12:00');
+
   const hour = parseInt((details.tob || '12:00').split(':')[0], 10) || 12;
   const minute = parseInt((details.tob || '12:00').split(':')[1], 10) || 0;
-  const month = parseInt((details.dob || '1990-01-01').split('-')[1], 10) || 1;
-  const day = parseInt((details.dob || '1990-01-01').split('-')[2], 10) || 15;
-  const approxSunSign = ((month + 1) % 12) + 1;
+  const sunRashiIdx = activeSunCalc ? activeSunCalc.rashiIndex : 0;
   const hoursSinceSunrise = (hour + minute / 60 - 6 + 24) % 24;
-  const lagnaSign = ((approxSunSign - 1 + Math.floor(hoursSinceSunrise / 2)) % 12) + 1;
+  const lagnaSign = ((sunRashiIdx + Math.floor(hoursSinceSunrise / 2)) % 12) + 1;
 
-  const moonSignName = moonCalc?.rashi.name || 'Taurus';
+  const moonSignName = activeMoonCalc?.rashi.name || 'Taurus';
   const moonSignLocalized = getLocalizedSign(moonSignName, language);
-  const nakshatraName = moonCalc?.nakshatra.name || 'Rohini';
-  const nakshatraSanskrit = moonCalc?.nakshatra.sanskrit || 'रोहिणी';
-  const starLord = getLocalizedPlanet(moonCalc?.nakshatra.lord || 'Moon', language);
+  const sunSignName = activeSunCalc?.rashi.name || 'Aries';
+  const nakshatraName = activeMoonCalc?.nakshatra.name || 'Rohini';
+  const starLord = getLocalizedPlanet(activeMoonCalc?.nakshatra.lord || 'Moon', language);
   const subLord = getLocalizedPlanet('Jupiter', language);
 
   // Compute authentic natal planetary positions
@@ -798,7 +827,9 @@ ${language === 'English'
   const practicalRemedies = calculatePracticalRemedies(planetaryPositions, lagnaSign, doshas, language);
 
   const sunPos = planetaryPositions.find(p => p.planet === 'Sun');
-  const sunSignStr = sunPos ? getLocalizedSign(sunPos.sign, language) : getLocalizedSign(approxSunSign, language);
+  const sunSignStr = sunPos ? sunPos.sign : sunSignName;
+  const moonPos = planetaryPositions.find(p => p.planet === 'Moon');
+  const finalMoonSign = moonPos ? moonPos.sign : moonSignName;
 
   return {
     report,
@@ -807,7 +838,7 @@ ${language === 'English'
     starLord,
     subLord,
     nakshatra: nakshatraName,
-    moonSign: moonSignLocalized,
+    moonSign: finalMoonSign,
     sunSign: sunSignStr,
     system,
     mahadashas,

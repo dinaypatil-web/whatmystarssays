@@ -227,16 +227,29 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
   // Localization bundle based on user-selected language
   const locale = useMemo(() => getKundaliLocale(language), [language]);
 
+  // Moon position and Moon Sign display
+  const moonPosition = useMemo(() => {
+    return planetaryPositionsData.find(p => p.planet === 'Moon');
+  }, [planetaryPositionsData]);
+
+  const moonSignDisplay = useMemo(() => {
+    if (avakahadaData?.moonSign) return getLocalizedSign(avakahadaData.moonSign, language);
+    if (moonPosition?.sign) return getLocalizedSign(moonPosition.sign, language);
+    if (analysis.moonSign) return getLocalizedSign(analysis.moonSign, language);
+    return getLocalizedSign('Taurus', language);
+  }, [avakahadaData?.moonSign, moonPosition, analysis.moonSign, language]);
+
   // Sun position and Sun Sign display
   const sunPosition = useMemo(() => {
     return planetaryPositionsData.find(p => p.planet === 'Sun');
   }, [planetaryPositionsData]);
 
   const sunSignDisplay = useMemo(() => {
+    if (avakahadaData?.sunSign) return getLocalizedSign(avakahadaData.sunSign, language);
+    if (sunPosition?.sign) return getLocalizedSign(sunPosition.sign, language);
     if (analysis.sunSign) return getLocalizedSign(analysis.sunSign, language);
-    if (sunPosition) return getLocalizedSign(sunPosition.sign, language);
-    return getLocalizedSign('Aries', language);
-  }, [analysis.sunSign, sunPosition, language]);
+    return getLocalizedSign('Scorpio', language);
+  }, [avakahadaData?.sunSign, sunPosition, analysis.sunSign, language]);
 
   // Compute 12 Bhavas exhaustive Vedic analysis
   const bhavasDetailed: BhavaDetailedAnalysis[] = useMemo(() => {
@@ -756,7 +769,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                       {locale.cardinalPoints.moonSign}
                     </span>
                     <span className="font-bold text-xs mt-0.5 block text-amber-900 dark:text-amber-100">
-                      {getLocalizedSign(analysis.moonSign || 'Taurus', language)}
+                      {moonSignDisplay}
                     </span>
                   </div>
                   <p className="text-[9px] text-stone-600 dark:text-slate-400 mt-1 leading-snug line-clamp-3">
@@ -788,7 +801,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                       {locale.cardinalPoints.nakshatra}
                     </span>
                     <span className="font-bold text-xs mt-0.5 block text-amber-900 dark:text-amber-100">
-                      {stripAsterisksAndMarkdown(analysis.nakshatra) || 'Rohini'}
+                      {stripAsterisksAndMarkdown(avakahadaData?.nakshatra || analysis.nakshatra) || 'Rohini'}
                     </span>
                   </div>
                   <p className="text-[9px] text-stone-600 dark:text-slate-400 mt-1 leading-snug line-clamp-3">
