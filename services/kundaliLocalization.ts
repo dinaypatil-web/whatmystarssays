@@ -30,6 +30,51 @@ export const stripAsterisksAndMarkdown = (text: string | undefined | null, langu
   return cleaned.trim();
 };
 
+export interface SixPillarsData {
+  pillar1Title: string; // 1. Core Astronomical Framework
+  pillar1Subtitle: string;
+  lagnaDef: string;
+  rashiDef: string;
+  sunSignDef: string;
+  planetaryDef: string;
+
+  pillar2Title: string; // 2. Life Domains (The 12 Bhavas/Houses)
+  pillar2Subtitle: string;
+
+  pillar3Title: string; // 3. Cosmic Timing (Dasha Systems)
+  pillar3Subtitle: string;
+  vimshottariDesc: string;
+  antardashaTitle: string;
+  antardashaDesc: string;
+  saadesatiTitle: string;
+
+  pillar4Title: string; // 4. Karmic Blueprint & Strengths
+  pillar4Subtitle: string;
+  nakshatrasDesc: string;
+  shadbalaTitle: string;
+  shadbalaDesc: string;
+  yogasTitle: string;
+  yogasDesc: string;
+  doshasTitle: string;
+  doshasDesc: string;
+
+  pillar5Title: string; // 5. Divisional Charts (Vargas)
+  pillar5Subtitle: string;
+  d1Desc: string;
+  d9Desc: string;
+  d10Desc: string;
+  d7Desc: string;
+
+  pillar6Title: string; // 6. Practical Remedies (Upayas)
+  pillar6Subtitle: string;
+  gemstonesTitle: string;
+  gemstonesDesc: string;
+  mantraTitle: string;
+  mantraDesc: string;
+  charityTitle: string;
+  charityDesc: string;
+}
+
 export interface KundaliLocaleData {
   planetHeaders: {
     planet: string;
@@ -42,7 +87,10 @@ export interface KundaliLocaleData {
     subLord: string;
     nakshatra: string;
     moonSign: string;
+    sunSign: string;
+    lagna: string;
   };
+  sixPillars: SixPillarsData;
   chapterLabels: {
     chapter: string;
     part: string;
@@ -722,11 +770,473 @@ export const getLocalizedPaya = (paya: string, language: Language): string => {
   return PAYA_MAP[language]?.[key] || PAYA_MAP.English[key];
 };
 
+export const SUN_SIGN_TRANSLATIONS: Record<Language, string> = {
+  English: 'Sun Sign (Surya Rashi)',
+  Hindi: 'सूर्य राशि',
+  Marathi: 'सूर्य राशी',
+  Gujarati: 'સૂર્ય રાશિ',
+  Bengali: 'সূর্য রাশি',
+  Tamil: 'சூரிய ராசி',
+  Telugu: 'సూర్య రాశి',
+  Kannada: 'ಸೂರ್ಯ ರಾಶಿ',
+  Malayalam: 'സൂര്യ രാശി',
+  Punjabi: 'ਸੂਰਜ ਰਾਸ਼ੀ',
+  Odia: 'ସୂର୍ଯ୍ୟ ରାଶି'
+};
+
+export const LAGNA_TRANSLATIONS: Record<Language, string> = {
+  English: 'Lagna (Ascendant)',
+  Hindi: 'जन्म लग्न',
+  Marathi: 'जन्म लग्न',
+  Gujarati: 'જન્મ લગ્ન',
+  Bengali: 'জন্ম লগ্ন',
+  Tamil: 'ஜென்ம லக்னம்',
+  Telugu: 'జన్మ లగ్నం',
+  Kannada: 'ಜನ್ಮ ಲಗ್ನ',
+  Malayalam: 'ജന്മ ലഗ്നം',
+  Punjabi: 'ਜਨਮ ਲਗਨ',
+  Odia: 'ଜନ୍ମ ଲଗ୍ନ'
+};
+
+export const SIX_PILLARS_DATA: Record<Language, SixPillarsData> = {
+  English: {
+    pillar1Title: '1. Core Astronomical Framework',
+    pillar1Subtitle: 'Fundamental Celestial Anchor, Ascendant & Planetary Coordinates',
+    lagnaDef: 'Lagna (Ascendant): The exact zodiac sign rising on the eastern horizon at birth. It defines your physical appearance, personality, temperament, and outer self.',
+    rashiDef: 'Rashi (Moon Sign): The sign the Moon occupied at birth. It governs your emotional nature, mental state, habits, and how you perceive the world.',
+    sunSignDef: "Surya Rashi (Sun Sign): The sign the Sun occupied. It represents your soul's purpose, ego, authority, and relationship with your father.",
+    planetaryDef: 'Planetary Positions: The precise degrees and signs of all nine Vedic planets (Navagraha): Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu (North Node), and Ketu (South Node).',
+    pillar2Title: '2. Life Domains (The 12 Bhavas/Houses)',
+    pillar2Subtitle: 'Authentic House Mapping Across All Twelve Spheres of Existence',
+    pillar3Title: '3. Cosmic Timing (Dasha Systems)',
+    pillar3Subtitle: 'Vimshottari Lifeline Timeline, Active Antardashas & Planetary Eras',
+    vimshottariDesc: 'A 120-year planetary cycle based on the position of the Moon at birth. It breaks down into major periods (Mahadasha) and sub-periods (Antardasha) to map out the timing of major life events.',
+    antardashaTitle: 'Active Antardasha Sub-Periods',
+    antardashaDesc: 'Micro-timing of active planetary energies governing immediate opportunities and tests.',
+    saadesatiTitle: 'Shani Saadesati 3-Phase Lifeline',
+    pillar4Title: '4. Karmic Blueprint & Strengths',
+    pillar4Subtitle: 'Nakshatras, Shadbala Six-Fold Strengths, Classical Yogas & Karmic Doshas',
+    nakshatrasDesc: 'The specific star constellation (out of 27) that the Moon and key planets reside in. This provides the micro-nuances of your psychology and destiny.',
+    shadbalaTitle: 'Shadbala (Six-Fold Planetary Mathematical Strength)',
+    shadbalaDesc: 'A mathematical calculation determining the six-fold strength of each planet to see which planets have the power to deliver positive or negative results.',
+    yogasTitle: 'Classical Vedic Yogas',
+    yogasDesc: 'Special planetary combinations or alignments indicating extraordinary wealth, status, intelligence, or spiritual growth.',
+    doshasTitle: 'Karmic Doshas & Neutralization (Parihara)',
+    doshasDesc: 'Planetary afflictions or karmic debts highlighting areas of struggle, delay, or lessons to be learned, along with verified classical cancellations.',
+    pillar5Title: '5. Divisional Charts (Vargas)',
+    pillar5Subtitle: 'Microscopic Astrological Sub-Charts Confirming Specific Spheres of Life',
+    d1Desc: 'Main birth chart (D1): The macro canvas of physical manifestation and bodily constitution.',
+    d9Desc: 'Navamsha (D9 Chart): The most important sub-chart. It reveals the second half of life, inner strength of planets, marriage, and spiritual potential.',
+    d10Desc: 'Dashamsha (D10 Chart): Used exclusively to look at career, profession, status, and grand achievements.',
+    d7Desc: 'Saptamsha (D7 Chart): Used to analyze children, progeny, and future generations.',
+    pillar6Title: '6. Practical Remedies (Upayas)',
+    pillar6Subtitle: 'Conscious Karmic Harmonization Through Auspicious Actions',
+    gemstonesTitle: 'Gemstone Recommendations',
+    gemstonesDesc: 'To strengthen weak, beneficial planets with exact carats, metals, and consecration mantras.',
+    mantraTitle: 'Mantra & Japa',
+    mantraDesc: 'Specific sound frequencies to balance planetary energies through daily repetition.',
+    charityTitle: 'Charity (Daan) & Rituals',
+    charityDesc: 'Actions and specific donations designed to mitigate heavy karmic debts.'
+  },
+  Marathi: {
+    pillar1Title: '१. मूळ खगोलीय चौकट',
+    pillar1Subtitle: 'मूलभूत खगोलीय आधार, जन्म लग्न आणि नवग्रह स्थिती',
+    lagnaDef: 'लग्न: जन्माच्या वेळी पूर्व क्षितिजावर उदय पावणारी नेमकी राशी. ही तुमचे शारीरिक स्वरूप, व्यक्तिमत्त्व, स्वभाव आणि बाह्य स्वरूप निर्धारित करते.',
+    rashiDef: 'चंद्र राशी: जन्माच्या वेळी चंद्राची स्थिती असलेली राशी. ही तुमची भावनिक प्रकृती, मानसिक स्थिती, सवयी आणि जगाकडे पाहण्याचा दृष्टिकोन नियंत्रित करते.',
+    sunSignDef: 'सूर्य राशी: जन्माच्या वेळी सूर्याची स्थिती. ही तुमच्या आत्म्याचा मूळ उद्देश, स्वाभिमान, अधिकार आणि वडिलांशी असलेले संबंध दर्शवते.',
+    planetaryDef: 'ग्रह स्पष्ट स्थिती: नऊही वैदिक ग्रहांचे (सूर्य, चंद्र, मंगळ, बुध, गुरु, शुक्र, शनि, राहू, केतू) नेमके अंश, राशी आणि भाव स्थान.',
+    pillar2Title: '२. जीवन क्षेत्रे: द्वादश भाव',
+    pillar2Subtitle: 'जीवनाच्या सर्व १२ अंगांचे सखोल व अस्सल फलकथन',
+    pillar3Title: '३. कालचक्र: दशा पद्धती',
+    pillar3Subtitle: 'विंशोत्तरी महादशा, सक्रिय अंतर्दशा आणि शनी साडेसाती कालखंड',
+    vimshottariDesc: 'जन्मकालीन चंद्राच्या नक्षत्रावर आधारित १२० वर्षांचे ग्रह कालचक्र. हे जीवनातील महत्त्वाच्या घटनांचे अचूक कालमापन महादशा आणि अंतर्दशेत विभाजित करते.',
+    antardashaTitle: 'सक्रिय अंतर्दशा उप-कालखंड',
+    antardashaDesc: 'तात्कालिक संधी, आव्हाने आणि घटनांचे सूक्ष्म कालमापन करणारे ग्रह प्रभाव.',
+    saadesatiTitle: 'शनी साडेसाती ३-टप्पे कालखंड',
+    pillar4Title: '४. कर्म प्रारब्ध व ग्रहबळ',
+    pillar4Subtitle: 'नक्षत्रे, षड्बल गणितीय सामर्थ्य, वैदिक शुभ योग आणि कर्म दोष',
+    nakshatrasDesc: '२७ नक्षत्रांपैकी ज्या नक्षत्रात चंद्र व इतर ग्रह स्थित आहेत, ते नक्षत्र तुमच्या मानसिकतेचे व प्रारब्धाचे सूक्ष्म कंगोरे स्पष्ट करते.',
+    shadbalaTitle: 'षड्बल (सहा पटींचे गणितीय ग्रहबळ)',
+    shadbalaDesc: 'ग्रहांची फळे देण्याची प्रत्यक्ष क्षमता मोजण्यासाठी सहा प्रकारच्या बळांचे गणितीय विश्लेषण.',
+    yogasTitle: 'अभिजात वैदिक शुभ योग',
+    yogasDesc: 'असाधारण संपत्ती, पद-प्रतिष्ठा, बुद्धिमत्ता किंवा आध्यात्मिक उन्नती दर्शवणारे ग्रहांचे विशेष शुभ संयोग.',
+    doshasTitle: 'कर्म दोष व शास्त्रीय परिहार',
+    doshasDesc: 'जीवनातील संघर्ष किंवा विलंबाची कारणे दर्शवणारे ग्रह योग व त्यांचे शास्त्रशुद्ध परिहार आणि निवारक उपाय.',
+    pillar5Title: '५. वर्ग कुण्डल्या (Divisional Charts)',
+    pillar5Subtitle: 'विशिष्ट जीवन क्षेत्रांची पडताळणी करणारी सूक्ष्म वर्ग चक्रे',
+    d1Desc: 'जन्म लग्न चक्र (D1): स्थूल शरीर, आरोग्य व प्रारब्धाची मुख्य चौकट.',
+    d9Desc: 'नवांश चक्र (D9): वैवाहिक सौख्य, ग्रहांचे आंतरिक आत्मिक बळ आणि आयुष्याचा उत्तरार्ध स्पष्ट करणारी सर्वात महत्त्वाची वर्ग कुण्डली.',
+    d10Desc: 'दशांश चक्र (D10): आजीविका, व्यवसाय, प्रशासकीय अधिकार आणि सामाजिक कीर्तीचे सखोल विश्लेषण करणारी वर्ग कुण्डली.',
+    d7Desc: 'सप्तांश चक्र (D7): संतती सुख, भावी पिढ्या आणि सर्जनशील बौद्धिक क्षमता यांचे विश्लेषण.',
+    pillar6Title: '६. व्यावहारिक वैदिक उपाय',
+    pillar6Subtitle: 'सजग कर्म प्रयत्नांतून ग्रह ऊर्जा संतुलित करणारे शास्त्रीय उपाय',
+    gemstonesTitle: 'शुभ रत्न परामर्श',
+    gemstonesDesc: 'कारक व अनुकूल ग्रहांना बलवान करण्यासाठी योग्य वजन, धातू, बोट आणि मंत्रांसह शास्त्रीय रत्न निवड.',
+    mantraTitle: 'मंत्र व जप साधना',
+    mantraDesc: 'ग्रह ऊर्जा संतुलित करण्यासाठी विशिष्ट ध्वनी लहरींचा नित्य विहित संख्येने जप.',
+    charityTitle: 'दान व सेवा विधी',
+    charityDesc: 'प्रारब्धातील नकारात्मक कर्म प्रभाव सौम्य करण्यासाठी विशिष्ट वार, वस्तू आणि सत्पात्री दानाचे विधी.'
+  },
+  Hindi: {
+    pillar1Title: '१. मूल खगोलीय रूपरेखा',
+    pillar1Subtitle: 'मूलभूत खगोलीय आधार, जन्म लग्न एवं नवग्रह स्पष्ट स्थिति',
+    lagnaDef: 'लग्न: जन्म समय पूर्व क्षितिज पर उदित राशि। यह आपके शारीरिक स्वरूप, व्यक्तित्व, स्वभाव और बाह्य अस्तित्व को निर्धारित करता है।',
+    rashiDef: 'चन्द्र राशि: जन्म समय चन्द्रमा की स्थिति। यह आपकी भावनात्मक प्रकृति, मानसिक स्थिति, आदतें और सांसारिक दृष्टिकोण को नियंत्रित करती है।',
+    sunSignDef: 'सूर्य राशि: जन्म समय सूर्य की स्थिति। यह आपकी आत्मा का उद्देश्य, आत्मबल, प्रशासनिक सामर्थ्य और पिता से संबंध का द्योतक है।',
+    planetaryDef: 'ग्रह स्पष्ट स्थिति: नवग्रहों (सूर्य, चन्द्र, मंगल, बुध, गुरु, शुक्र, शनि, राहु, केतु) के सटीक अंश, राशियां एवं भाव स्थिति।',
+    pillar2Title: '२. जीवन आयाम: द्वादश भाव',
+    pillar2Subtitle: 'जीवन के समस्त १२ क्षेत्रों का प्रामाणिक एवं विस्तृत फलकथन',
+    pillar3Title: '३. कालचक्र: दशा पद्धतियां',
+    pillar3Subtitle: 'विंशोत्तरी महादशा, सक्रिय अंतर्दशा एवं शनि साढ़ेसाती समय-सारिणी',
+    vimshottariDesc: 'जन्मकालीन चन्द्रमा के नक्षत्र पर आधारित १२० वर्षीय ग्रह चक्र। यह जीवन की प्रमुख घटनाओं के समय का निर्धारण महादशा व अंतर्दशा द्वारा करता है।',
+    antardashaTitle: 'सक्रिय अंतर्दशा उप-कालखंड',
+    antardashaDesc: 'तात्कालिक अवसरों एवं चुनौतियों को नियंत्रित करने वाली सूक्ष्म ग्रह ऊर्जा का कालमापन।',
+    saadesatiTitle: 'शनि साढ़ेसाती ३-चरणीय कालरेखा',
+    pillar4Title: '४. कर्म प्रारब्ध एवं ग्रह सामर्थ्य',
+    pillar4Subtitle: 'नक्षत्र, षड्बल गणितीय सामर्थ्य, शास्त्रीय राजयोग एवं कर्म दोष',
+    nakshatrasDesc: '२७ नक्षत्रों में से जिस नक्षत्र में ग्रह स्थित हैं, वह आपके मानस और भाग्य के सूक्ष्म रहस्यों को उजागर करता है।',
+    shadbalaTitle: 'षड्बल (छह-गुना गणितीय ग्रहबल)',
+    shadbalaDesc: 'ग्रहाें की शुभ या अशुभ परिणाम देने की वास्तविक क्षमता को निर्धारित करने वाला छह प्रकार के बलों का गणितीय विश्लेषण।',
+    yogasTitle: 'शास्त्रीय वैदिक योग',
+    yogasDesc: 'विशिष्ट ग्रह संयोजन जो जीवन में असाधारण धन, प्रतिष्ठा, प्रज्ञा अथवा आध्यात्मिक सिद्धि का मार्ग प्रशस्त करते हैं।',
+    doshasTitle: 'कर्म दोष एवं शास्त्रीय परिहार',
+    doshasDesc: 'जीवन में संघर्ष या विलंब के कारण बनने वाले ग्रह दोष एवं उनके शास्त्रसम्मत परिहार व निवारण उपाय।',
+    pillar5Title: '५. वर्ग कुण्डली (Divisional Charts)',
+    pillar5Subtitle: 'जीवन के विशिष्ट आयामों की प्रामाणिक पुष्टि करने वाले सूक्ष्म वर्ग',
+    d1Desc: 'जन्म लग्न चक्र (D1): स्थूल शरीर, स्वास्थ्य एवं जीवन की मूल आधारशिला।',
+    d9Desc: 'नवांश चक्र (D9): वैवाहिक सौहार्द, ग्रहों का आंतरिक आत्मिक बल और जीवन के उत्तरार्ध का दर्पण।',
+    d10Desc: 'दशांश चक्र (D10): आजीविका, व्यवसाय, उच्च पद और सामाजिक प्रतिष्ठा का विशेष वर्ग।',
+    d7Desc: 'सप्तांश चक्र (D7): संतान सुख, भावी पीढ़ी और सृजनात्मक प्रतिभा का सूक्ष्म विश्लेषण।',
+    pillar6Title: '६. व्यावहारिक वैदिक उपाय',
+    pillar6Subtitle: 'सजग कर्म एवं साधना द्वारा ग्रह ऊर्जा को संतुलित करने वाले उपाय',
+    gemstonesTitle: 'शुभ रत्न परामर्श',
+    gemstonesDesc: 'अनुकूल ग्रहों को संबल देने हेतु शुद्ध धातु, सही वजन और प्राण-प्रतिष्ठा मंत्र सहित रत्न चयन।',
+    mantraTitle: 'मन्त्र एवं जप साधना',
+    mantraDesc: 'ग्रह रश्मियों को अनुकूल बनाने हेतु प्रतिदिन निर्धारित संख्या में वैदिक बीज मन्त्रों का जप।',
+    charityTitle: 'दान एवं सेवा विधान',
+    charityDesc: 'प्रारब्ध कर्मों के भार को शांत करने हेतु विशिष्ट दिन, वस्तु एवं पात्र को किया जाने वाला शास्त्रोक्त दान।'
+  },
+  Gujarati: {
+    pillar1Title: '૧. મૂળ ખગોળીય માળખું',
+    pillar1Subtitle: 'મૂળભૂત ખગોળીય આધાર, જન્મ લગ્ન અને નવગ્રહ સ્થિતિ',
+    lagnaDef: 'લગ્ન: જન્મ સમયે પૂર્વ ક્ષિતિજ પર ઉદિત થતી રાશિ. આ તમારું શારીરિક સ્વરૂપ, વ્યક્તિત્વ અને સ્વભાવ નક્કી કરે છે.',
+    rashiDef: 'ચંદ્ર રાશિ: જન્મ સમયે ચંદ્રની સ્થિતિ. આ તમારી ભાવનાત્મક પ્રકૃતિ અને માનસિક સ્થિતિનું સંચાલન કરે છે.',
+    sunSignDef: 'સૂર્ય રાશિ: જન્મ સમયે સૂર્યની સ્થિતિ. આ આત્માનો ઉદ્દેશ્ય, નેતૃત્વ અને પિતા સાથેના સંબંધ દર્શાવે છે.',
+    planetaryDef: 'ગ્રહ સ્પષ્ટ સ્થિતિ: નવગ્રહોના ચોક્કસ અંશ, રાશિ અને ભાવ સ્થિતિ.',
+    pillar2Title: '૨. જીવન ક્ષેત્રો: દ્વાદશ ભાવ',
+    pillar2Subtitle: 'જીવનના તમામ ૧૨ પાસાંઓનું વિગતવાર ફળકથન',
+    pillar3Title: '૩. કાળચક્ર: દશા પદ્ધતિ',
+    pillar3Subtitle: 'વિંશોત્તરી મહાદશા અને સાડાસાતી સમયરેખા',
+    vimshottariDesc: '૧૨૦ વર્ષનું ગ્રહ કાળચક્ર જે જીવનની ઘટનાઓનું સચોટ કાળમાપન કરે છે.',
+    antardashaTitle: 'સક્રિય અંતર્દશા',
+    antardashaDesc: 'તાત્કાલિક તકો અને પડકારોનું સૂક્ષ્મ કાળમાપન.',
+    saadesatiTitle: 'શનિ સાડાસાતી ૩-તબક્કા',
+    pillar4Title: '૪. કર્મ પ્રારબ્ધ અને ગ્રહબળ',
+    pillar4Subtitle: 'નક્ષત્ર, ષડ્બળ, શુભ યોગ અને કર્મ દોષ',
+    nakshatrasDesc: '૨૭ નક્ષત્રોમાંથી ચંદ્ર અને ગ્રહોનું સ્થાન જે માનસિકતાનું રહસ્ય ખોલે છે.',
+    shadbalaTitle: 'ષડ્બળ (છ-ગણું ગ્રહબળ)',
+    shadbalaDesc: 'ગ્રહોની ફળ આપવાની ગણિતીય ક્ષમતા.',
+    yogasTitle: 'શાસ્ત્રીય વૈદિક શુભ યોગ',
+    yogasDesc: 'ધન, પદ અને પ્રતિષ્ઠા આપનારા ગ્રહ સંયોગ.',
+    doshasTitle: 'કર્મ દોષ અને પરિહાર',
+    doshasDesc: 'જીવનના વિલંબના કારણો અને શાસ્ત્રોક્ત ઉપાયો.',
+    pillar5Title: '૫. વર્ગ કુંડળી (Vargas)',
+    pillar5Subtitle: 'જીવનના વિશિષ્ટ પાસાંઓની સૂક્ષ્મ વર્ગ કુંડળીઓ',
+    d1Desc: 'લગ્ન ચક્ર (D1): શરીર, સ્વાસ્થ્ય અને પ્રારબ્ધની મુખ્ય રૂપરેખા.',
+    d9Desc: 'નવાંશ ચક્ર (D9): વિવાહ, આંતરિક બળ અને ઉત્તરાર્ધનું દર્પણ.',
+    d10Desc: 'દશાંશ ચક્ર (D10): કારકિર્દી, વ્યવસાય અને સામાજિક પ્રતિષ્ઠા.',
+    d7Desc: 'સપ્તાંશ ચક્ર (D7): સંતાન સુખ અને સર્જનાત્મક ફળ.',
+    pillar6Title: '૬. વ્યવહારુ વૈદિક ઉપાયો',
+    pillar6Subtitle: 'સજાગ કર્મ દ્વારા ગ્રહ ઉર્જા સંતુલિત કરતા ઉપાયો',
+    gemstonesTitle: 'શુભ રત્ન પરામર્શ',
+    gemstonesDesc: 'અનુકૂળ ગ્રહોને બળ આપવા રત્ન ધારણ.',
+    mantraTitle: 'મંત્ર અને જપ સાધના',
+    mantraDesc: 'ગ્રહ શાંતિ માટે નિત્ય બીજ મંત્ર જપ.',
+    charityTitle: 'દાન અને સેવા વિધાન',
+    charityDesc: 'કર્મ ભાર શાંત કરવા માટે વિહિત દાન.'
+  },
+  Bengali: {
+    pillar1Title: '১. মূল জ্যোতির্বৈজ্ঞানিক কাঠামো',
+    pillar1Subtitle: 'মৌলিক মহাজাগতিক ভিত্তি, লগ্ন ও নবগ্রহ অবস্থান',
+    lagnaDef: 'লগ্ন: জন্মের সময় পূর্ব দিগন্তে উদিত রাশি। এটি আপনার বাহ্যিক রূপ, ব্যক্তিত্ব ও স্বভাব নির্দেশ করে।',
+    rashiDef: 'চন্দ্র রাশি: জন্মের সময় চন্দ্রের অবস্থান। এটি মানসিক অবস্থা, আবেগ ও স্বভাব পরিচালনা করে।',
+    sunSignDef: 'সূর্য রাশি: জন্মের সময় সূর্যের অবস্থান। এটি আত্মার উদ্দেশ্য, অহংকার ও পিতৃসম্পর্ক ব্যক্ত করে।',
+    planetaryDef: 'গ্রহ স্পষ্ট অবস্থান: নবগ্রহের সুনির্দিষ্ট ডিগ্রি, রাশি ও ভাব অবস্থান।',
+    pillar2Title: '২. জীবন ক্ষেত্র: দ্বাদশ ভাব',
+    pillar2Subtitle: 'জীবনের ১২টি দিকের বিস্তারিত বৈদিক বিশ্লেষণ',
+    pillar3Title: '৩. কালচক্র: দশা পদ্ধতি',
+    pillar3Subtitle: 'বিংশোত্তরী মহাদশা, অন্তর্দশা ও শনি সাড়েসাতি সময়কাল',
+    vimshottariDesc: '১২০ বছরের গ্রহ চক্র যা জীবনের গুরুত্বপূর্ণ ঘটনার সময়কাল নির্দেশ করে।',
+    antardashaTitle: 'সক্রিয় অন্তর্দশা উপ-কালখণ্ড',
+    antardashaDesc: 'তাৎক্ষণিক সুযোগ ও চ্যালেঞ্জের সূক্ষ্ম সময়কাল।',
+    saadesatiTitle: 'শনি সাড়েসাতি ৩-পর্যায়ের সময়রেখা',
+    pillar4Title: '৪. কর্ম ও গ্রহবল',
+    pillar4Subtitle: 'নক্ষত্র, ষড়বল, শুভ যোগ ও কর্ম দোষ',
+    nakshatrasDesc: '২৭টি নক্ষত্রের মধ্যে গ্রহের অবস্থান যা মনস্তত্ত্বের গভীরতা প্রকাশ করে।',
+    shadbalaTitle: 'ষড়বল (ছয় গুণের গাণিতিক বল)',
+    shadbalaDesc: 'গ্রহের ফলদানের বাস্তব ক্ষমতার গাণিতিক পরিমাপ।',
+    yogasTitle: 'শাস্ত্রীয় বৈদিক রাজযোগ',
+    yogasDesc: 'ধন, প্রতিষ্ঠা ও প্রজ্ঞা প্রদানকারী বিশেষ গ্রহ সমাবেশ।',
+    doshasTitle: 'কর্ম দোষ ও শাস্ত্রীয় প্রতিকার',
+    doshasDesc: 'জীবনের বাধার কারণ ও তার শাস্ত্রসম্মত প্রতিকার।',
+    pillar5Title: '৫. বর্গ কুষ্ঠি (Divisional Charts)',
+    pillar5Subtitle: 'জীবনের বিশেষ ক্ষেত্রের যাচাইকরণ বর্গ চক্র',
+    d1Desc: 'লগ্ন চক্র (D1): শরীর, স্বাস্থ্য ও ভাগ্যের মূল ভিত্তি।',
+    d9Desc: 'নবাংশ চক্র (D9): বিবাহ, আত্মিক শক্তি ও জীবনের দ্বিতীয়ার্ধ।',
+    d10Desc: 'দশাংশ চক্র (D10): জীবিকা, পেশা ও সামাজিক মর্যাদা।',
+    d7Desc: 'সপ্তাংশ চক্র (D7): সন্তান সুখ ও সৃজনশীল প্রতিভা।',
+    pillar6Title: '৬. বাস্তবিক বৈদিক প্রতিকার',
+    pillar6Subtitle: 'সচেতন প্রচেষ্টার মাধ্যমে গ্রহের শক্তি সামঞ্জস্যকরণ',
+    gemstonesTitle: 'শুভ রত্ন পরামর্শ',
+    gemstonesDesc: 'অনুকূল গ্রহকে শক্তিশালী করতে রত্ন ধারণ।',
+    mantraTitle: 'মন্ত্র ও জপ সাধনা',
+    mantraDesc: 'গ্রহের অনুকূলতার জন্য দৈনিক বীজ মন্ত্র জপ।',
+    charityTitle: 'দান ও সেবা বিধান',
+    charityDesc: 'কর্মফল প্রশমনে নির্দিষ্ট সামগ্রী দান।'
+  },
+  Tamil: {
+    pillar1Title: '1. வானியல் அடிப்படை கட்டமைப்பு',
+    pillar1Subtitle: 'ஜெனன லக்னம் மற்றும் நவக்கிரக பாத நிலைகள்',
+    lagnaDef: 'லக்னம்: பிறக்கும் போது கிழக்கு வானில் உதித்த ராசி. இது உங்கள் தோற்றம், ஆளுமை மற்றும் குணத்தை தீர்மானிக்கிறது.',
+    rashiDef: 'சந்திர ராசி: பிறப்பில் சந்திரன் நின்ற ராசி. இது உங்கள் மனநிலை, உணர்வுகள் மற்றும் பழக்கவழக்கங்களை ஆள்கிறது.',
+    sunSignDef: 'சூரிய ராசி: சூரியன் நின்ற ராசி. இது ஆத்ம பலம், கௌரவம் மற்றும் தந்தையுடனான உறவைக் குறிக்கிறது.',
+    planetaryDef: 'கிரக நிலைகள்: ஒன்பது கிரகங்களின் துல்லியமான பாகை, ராசி மற்றும் வீடுகள்.',
+    pillar2Title: '2. வாழ்க்கை களங்கள் (12 பாவங்கள்)',
+    pillar2Subtitle: 'மனித வாழ்வின் 12 பகுதிகளுக்கான ஆழமான பலன்கள்',
+    pillar3Title: '3. காலச்சக்கரம் (தசா அமைப்புகள்)',
+    pillar3Subtitle: 'விம்சோத்தரி மகா தசை, அந்தர்தசை மற்றும் ஏழரை சனி கால அட்டவணை',
+    vimshottariDesc: '120 வருட கிரக காலச்சக்கரம் வாழ்வின் முக்கிய நிகழ்வுகளின் காலத்தை குறிக்கிறது.',
+    antardashaTitle: 'நடப்பு அந்தர்தசை',
+    antardashaDesc: 'தற்போதைய காலகட்டத்தில் செயல்படும் கிரக ஆற்றல்கள்.',
+    saadesatiTitle: 'ஏழரை சனி 3 நிலைகள்',
+    pillar4Title: '4. கர்ம பலம் மற்றும் கிரக பலம்',
+    pillar4Subtitle: 'நட்சத்திரங்கள், ஷட்பலம், ராஜ யோகங்கள் மற்றும் தோஷங்கள்',
+    nakshatrasDesc: '27 நட்சத்திரங்களில் உங்கள் மன அமைப்பை விவரிக்கும் கிரக நட்சத்திரம்.',
+    shadbalaTitle: 'ஷட்பலம் (ஆறு வகை கிரக பலம்)',
+    shadbalaDesc: 'கிரகங்களின் பலன் தரும் ஆற்றலைக் கணக்கிடும் கணித முறை.',
+    yogasTitle: 'வேத கால சுப யோகங்கள்',
+    yogasDesc: 'செல்வம் மற்றும் புகழைத் தரும் விசேஷ கிரக இணைப்புகள்.',
+    doshasTitle: 'கர்ம தோஷங்கள் மற்றும் பரிகாரங்கள்',
+    doshasDesc: 'தடைகளை நீக்கும் சாஸ்திர ரீதியான பரிகாரங்கள்.',
+    pillar5Title: '5. வர்க்க சக்கரங்கள் (Divisional Charts)',
+    pillar5Subtitle: 'குறிப்பிட்ட வாழ்வியல் துறைகளை உறுதி செய்யும் துணை சக்கரங்கள்',
+    d1Desc: 'ராசி சக்கரம் (D1): உடல் நலம் மற்றும் வாழ்வின் பொதுவான தளம்.',
+    d9Desc: 'நவாம்சம் (D9): திருமணம், ஆன்மீக பலம் மற்றும் வாழ்வின் பிற்பகுதி.',
+    d10Desc: 'தசாம்சம் (D10): தொழில், உத்தியோகம் மற்றும் அதிகாரப் பதவிகள்.',
+    d7Desc: 'சப்தாம்சம் (D7): புத்திர பாக்கியம் மற்றும் எதிர்கால சந்ததி.',
+    pillar6Title: '6. நிதர்சன வேத பரிகாரங்கள்',
+    pillar6Subtitle: 'சுப காரியங்கள் மூலம் கர்மாவை சமநிலைப்படுத்தும் வழிகள்',
+    gemstonesTitle: 'ரத்தினப் பரிந்துரைகள்',
+    gemstonesDesc: 'யோக கிரகங்களை பலப்படுத்த சரியான ரத்தினம் அணிதல்.',
+    mantraTitle: 'மந்திர ஜபம்',
+    mantraDesc: 'கிரக அமைதிக்கு தினசரி மூல மந்திர ஜபம்.',
+    charityTitle: 'தானம் மற்றும் வழிபாடுகள்',
+    charityDesc: 'தோஷங்களை போக்கும் முறையான தான தர்மங்கள்.'
+  },
+  Telugu: {
+    pillar1Title: '1. ఖగోళ ప్రాథమిక చట్రం',
+    pillar1Subtitle: 'జన్మ లగ్నం మరియు నవగ్రహ స్పష్ట స్థితులు',
+    lagnaDef: 'లగ్నం: పుట్టిన సమయంలో తూర్పు దిగంతంలో ఉదయించిన రాశి. ఇది రూపం మరియు వ్యక్తిత్వాన్ని నిర్ణయిస్తుంది.',
+    rashiDef: 'చంద్ర రాశి: చంద్రుని స్థాన రాశి. ఇది మనస్సు, భావోద్వేగాలు మరియు అలవాట్లను పాలిస్తుంది.',
+    sunSignDef: 'సూర్య రాశి: సూర్యుని స్థానం. ఇది ఆత్మబలం, కీర్తి మరియు తండ్రితో అనుబంధాన్ని సూచిస్తుంది.',
+    planetaryDef: 'గ్రహ స్థితులు: నవగ్రహాల ఖచ్చితమైన డిగ్రీలు, రాశులు మరియు స్థానాలు.',
+    pillar2Title: '2. జీవన క్షేత్రాలు (12 భావాలు)',
+    pillar2Subtitle: 'జీవితంలోని 12 ముఖ్య రంగాల సమగ్ర విశ్లేషణ',
+    pillar3Title: '3. కాలచక్రం (దశా పద్ధతులు)',
+    pillar3Subtitle: 'వింశోత్తరి మహాదశ, అంతర్దశ మరియు ఏలినాటి శని కాలరేఖ',
+    vimshottariDesc: '120 సంవత్సరాల గ్రహ చక్రం జీవిత ఘట్టాల సమయాన్ని నిర్దేశిస్తుంది.',
+    antardashaTitle: 'ప్రస్తుత అంతర్దశ',
+    antardashaDesc: 'ప్రస్తుతం ప్రభావం చూపుతున్న సూక్ష్మ గ్రహ శక్తులు.',
+    saadesatiTitle: 'ఏలినాటి శని 3 దశలు',
+    pillar4Title: '4. కర్మానుసార గ్రహ బలం',
+    pillar4Subtitle: 'నక్షత్రాలు, షడ్బలం, వైదిక యోగాలు మరియు దోషాలు',
+    nakshatrasDesc: '27 నక్షత్రాలలో మనస్తత్వాన్ని మరియు భవితవ్యాన్ని తెలిపే గ్రహ నక్షత్రం.',
+    shadbalaTitle: 'షడ్బలం (ఆరు రెట్ల గ్రహ బలం)',
+    shadbalaDesc: 'గ్రహాల ఫలితాలను ఇచ్చే సామర్థ్యాన్ని కొలిచే గణన.',
+    yogasTitle: 'వైదిక శుభ యోగాలు',
+    yogasDesc: 'సంపద, హోదా మరియు జ్ఞానాన్ని అందించే విశేష గ్రహ కూటమి.',
+    doshasTitle: 'కర్మ దోషాలు మరియు పరిహారాలు',
+    doshasDesc: 'ఆటంకాలను అధిగమించడానికి శాస్త్రోక్త పరిహారాలు.',
+    pillar5Title: '5. వర్గ చక్రాలు (Divisional Charts)',
+    pillar5Subtitle: 'ప్రత్యేక జీవన రంగాలను స్పష్టం చేసే సూక్ష్మ చక్రాలు',
+    d1Desc: 'రాశి చక్రం (D1): శరీరం, ఆరోగ్యం మరియు జీవిత పునాది.',
+    d9Desc: 'నవాంశ చక్రం (D9): వివాహం, ఆత్మబలం మరియు జీవిత ద్వితీయార్ధం.',
+    d10Desc: 'దశాంశ చక్రం (D10): వృత్తి, ఉద్యోగం మరియు కీర్తి ప్రతిష్టలు.',
+    d7Desc: 'సప్తాంశ చక్రం (D7): సంతాన సౌఖ్యం మరియు భవిష్యత్ తరాలు.',
+    pillar6Title: '6. వైదిక పరిహారాలు',
+    pillar6Subtitle: 'కర్మ ప్రక్షాళనకు సహాయపడే ఆచరణాత్మక ఉపాయాలు',
+    gemstonesTitle: 'రత్న ధారణ సూచనలు',
+    gemstonesDesc: 'అనుకూల గ్రహాలకు బలం చేకూర్చే రత్నాలు.',
+    mantraTitle: 'మంత్ర జప సాధన',
+    mantraDesc: 'గ్రహ శాంతికి నిత్యం పఠించాల్సిన బీజ మంత్రాలు.',
+    charityTitle: 'దాన ధర్మాలు',
+    charityDesc: 'దోష నివారణకు నిర్దేశించిన దానాలు.'
+  },
+  Kannada: {
+    pillar1Title: '1. ಖಗೋಳೀಯ ಮೂಲ ಚೌಕಟ್ಟು',
+    pillar1Subtitle: 'ಜನ್ಮ ಲಗ್ನ ಮತ್ತು ನವಗ್ರಹ ಸ್ಪಷ್ಟ ಸ್ಥಿತಿಗಳು',
+    lagnaDef: 'ಲಗ್ನ: ಜನನದ ಸಮಯದಲ್ಲಿ ಮೂಡಿದ ರಾಶಿ. ಇದು ಶಾರೀರಿಕ ರೂಪ ಮತ್ತು ವ್ಯಕ್ತಿತ್ವವನ್ನು ನಿರ್ಧರಿಸುತ್ತದೆ.',
+    rashiDef: 'ಚಂದ್ರ ರಾಶಿ: ಜನನ ಸಮಯದಲ್ಲಿ ಚಂದ್ರನಿದ್ದ ರಾಶಿ. ಇದು ಮನಸ್ಸು ಮತ್ತು ಭಾವನೆಗಳನ್ನು ನಿಯಂತ್ರಿಸುತ್ತದೆ.',
+    sunSignDef: 'ಸೂರ್ಯ ರಾಶಿ: ಸೂರ್ಯನಿದ್ದ ರಾಶಿ. ಇದು ಆತ್ಮಬಲ, ಗೌರವ ಮತ್ತು ಪಿತೃ ಸಂಬಂಧವನ್ನು ಸೂಚಿಸುತ್ತದೆ.',
+    planetaryDef: 'ಗ್ರಹ ಸ್ಥಿತಿಗಳು: ನವಗ್ರಹಗಳ ನಿಖರವಾದ ಅಂಶಗಳು, ರಾಶಿಗಳು ಮತ್ತು ಭಾವಗಳು.',
+    pillar2Title: '2. ಜೀವನ ರಂಗಗಳು (12 ಭಾವಗಳು)',
+    pillar2Subtitle: 'ಜೀವನದ 12 ಪ್ರಮುಖ ಕ್ಷೇತ್ರಗಳ ಸಮಗ್ರ ಫಲಕಥನ',
+    pillar3Title: '3. ಕಾಲಚಕ್ರ (ದಶಾ ವ್ಯವಸ್ಥೆ)',
+    pillar3Subtitle: 'ವಿಂಶೋತ್ತರಿ ಮಹಾದಶಾ, ಅಂತರ್ದಶಾ ಮತ್ತು ಸಾಡೇಸಾತಿ ಕಾಲಾವಧಿ',
+    vimshottariDesc: '120 ವರ್ಷಗಳ ಗ್ರಹ ಕಾಲಚಕ್ರವು ಘಟನೆಗಳ ನಿಖರ ಸಮಯವನ್ನು ತಿಳಿಸುತ್ತದೆ.',
+    antardashaTitle: 'ಸಕ್ರಿಯ ಅಂತರ್ದಶಾ',
+    antardashaDesc: 'ಪ್ರಸ್ತುತ ಸಕ್ರಿಯವಾಗಿರುವ ಸೂಕ್ಷ್ಮ ಗ್ರಹ ಪ್ರಭಾವಗಳು.',
+    saadesatiTitle: 'ಶನಿ ಸಾಡೇಸಾತಿ 3 ಹಂತಗಳು',
+    pillar4Title: '4. ಕರ್ಮ ಮತ್ತು ಗ್ರಹಬಲ',
+    pillar4Subtitle: 'ನಕ್ಷತ್ರಗಳು, ಷಡ್ಬಲ, ವೈದಿಕ ಯೋಗಗಳು ಮತ್ತು ದೋಷಗಳು',
+    nakshatrasDesc: '27 ನಕ್ಷತ್ರಗಳಲ್ಲಿ ಮನಸ್ಸಿನ ಒಳನೋಟಗಳನ್ನು ತಿಳಿಸುವ ನಕ್ಷತ್ರ ಸ್ಥಿತಿ.',
+    shadbalaTitle: 'ಷಡ್ಬಲ (ಆರು ವಿಧದ ಗ್ರಹ ಸಾಮರ್ಥ್ಯ)',
+    shadbalaDesc: 'ಗ್ರಹಗಳ ಫಲ ನೀಡುವ ಸಾಮರ್ಥ್ಯದ ಗಣಿತೀಯ ವಿಶ್ಲೇಷಣೆ.',
+    yogasTitle: 'ಶಾಸ್ತ್ರೀಯ ವೈದಿಕ ಯೋಗಗಳು',
+    yogasDesc: 'ಸಂಪತ್ತು ಮತ್ತು ಕೀರ್ತಿ ನೀಡುವ ವಿಶೇಷ ಗ್ರಹ ಸಂಯೋಗಗಳು.',
+    doshasTitle: 'ಕರ್ಮ ದೋಷಗಳು ಮತ್ತು ಪರಿಹಾರ',
+    doshasDesc: 'ಅಡೆತಡೆಗಳನ್ನು ನಿವಾರಿಸಲು ಶಾಸ್ತ್ರೋಕ್ತ ಪರಿಹಾರ ಕ್ರಮಗಳು.',
+    pillar5Title: '5. ವರ್ಗ ಕುಂಡಲಿಗಳು (Vargas)',
+    pillar5Subtitle: 'ನಿರ್ದಿಷ್ಟ ಜೀವನ ಕ್ಷೇತ್ರಗಳನ್ನು ದೃಢೀಕರಿಸುವ ಸೂಕ್ಷ್ಮ ನಕ್ಷೆಗಳು',
+    d1Desc: 'ರಾಶಿ ಕುಂಡಲಿ (D1): ದೇಹ, ಆರೋಗ್ಯ ಮತ್ತು ಮೂಲ ಅಡಿಪಾಯ.',
+    d9Desc: 'ನವಾಂಶ ಕುಂಡಲಿ (D9): ವಿವಾಹ, ಆತ್ಮಬಲ ಮತ್ತು ಜೀವನದ ಉತ್ತರಾರ್ಧ.',
+    d10Desc: 'ದಶಾಂಶ ಕುಂಡಲಿ (D10): ಉದ್ಯೋಗ, ವೃತ್ತಿ ಮತ್ತು ಅಧಿಕಾರ.',
+    d7Desc: 'ಸಪ್ತಾಂಶ ಕುಂಡಲಿ (D7): ಸಂತಾನ ಸುಖ ಮತ್ತು ಸೃಜನಶೀಲತೆ.',
+    pillar6Title: '6. ಪ್ರಾಯೋಗಿಕ ವೈದಿಕ ಪರಿಹಾರಗಳು',
+    pillar6Subtitle: 'ಸತ್ಕರ್ಮಗಳ ಮೂಲಕ ಗ್ರಹ ಶಕ್ತಿ ಸಮತೋಲನಗೊಳಿಸುವ ವಿಧಾನ',
+    gemstonesTitle: 'ರತ್ನ ಧಾರಣೆ ಸಲಹೆ',
+    gemstonesDesc: 'ಶುಭ ಗ್ರಹಗಳನ್ನು ಬಲಪಡಿಸಲು ರತ್ನ ಧಾರಣೆ.',
+    mantraTitle: 'ಮಂತ್ರ ಮತ್ತು ಜಪ ಸಾಧನೆ',
+    mantraDesc: 'ಗ್ರಹ ಶಾಂತಿಗಾಗಿ ದೈನಂದಿನ ಬೀಜ ಮಂತ್ರ ಜಪ.',
+    charityTitle: 'ದಾನ ಮತ್ತು ಸೇವಾ ಕಾರ್ಯಗಳು',
+    charityDesc: 'ದೋಷ ನಿವಾರಣೆಗಾಗಿ ಶಾಸ್ತ್ರೋಕ್ತ ದಾನಗಳು.'
+  },
+  Malayalam: {
+    pillar1Title: '1. ജ്യോതിശാസ്ത്ര ചട്ടക്കൂട്',
+    pillar1Subtitle: 'ജന്മ ലഗ്നവും നവഗ്രഹ സ്ഥാനങ്ങളും',
+    lagnaDef: 'ലഗ്നം: ജനന സമയത്ത് ഉദിച്ച രാശി. ഇത് ശരീര പ്രകൃതിയും വ്യക്തിത്വവും നിശ്ചയിക്കുന്നു.',
+    rashiDef: 'ചന്ദ്ര രാശി: ചന്ദ്രൻ സ്ഥിതി ചെയ്ത രാശി. ഇത് മനസ്സിനെയും വികാരങ്ങളെയും സ്വാധീനിക്കുന്നു.',
+    sunSignDef: 'സൂര്യ രാശി: സൂര്യന്റെ സ്ഥിതി. ഇത് ആത്മബലത്തെയും അധികാരത്തെയും സൂചിപ്പിക്കുന്നു.',
+    planetaryDef: 'ഗ്രഹ നില: ഒമ്പത് ഗ്രഹങ്ങളുടെയും കൃത്യമായ ഡിഗ്രിയും രാശിയും ഭാവങ്ങളും.',
+    pillar2Title: '2. ജീവിത ഭാവങ്ങൾ (12 ഭാവങ്ങൾ)',
+    pillar2Subtitle: 'ജീവിതത്തിന്റെ 12 മേഖലകളെക്കുറിച്ചുള്ള വിശകലനം',
+    pillar3Title: '3. കാലചക്രം (ദശാ സമ്പ്രദായം)',
+    pillar3Subtitle: 'വിംശോത്തരി മഹാദശയും കണ്ടകശ്ശനി സമയരേഖയും',
+    vimshottariDesc: '120 വർഷത്തെ ഗ്രഹ ചക്രം ജീവിതത്തിലെ പ്രധാന സംഭവങ്ങളുടെ സമയം നിർണ്ണയിക്കുന്നു.',
+    antardashaTitle: 'നിലവിലെ അന്തർദശ',
+    antardashaDesc: 'ഇപ്പോൾ സ്വാധീനിക്കുന്ന സൂക്ഷ്മ ഗ്രഹ ഊർജ്ജങ്ങൾ.',
+    saadesatiTitle: 'ഏഴരശ്ശനി 3 ഘട്ടങ്ങൾ',
+    pillar4Title: '4. കർമ്മ ഫലങ്ങളും ഗ്രഹബലവും',
+    pillar4Subtitle: 'നക്ഷത്രങ്ങൾ, ഷഡ്ബലം, ശുഭ യോഗങ്ങൾ, ദോഷങ്ങൾ',
+    nakshatrasDesc: '27 നക്ഷത്രങ്ങളിൽ മനസ്സിന്റെ ഘടന വ്യക്തമാക്കുന്ന ഗ്രഹ നക്ഷത്രം.',
+    shadbalaTitle: 'ഷഡ്ബലം (ആറുവിധ ഗ്രഹബലം)',
+    shadbalaDesc: 'ഗ്രഹങ്ങൾക്ക് ഫലം നൽകാനുള്ള ആകെ ശേഷിയുടെ ഗണിതം.',
+    yogasTitle: 'വൈദിക ശുഭ യോഗങ്ങൾ',
+    yogasDesc: 'ഐശ്വര്യവും കീർത്തിയും നൽകുന്ന വിശേഷ ഗ്രഹ യോഗങ്ങൾ.',
+    doshasTitle: 'കർമ്മ ദോഷങ്ങളും പരിഹാരങ്ങളും',
+    doshasDesc: 'തടസ്സങ്ങൾ മാറ്റാനുള്ള ശാസ്ത്രീയ പരിഹാരങ്ങൾ.',
+    pillar5Title: '5. വർഗ്ഗ ചക്രങ്ങൾ (Vargas)',
+    pillar5Subtitle: 'പ്രത്യേക മേഖലകളെ വ്യക്തമാക്കുന്ന സൂക്ഷ്മ ചക്രങ്ങൾ',
+    d1Desc: 'രാശി ചക്രം (D1): ശരീരം, ആരോഗ്യം, അടിസ്ഥാന ജീവിതം.',
+    d9Desc: 'നവാംശകം (D9): വിവാഹം, ആത്മീയ ബലം, ജീവിതത്തിന്റെ രണ്ടാം പകുതി.',
+    d10Desc: 'ദശാംശകം (D10): തൊഴിൽ, ഔദ്യോഗിക പദവി, യശസ്സ്.',
+    d7Desc: 'സപ്താംശകം (D7): സന്താന ഭാഗ്യം, വരുംതലമുറ.',
+    pillar6Title: '6. പ്രായോഗിക വൈദിക പരിഹാരങ്ങൾ',
+    pillar6Subtitle: 'കർമ്മദോഷങ്ങൾ ശമിപ്പിക്കാനുള്ള മാർഗ്ഗങ്ങൾ',
+    gemstonesTitle: 'രത്ന നിർദ്ദേശം',
+    gemstonesDesc: 'അനുകൂല ഗ്രഹങ്ങളെ ബലപ്പെടുത്താൻ രത്നധാരണം.',
+    mantraTitle: 'മന്ത്ര ജപം',
+    mantraDesc: 'ഗ്രഹ ശാന്തിക്കായി ദിവസവും ചൊല്ലേണ്ട ബീജ മന്ത്രങ്ങൾ.',
+    charityTitle: 'ദാന ധർമ്മങ്ങൾ',
+    charityDesc: 'ദോഷ ശമനത്തിനായി നിർദ്ദേശിച്ച ദാനങ്ങൾ.'
+  },
+  Punjabi: {
+    pillar1Title: '1. ਖਗੋਲੀ ਆਧਾਰ',
+    pillar1Subtitle: 'ਜਨਮ ਲਗਨ ਅਤੇ ਨਵਗ੍ਰਹਿ ਸਥਿਤੀ',
+    lagnaDef: 'ਲਗਨ: ਜਨਮ ਸਮੇਂ ਪੂਰਬੀ ਦਿਸ਼ਾ ਵਿੱਚ ਉਦੈ ਹੋਣ ਵਾਲੀ ਰਾਸ਼ੀ ਜੋ ਸ਼ਖਸੀਅਤ ਤੈਅ ਕਰਦੀ ਹੈ।',
+    rashiDef: 'ਚੰਦਰ ਰਾਸ਼ੀ: ਜਨਮ ਸਮੇਂ ਚੰਦਰਮਾ ਦੀ ਸਥਿਤੀ ਜੋ ਮਨ ਅਤੇ ਭਾਵਨਾਵਾਂ ਚਲਾਉਂਦੀ ਹੈ।',
+    sunSignDef: 'ਸੂਰਜ ਰਾਸ਼ੀ: ਸੂਰਜ ਦੀ ਸਥਿਤੀ ਜੋ ਆਤਮਿਕ ਬਲ ਅਤੇ ਪਿਤਾ ਨਾਲ ਸਬੰਧ ਦਰਸਾਉਂਦੀ ਹੈ।',
+    planetaryDef: 'ਗ੍ਰਹਿ ਸਥਿਤੀਆਂ: ਸਾਰੇ ਨੌਂ ਗ੍ਰਹਿਆਂ ਦੀਆਂ ਸਹੀ ਡਿਗਰੀਆਂ ਅਤੇ ਭਾਵ।',
+    pillar2Title: '2. ਜੀਵਨ ਖੇਤਰ (12 ਭਾਵ)',
+    pillar2Subtitle: 'ਜੀਵਨ ਦੇ 12 ਮੁੱਖ ਖੇਤਰਾਂ ਦਾ ਵਿਸਥਾਰਪੂਰਵਕ ਫਲ',
+    pillar3Title: '3. ਕਾਲਚੱਕਰ (ਦਸ਼ਾ ਪ੍ਰਣਾਲੀ)',
+    pillar3Subtitle: 'ਵਿਮਸ਼ੋਤਰੀ ਮਹਾਦਸ਼ਾ ਅਤੇ ਸ਼ਨੀ ਸਾੜ੍ਹਸਤੀ ਸਮਾਂ-ਸਾਰਣੀ',
+    vimshottariDesc: '120 ਸਾਲਾਂ ਦਾ ਗ੍ਰਹਿ ਚੱਕਰ ਜੋ ਜੀਵਨ ਘਟਨਾਵਾਂ ਦਾ ਸਮਾਂ ਦੱਸਦਾ ਹੈ।',
+    antardashaTitle: 'ਮੌਜੂਦਾ ਅੰਤਰਦਸ਼ਾ',
+    antardashaDesc: 'ਮੌਜੂਦਾ ਸਮੇਂ ਸਰਗਰਮ ਗ੍ਰਹਿ ਊਰਜਾ ਦਾ ਪ੍ਰਭਾਵ।',
+    saadesatiTitle: 'ਸ਼ਨੀ ਸਾੜ੍ਹਸਤੀ 3 ਪੜਾਅ',
+    pillar4Title: '4. ਕਰਮ ਅਤੇ ਗ੍ਰਹਿ ਬਲ',
+    pillar4Subtitle: 'ਨਕਸ਼ਤਰ, ਸ਼ਡਬਲ, ਸ਼ੁਭ ਯੋਗ ਅਤੇ ਕਰਮ ਦੋਸ਼',
+    nakshatrasDesc: '27 ਨਕਸ਼ਤਰਾਂ ਵਿੱਚ ਮਾਨਸਿਕਤਾ ਦਰਸਾਉਣ ਵਾਲਾ ਗ੍ਰਹਿ ਨਕਸ਼ਤਰ।',
+    shadbalaTitle: 'ਸ਼ਡਬਲ (ਛੇ ਗੁਣਾ ਗ੍ਰਹਿ ਬਲ)',
+    shadbalaDesc: 'ਗ੍ਰਹਿਆਂ ਦੀ ਫਲ ਦੇਣ ਦੀ ਗਣਿਤਿਕ ਸਮਰੱਥਾ।',
+    yogasTitle: 'ਵੈਦਿਕ ਸ਼ੁਭ ਯੋਗ',
+    yogasDesc: 'ਦੌਲਤ ਅਤੇ ਰੁਤਬਾ ਦੇਣ ਵਾਲੇ ਵਿਸ਼ੇਸ਼ ਗ੍ਰਹਿ ਸੰਯੋਗ।',
+    doshasTitle: 'ਕਰਮ ਦੋਸ਼ ਅਤੇ ਉਪਾਅ',
+    doshasDesc: 'ਮੁਸ਼ਕਲਾਂ ਨੂੰ ਦੂਰ ਕਰਨ ਲਈ ਸ਼ਾਸਤਰੀ ਉਪਾਅ।',
+    pillar5Title: '5. ਵਰਗ ਕੁੰਡਲੀਆਂ (Vargas)',
+    pillar5Subtitle: 'ਖਾਸ ਜੀਵਨ ਖੇਤਰਾਂ ਦੀ ਜਾਂਚ ਲਈ ਸੂਖਮ ਚੱਕਰ',
+    d1Desc: 'ਲਗਨ ਚੱਕਰ (D1): ਸਰੀਰ, ਸਿਹਤ ਅਤੇ ਕਿਸਮਤ ਦੀ ਨੀਂਹ।',
+    d9Desc: 'ਨਵਾਂਸ਼ ਚੱਕਰ (D9): ਵਿਆਹ, ਆਤਮਿਕ ਬਲ ਅਤੇ ਉਮਰ ਦਾ ਦੂਜਾ ਹਿੱਸਾ।',
+    d10Desc: 'ਦਸ਼ਾਂਸ਼ ਚੱਕਰ (D10): ਕਰੀਅਰ, ਕਾਰੋਬਾਰ ਅਤੇ ਉੱਚ ਅਹੁਦਾ।',
+    d7Desc: 'ਸਪਤਾਂਸ਼ ਚੱਕਰ (D7): ਔਲਾਦ ਦਾ ਸੁੱਖ ਅਤੇ ਰਚਨਾਤਮਕ ਪ੍ਰਤਿਭਾ।',
+    pillar6Title: '6. ਵਿਹਾਰਕ ਵੈਦਿਕ ਉਪਾਅ',
+    pillar6Subtitle: 'ਸ਼ੁਭ ਕਰਮਾਂ ਰਾਹੀਂ ਗ੍ਰਹਿ ਊਰਜਾ ਸੰਤੁਲਿਤ ਕਰਨ ਦੇ ਤਰੀਕੇ',
+    gemstonesTitle: 'ਸ਼ੁਭ ਰਤਨ ਸਲਾਹ',
+    gemstonesDesc: 'ਅਨੁਕੂਲ ਗ੍ਰਹਿਆਂ ਨੂੰ ਮਜ਼ਬੂਤ ਕਰਨ ਲਈ ਰਤਨ।',
+    mantraTitle: 'ਮੰਤਰ ਅਤੇ ਜਪ ਸਾਧਨਾ',
+    mantraDesc: 'ਗ੍ਰਹਿ ਸ਼ਾਂਤੀ ਲਈ ਰੋਜ਼ਾਨਾ ਬੀਜ ਮੰਤਰ ਜਪ।',
+    charityTitle: 'ਦਾਨ ਅਤੇ ਸੇਵਾ ਕਾਰਜ',
+    charityDesc: 'ਦੋਸ਼ ਸ਼ਾਂਤੀ ਲਈ ਨਿਰਧਾਰਤ ਵਸਤਾਂ ਦਾ ਦਾਨ।'
+  },
+  Odia: {
+    pillar1Title: '୧. ମୂଳ ଜ୍ୟୋତିର୍ବିଜ୍ଞାନ ଢାଞ୍ଚା',
+    pillar1Subtitle: 'ଜନ୍ମ ଲଗ୍ନ ଓ ନବଗ୍ରହ ସ୍ପଷ୍ଟ ସ୍ଥିତି',
+    lagnaDef: 'ଲଗ୍ନ: ଜନ୍ମ ସମୟରେ ପୂର୍ବ ଦିଗବଳୟରେ ଉଦିତ ରାଶି ଯାହା ବ୍ୟକ୍ତିତ୍ୱ ନିର୍ଦ୍ଧାରଣ କରେ।',
+    rashiDef: 'ଚନ୍ଦ୍ର ରାଶି: ଚନ୍ଦ୍ରଙ୍କ ସ୍ଥିତି ଯାହା ମନ ଓ ଭାବନା ପରିଚାଳନା କରେ।',
+    sunSignDef: 'ସୂର୍ଯ୍ୟ ରାଶି: ସୂର୍ଯ୍ୟଙ୍କ ସ୍ଥିତି ଯାହା ଆତ୍ମବଳ ଓ ପିତୃ ସମ୍ପର୍କ ଦର୍ଶାଏ।',
+    planetaryDef: 'ଗ୍ରହ ସ୍ଥିତି: ନଅଟି ଗ୍ରହଙ୍କ ସଠିକ ଡିଗ୍ରୀ ଓ ଭାବ ସ୍ଥିତି।',
+    pillar2Title: '୨. ଜୀବନ କ୍ଷେତ୍ର (୧୨ ଭାବ)',
+    pillar2Subtitle: 'ଜୀବନର ୧୨ଟି ପ୍ରମୁଖ ଦିଗର ସବିଶେଷ ବିଶ୍ଳେଷଣ',
+    pillar3Title: '୩. କାଳଚକ୍ର (ଦଶା ପ୍ରଣାଳୀ)',
+    pillar3Subtitle: 'ବିଂଶୋତ୍ତରୀ ମହାଦଶା ଓ ଶନି ସାଢ଼େସାତୀ ସମୟରେଖା',
+    vimshottariDesc: '୧୨୦ ବର୍ଷର ଗ୍ରହ ଚକ୍ର ଯାହା ଜୀବନ ଘଟଣାବଳୀର ସମୟ ନିର୍ଦ୍ଧାରଣ କରେ।',
+    antardashaTitle: 'ସକ୍ରିୟ ଅନ୍ତର୍ଦଶା',
+    antardashaDesc: 'ସାମ୍ପ୍ରତିକ ସୁଯୋଗ ଓ ଚ୍ୟାଲେଞ୍ଜର ସୂକ୍ଷ୍ମ ସମୟ।',
+    saadesatiTitle: 'ଶନି ସାଢ଼େସାତୀ ୩ ପର୍ଯ୍ୟାୟ',
+    pillar4Title: '୪. କର୍ମ ଓ ଗ୍ରହ ବଳ',
+    pillar4Subtitle: 'ନକ୍ଷତ୍ର, ଷଡ଼ବଳ, ଶୁଭ ଯୋଗ ଓ କର୍ମ ଦୋଷ',
+    nakshatrasDesc: '୨୭ ନକ୍ଷତ୍ର ମଧ୍ୟରେ ମାନସିକତା ଦର୍ଶାଉଥିବା ଗ୍ରହ ନକ୍ଷତ୍ର।',
+    shadbalaTitle: 'ଷଡ଼ବଳ (ଛଅ ଗୁଣ ଗ୍ରହ ସାମର୍ଥ୍ୟ)',
+    shadbalaDesc: 'ଗ୍ରହଙ୍କ ଫଳଦାନ କ୍ଷମତାର ଗାଣିତିକ ବିଶ୍ଳେଷଣ।',
+    yogasTitle: 'ବୈଦିକ ଶୁଭ ଯୋଗ',
+    yogasDesc: 'ଧନ, ପଦ ଓ ପ୍ରତିଷ୍ଠା ପ୍ରଦାନକାରୀ ବିଶେଷ ଗ୍ରହ ସଂଯୋଗ।',
+    doshasTitle: 'କର୍ମ ଦୋଷ ଓ ପ୍ରତିକାର',
+    doshasDesc: 'ବାଧାବିଘ୍ନ ଦୂର କରିବା ପାଇଁ ଶାସ୍ତ୍ରୋକ୍ତ ଉପାୟ।',
+    pillar5Title: '୫. ବର୍ଗ କୁଣ୍ଡଳୀ (Vargas)',
+    pillar5Subtitle: 'ନିର୍ଦ୍ଦିଷ୍ଟ ଜୀବନ କ୍ଷେତ୍ରକୁ ସ୍ପଷ୍ଟ କରୁଥିବା ସୂକ୍ଷ୍ମ ଚକ୍ର',
+    d1Desc: 'ରାଶି ଚକ୍ର (D1): ଶରୀର, ସ୍ୱାସ୍ଥ୍ୟ ଓ ଭାଗ୍ୟର ମୂଳଦୁଆ।',
+    d9Desc: 'ନବାଂଶ ଚକ୍ର (D9): ବିବାହ, ଆତ୍ମିକ ଶକ୍ତି ଓ ଜୀବନର ଉତ୍ତରାର୍ଦ୍ଧ।',
+    d10Desc: 'ଦଶାଂଶ ଚକ୍ର (D10): କ୍ୟାରିୟର, ବ୍ୟବସାୟ ଓ ସାମାଜିକ ପ୍ରତିଷ୍ଠା।',
+    d7Desc: 'ସପ୍ତାଂଶ ଚକ୍ର (D7): ସନ୍ତାନ ସୁଖ ଓ ସୃଜନଶୀଳ ପ୍ରତିଭା।',
+    pillar6Title: '୬. ବ୍ୟବହାରିକ ବୈଦିକ ପ୍ରତିକାର',
+    pillar6Subtitle: 'ସତ୍ କର୍ମ ମାଧ୍ୟମରେ ଗ୍ରହ ଊର୍ଜ୍ଜା ସନ୍ତୁଳିତ କରିବା',
+    gemstonesTitle: 'ଶୁଭ ରତ୍ନ ପରାମର୍ଶ',
+    gemstonesDesc: 'ଅନୁକୂଳ ଗ୍ରହଙ୍କୁ ବଳବାନ କରିବା ପାଇଁ ରତ୍ନ ଧାରଣ।',
+    mantraTitle: 'ମନ୍ତ୍ର ଓ ଜପ ସାଧନା',
+    mantraDesc: 'ଗ୍ରହ ଶାନ୍ତି ପାଇଁ ଦୈନିକ ବୀଜ ମନ୍ତ୍ର ଜପ।',
+    charityTitle: 'ଦାନ ଓ ସେବା ବିଧାନ',
+    charityDesc: 'ଦୋଷ ନିବାରଣ ପାଇଁ ଉଦ୍ଦିଷ୍ଟ ଦ୍ରବ୍ୟ ଦାନ।'
+  }
+};
+
+
 /**
  * Comprehensive UI strings localized for all 11 supported languages.
  */
 export const getKundaliLocale = (language: Language): KundaliLocaleData => {
-  switch (language) {
+  const getRaw = (): any => {
+    switch (language) {
     case 'English':
       return {
         planetHeaders: {
@@ -2421,5 +2931,17 @@ export const getKundaliLocale = (language: Language): KundaliLocaleData => {
           refIdPrefix: 'सन्दभ संख्या: WMS-'
         }
       };
-  }
+    }
+  };
+
+  const raw = getRaw();
+  return {
+    ...raw,
+    cardinalPoints: {
+      ...raw.cardinalPoints,
+      sunSign: SUN_SIGN_TRANSLATIONS[language] || SUN_SIGN_TRANSLATIONS.English,
+      lagna: LAGNA_TRANSLATIONS[language] || LAGNA_TRANSLATIONS.English
+    },
+    sixPillars: SIX_PILLARS_DATA[language] || SIX_PILLARS_DATA.English
+  };
 };

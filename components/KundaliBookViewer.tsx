@@ -1,7 +1,34 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { BirthDetails, Language, ChatMessage, KundaliResponse, KundaliSystem, MahadashaPeriod, SaadesatiPhase, AvakahadaDetails, PlanetaryPositionDetail, BhavaDetailedAnalysis } from '../types';
+import {
+  BirthDetails,
+  Language,
+  ChatMessage,
+  KundaliResponse,
+  KundaliSystem,
+  MahadashaPeriod,
+  SaadesatiPhase,
+  AvakahadaDetails,
+  PlanetaryPositionDetail,
+  BhavaDetailedAnalysis,
+  ShadbalaDetail,
+  VedicYogaDetail,
+  VedicDoshaDetail,
+  DivisionalChartDetail,
+  AntardashaDetail,
+  PracticalRemedyDetail
+} from '../types';
 import { KUNDALI_SYSTEMS } from '../constants';
-import { ensureValidKundaliChart, calculate12BhavasDetailedAnalysis, RASHI_NAMES_EN } from '../services/astrologyHelper';
+import {
+  ensureValidKundaliChart,
+  calculate12BhavasDetailedAnalysis,
+  RASHI_NAMES_EN,
+  calculateShadbala,
+  calculateYogas,
+  calculateDoshas,
+  calculateDivisionalCharts,
+  calculateAntardashas,
+  calculatePracticalRemedies
+} from '../services/astrologyHelper';
 import KundaliChart from './KundaliChart';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -16,7 +43,9 @@ import {
   getLocalizedPaya,
   getLocalizedElement,
   getLocalizedPurushartha,
-  stripAsterisksAndMarkdown
+  stripAsterisksAndMarkdown,
+  SUN_SIGN_TRANSLATIONS,
+  LAGNA_TRANSLATIONS
 } from '../services/kundaliLocalization';
 
 interface KundaliBookViewerProps {
@@ -187,6 +216,8 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
   const [currentPage, setCurrentPage] = useState<number>(0);
   // Active selected house for the 12 Bhava in-depth codex (1 to 12)
   const [selectedBhava, setSelectedBhava] = useState<number>(1);
+  // Active selected Varga for Section 5 (Divisional Charts: D9, D10, D7)
+  const [selectedVarga, setSelectedVarga] = useState<'D9' | 'D10' | 'D7'>('D9');
   // PDF Generation State
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [pdfStatus, setPdfStatus] = useState<string>('');
@@ -196,6 +227,17 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
   // Localization bundle based on user-selected language
   const locale = useMemo(() => getKundaliLocale(language), [language]);
 
+  // Sun position and Sun Sign display
+  const sunPosition = useMemo(() => {
+    return planetaryPositionsData.find(p => p.planet === 'Sun');
+  }, [planetaryPositionsData]);
+
+  const sunSignDisplay = useMemo(() => {
+    if (analysis.sunSign) return getLocalizedSign(analysis.sunSign, language);
+    if (sunPosition) return getLocalizedSign(sunPosition.sign, language);
+    return getLocalizedSign('Aries', language);
+  }, [analysis.sunSign, sunPosition, language]);
+
   // Compute 12 Bhavas exhaustive Vedic analysis
   const bhavasDetailed: BhavaDetailedAnalysis[] = useMemo(() => {
     return calculate12BhavasDetailedAnalysis(
@@ -204,6 +246,46 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
       language
     );
   }, [analysis.lagnaSign, planetaryPositionsData, language]);
+
+  // Shadbala calculation
+  const shadbalaData = useMemo(() => {
+    if (analysis.shadbala && analysis.shadbala.length > 0) return analysis.shadbala;
+    return calculateShadbala(planetaryPositionsData, analysis.lagnaSign || 1, details.dob, details.tob, language);
+  }, [analysis.shadbala, planetaryPositionsData, analysis.lagnaSign, details, language]);
+
+  // Vedic Yogas calculation
+  const yogasData = useMemo(() => {
+    if (analysis.yogas && analysis.yogas.length > 0) return analysis.yogas;
+    return calculateYogas(planetaryPositionsData, analysis.lagnaSign || 1, language);
+  }, [analysis.yogas, planetaryPositionsData, analysis.lagnaSign, language]);
+
+  // Vedic Doshas calculation
+  const doshasData = useMemo(() => {
+    if (analysis.doshas && analysis.doshas.length > 0) return analysis.doshas;
+    return calculateDoshas(planetaryPositionsData, analysis.lagnaSign || 1, avakahadaData, language);
+  }, [analysis.doshas, planetaryPositionsData, analysis.lagnaSign, avakahadaData, language]);
+
+  // Divisional Charts calculation
+  const divisionalChartsData = useMemo(() => {
+    if (analysis.divisionalCharts) return analysis.divisionalCharts;
+    return calculateDivisionalCharts(planetaryPositionsData, analysis.lagnaSign || 1);
+  }, [analysis.divisionalCharts, planetaryPositionsData, analysis.lagnaSign]);
+
+  // Active Mahadasha & Antardasha calculation
+  const activeMahadasha = useMemo(() => {
+    return displayMahadashas.find(m => m.isCurrent) || displayMahadashas[0];
+  }, [displayMahadashas]);
+
+  const antardashasData = useMemo(() => {
+    if (analysis.antardashas && analysis.antardashas.length > 0) return analysis.antardashas;
+    return calculateAntardashas(activeMahadasha, details.dob, language);
+  }, [analysis.antardashas, activeMahadasha, details.dob, language]);
+
+  // Practical Remedies calculation
+  const practicalRemediesData = useMemo(() => {
+    if (analysis.practicalRemedies) return analysis.practicalRemedies;
+    return calculatePracticalRemedies(planetaryPositionsData, analysis.lagnaSign || 1, doshasData, language);
+  }, [analysis.practicalRemedies, planetaryPositionsData, analysis.lagnaSign, doshasData, language]);
 
   // Parse markdown report into structured chapters
   const parsedChapters: ParsedChapter[] = useMemo(() => {
@@ -407,18 +489,26 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
     return pages;
   }, [bhavasDetailed, language, locale]);
 
-  // Page index offsets:
+  // Page index offsets matching the 6 Sacred Pillars:
   // Page 0: Royal Book Cover (Page 1)
-  // Page 1: Chapter 1 Part 1 - Janma Kundali Chart & Astral Coordinates (Page 2)
-  // Page 2: Chapter 1 Part 2 - Graha Sphuta (Planetary Positions & Dignities Table) (Page 3) - overflowed cleanly from Page 2 to Page 3!
-  // Page 3: Chapter 2 - Avakahada Chakra & Birth Panchanga (Page 4)
-  // Page 4: Chapter 3 - Navagraha Matrix & Purushartha Life Pillars (Page 5)
-  // Page 5: Chapter 4 - Vimshottari Mahadasha Timeline & Shani Sade Sati (Page 6)
-  // Pages 6 .. (6 + bhavaPages.length - 1): Separate Dedicated Pages for each Bhava!
-  // Pages (6 + bhavaPages.length) .. : Dynamic AI Chapters (paginated cleanly so overflowing chapters add to next page!)
-  // Last Page: Epilogue, Vedic Mantras & Certified Seal
-  const bhavaStartPage = 6;
-  const aiChaptersStartPage = bhavaStartPage + bhavaPages.length;
+  // Page 1: Pillar 1 (Part 1) - Core Astronomical Framework (Lagna, Rashi, Surya Rashi, Nakshatra, D1 Diamond Chart) (Page 2)
+  // Page 2: Pillar 1 (Part 2) - Planetary Positions (Navagraha Sphuta: degrees, retrograde/combust, dignities) (Page 3)
+  // Page 3: Astrological Foundations - Avakahada Chakra & Birth Panchanga (Page 4)
+  // Pages 4 .. (4 + bhavaPages.length - 1): Pillar 2 - Life Domains (The 12 Bhavas/Houses - each house on dedicated separate page)
+  // Page dashaPageIdx: Pillar 3 - Cosmic Timing (Vimshottari Mahadasha + Active Antardashas Table + Shani Sade Sati)
+  // Page shadbalaPageIdx: Pillar 4 (Part 1) - Karmic Blueprint & Strengths (Nakshatras & Shadbala 6-fold Strengths Table)
+  // Page yogasPageIdx: Pillar 4 (Part 2) - Karmic Blueprint & Strengths (Classical Vedic Yogas & Karmic Doshas)
+  // Page vargasPageIdx: Pillar 5 - Divisional Charts (Vargas: D9 Navamsha, D10 Dashamsha, D7 Saptamsha interactive chart)
+  // Page remediesPageIdx: Pillar 6 - Practical Remedies (Upayas: Gemstones, Mantra & Japa, Charity & Rituals)
+  // Pages aiChaptersStartPage .. (totalPages - 2): Dynamic AI Chapters (Synthesized Life Predictions)
+  // Page totalPages - 1: Epilogue, Vedic Mantras & Certified Astrological Seal
+  const bhavaStartPage = 4;
+  const dashaPageIdx = bhavaStartPage + bhavaPages.length;
+  const shadbalaPageIdx = dashaPageIdx + 1;
+  const yogasPageIdx = shadbalaPageIdx + 1;
+  const vargasPageIdx = yogasPageIdx + 1;
+  const remediesPageIdx = vargasPageIdx + 1;
+  const aiChaptersStartPage = remediesPageIdx + 1;
   const totalPages = aiChaptersStartPage + Math.max(1, aiPages.length) + 1;
 
   // Jump to next spread or page
@@ -606,13 +696,13 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
           <BookBorderFlourish theme={bookTheme} />
 
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-4 pt-2">
+          <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-3 pt-2">
             <div>
               <span className="text-[9px] font-black uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400">
-                {locale.chapterLabels.chapter} 1 • {locale.chapterLabels.part} 1
+                {locale.sixPillars.pillar1Title} • {locale.chapterLabels.part} 1
               </span>
               <h3 className={`text-base sm:text-xl font-devanagari font-bold ${textTitleClass}`}>
-                {locale.chapterLabels.ch1Part1Title}
+                {locale.chapterLabels.ch1Part1Title} • {locale.sixPillars.pillar1Subtitle}
               </h3>
             </div>
             <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-500/30">
@@ -621,11 +711,11 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
           </div>
 
           {/* Chart & Core Coordinates Grid */}
-          <div className="space-y-4 my-auto">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          <div className="space-y-3.5 my-auto overflow-y-auto max-h-[600px] no-scrollbar pr-1">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-center">
               {/* North Indian Diamond Chart */}
-              <div className="md:col-span-7 flex justify-center p-3 rounded-2xl bg-amber-500/[0.03] border border-amber-500/20">
-                <div className="scale-95 sm:scale-105 transform origin-center">
+              <div className="md:col-span-7 flex justify-center p-2.5 rounded-2xl bg-amber-500/[0.03] border border-amber-500/20">
+                <div className="scale-95 sm:scale-100 transform origin-center">
                   <KundaliChart
                     data={ensureValidKundaliChart(analysis.chart, planetaryPositionsData)}
                     lagnaSign={analysis.lagnaSign || 1}
@@ -640,34 +730,77 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                 </div>
               </div>
 
-              {/* Four Cardinal Coordinates */}
-              <div className="md:col-span-5 grid grid-cols-2 gap-2.5 text-xs">
-                <div className={`p-3.5 rounded-xl border ${cardBgClass} text-center`}>
-                  <span className="text-xl block mb-1">⭐</span>
-                  <span className="text-[9px] uppercase font-black tracking-wider text-amber-600 dark:text-amber-400 block">{locale.cardinalPoints.starLord}</span>
-                  <span className="font-bold text-xs mt-0.5 block">{getLocalizedPlanet(analysis.starLord || 'Sun', language)}</span>
+              {/* Four Core Astronomical Pillars: Lagna, Moon Sign, Sun Sign, Nakshatra */}
+              <div className="md:col-span-5 grid grid-cols-2 gap-2 text-xs">
+                {/* 1. Lagna (Ascendant) */}
+                <div className={`p-2.5 rounded-xl border ${cardBgClass} flex flex-col justify-between`}>
+                  <div>
+                    <span className="text-lg block mb-0.5">🌅</span>
+                    <span className="text-[9px] uppercase font-black tracking-wider text-amber-600 dark:text-amber-400 block">
+                      {locale.cardinalPoints.lagna}
+                    </span>
+                    <span className="font-bold text-xs mt-0.5 block text-amber-900 dark:text-amber-100">
+                      {getLocalizedSign(RASHI_NAMES_EN[(analysis.lagnaSign || 1) - 1], language)}
+                    </span>
+                  </div>
+                  <p className="text-[9px] text-stone-600 dark:text-slate-400 mt-1 leading-snug line-clamp-3">
+                    {locale.sixPillars.lagnaDef}
+                  </p>
                 </div>
-                <div className={`p-3.5 rounded-xl border ${cardBgClass} text-center`}>
-                  <span className="text-xl block mb-1">🔮</span>
-                  <span className="text-[9px] uppercase font-black tracking-wider text-amber-600 dark:text-amber-400 block">{locale.cardinalPoints.subLord}</span>
-                  <span className="font-bold text-xs mt-0.5 block">{getLocalizedPlanet(analysis.subLord || 'Jupiter', language)}</span>
+
+                {/* 2. Rashi (Moon Sign) */}
+                <div className={`p-2.5 rounded-xl border ${cardBgClass} flex flex-col justify-between`}>
+                  <div>
+                    <span className="text-lg block mb-0.5">🌙</span>
+                    <span className="text-[9px] uppercase font-black tracking-wider text-amber-600 dark:text-amber-400 block">
+                      {locale.cardinalPoints.moonSign}
+                    </span>
+                    <span className="font-bold text-xs mt-0.5 block text-amber-900 dark:text-amber-100">
+                      {getLocalizedSign(analysis.moonSign || 'Taurus', language)}
+                    </span>
+                  </div>
+                  <p className="text-[9px] text-stone-600 dark:text-slate-400 mt-1 leading-snug line-clamp-3">
+                    {locale.sixPillars.rashiDef}
+                  </p>
                 </div>
-                <div className={`p-3.5 rounded-xl border ${cardBgClass} text-center`}>
-                  <span className="text-xl block mb-1">✨</span>
-                  <span className="text-[9px] uppercase font-black tracking-wider text-amber-600 dark:text-amber-400 block">{locale.cardinalPoints.nakshatra}</span>
-                  <span className="font-bold text-xs mt-0.5 block">{stripAsterisksAndMarkdown(analysis.nakshatra) || 'Rohini'}</span>
+
+                {/* 3. Surya Rashi (Sun Sign) */}
+                <div className={`p-2.5 rounded-xl border ${cardBgClass} flex flex-col justify-between`}>
+                  <div>
+                    <span className="text-lg block mb-0.5">☀️</span>
+                    <span className="text-[9px] uppercase font-black tracking-wider text-amber-600 dark:text-amber-400 block">
+                      {locale.cardinalPoints.sunSign}
+                    </span>
+                    <span className="font-bold text-xs mt-0.5 block text-amber-900 dark:text-amber-100">
+                      {sunSignDisplay}
+                    </span>
+                  </div>
+                  <p className="text-[9px] text-stone-600 dark:text-slate-400 mt-1 leading-snug line-clamp-3">
+                    {locale.sixPillars.sunSignDef}
+                  </p>
                 </div>
-                <div className={`p-3.5 rounded-xl border ${cardBgClass} text-center`}>
-                  <span className="text-xl block mb-1">🌙</span>
-                  <span className="text-[9px] uppercase font-black tracking-wider text-amber-600 dark:text-amber-400 block">{locale.cardinalPoints.moonSign}</span>
-                  <span className="font-bold text-xs mt-0.5 block">{getLocalizedSign(analysis.moonSign || 'Taurus', language)}</span>
+
+                {/* 4. Janma Nakshatra */}
+                <div className={`p-2.5 rounded-xl border ${cardBgClass} flex flex-col justify-between`}>
+                  <div>
+                    <span className="text-lg block mb-0.5">✨</span>
+                    <span className="text-[9px] uppercase font-black tracking-wider text-amber-600 dark:text-amber-400 block">
+                      {locale.cardinalPoints.nakshatra}
+                    </span>
+                    <span className="font-bold text-xs mt-0.5 block text-amber-900 dark:text-amber-100">
+                      {stripAsterisksAndMarkdown(analysis.nakshatra) || 'Rohini'}
+                    </span>
+                  </div>
+                  <p className="text-[9px] text-stone-600 dark:text-slate-400 mt-1 leading-snug line-clamp-3">
+                    {locale.sixPillars.nakshatrasDesc}
+                  </p>
                 </div>
               </div>
             </div>
 
             {/* Ascendant Lagna Foundation Card */}
-            <div className="p-4 rounded-2xl border border-amber-500/20 bg-amber-500/[0.03] text-xs leading-relaxed text-stone-700 dark:text-slate-300">
-              <strong className="text-amber-600 dark:text-amber-400 block mb-1.5 text-xs font-devanagari font-bold">
+            <div className="p-3.5 rounded-2xl border border-amber-500/20 bg-amber-500/[0.03] text-xs leading-relaxed text-stone-700 dark:text-slate-300">
+              <strong className="text-amber-600 dark:text-amber-400 block mb-1 text-xs font-devanagari font-bold">
                 {locale.lagnaCard.titleTemplate(getLocalizedSign(RASHI_NAMES_EN[(analysis.lagnaSign || 1) - 1], language))}
               </strong>
               <p className="leading-relaxed">
@@ -693,31 +826,33 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
           <BookBorderFlourish theme={bookTheme} />
 
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-4 pt-2">
+          <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-3 pt-2">
             <div>
               <span className="text-[9px] font-black uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400">
-                {locale.chapterLabels.chapter} 1 • {locale.chapterLabels.part} 2
+                {locale.sixPillars.pillar1Title} • {locale.chapterLabels.part} 2
               </span>
               <h3 className={`text-base sm:text-xl font-devanagari font-bold ${textTitleClass}`}>
-                {locale.chapterLabels.ch1Part2Title}
+                {locale.chapterLabels.ch1Part2Title} • Navagraha Sphuta
               </h3>
             </div>
             <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-500/30">
-              Graha Sphuta
+              Precise Degrees & Dignities
             </span>
           </div>
 
           {/* Graha Sphuta Full Table & Planetary Dignity Matrix */}
-          <div className="space-y-4 my-auto">
+          <div className="space-y-3.5 my-auto overflow-y-auto max-h-[600px] no-scrollbar pr-1">
             {planetaryPositionsData.length > 0 ? (
               <div className="overflow-x-auto rounded-2xl border-2 border-amber-500/30 bg-amber-500/[0.02] shadow-sm">
-                <table className="w-full text-left text-xs sm:text-sm">
+                <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="border-b-2 border-amber-500/30 bg-amber-500/10 font-cinzel text-amber-900 dark:text-amber-300">
-                      <th className="py-2.5 px-4 font-bold">{locale.planetHeaders.planet}</th>
-                      <th className="py-2.5 px-4 font-bold">{locale.planetHeaders.sign}</th>
-                      <th className="py-2.5 px-4 font-bold">{locale.planetHeaders.house}</th>
-                      <th className="py-2.5 px-4 font-bold">{locale.planetHeaders.dignity}</th>
+                      <th className="py-2.5 px-3 font-bold">{locale.planetHeaders.planet}</th>
+                      <th className="py-2.5 px-2 font-bold">Degree (अंश)</th>
+                      <th className="py-2.5 px-3 font-bold">{locale.planetHeaders.sign}</th>
+                      <th className="py-2.5 px-2 font-bold">{locale.planetHeaders.house}</th>
+                      <th className="py-2.5 px-2 font-bold">Motion / Avastha</th>
+                      <th className="py-2.5 px-3 font-bold text-right">{locale.planetHeaders.dignity}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-amber-500/15">
@@ -729,14 +864,30 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
 
                       return (
                         <tr key={pos.planet} className="hover:bg-amber-500/10 transition-colors">
-                          <td className="py-2 px-4 font-semibold flex items-center gap-2">
+                          <td className="py-2 px-3 font-semibold flex items-center gap-1.5">
                             <span className="text-base">{pos.icon}</span>
                             <span className="font-bold">{planetDisplay}</span>
                           </td>
-                          <td className="py-2 px-4 font-medium">{signDisplay}</td>
-                          <td className="py-2 px-4 font-mono font-bold">{houseDisplay}</td>
-                          <td className="py-2 px-4">
-                            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 border border-amber-500/30">
+                          <td className="py-2 px-2 font-mono text-[11px] font-bold text-amber-700 dark:text-amber-300">
+                            {pos.degree || '15° 00\''}
+                          </td>
+                          <td className="py-2 px-3 font-medium">{signDisplay}</td>
+                          <td className="py-2 px-2 font-mono font-bold">{houseDisplay}</td>
+                          <td className="py-2 px-2">
+                            {pos.isRetrograde ? (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                                ℞ Vakri (Retrograde)
+                              </span>
+                            ) : pos.isCombust ? (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                                🔥 Asta (Combust)
+                              </span>
+                            ) : (
+                              <span className="text-[10px] opacity-75 font-mono">Margi (Direct)</span>
+                            )}
+                          </td>
+                          <td className="py-2 px-3 text-right">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/15 border border-amber-500/30">
                               {dignityDisplay}
                             </span>
                           </td>
@@ -751,11 +902,14 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
             )}
 
             {/* Planetary Dispositions Insight Card */}
-            <div className="p-4 rounded-2xl border border-amber-500/20 bg-amber-500/[0.03] text-xs leading-relaxed text-stone-700 dark:text-slate-300">
-              <strong className="text-amber-600 dark:text-amber-400 block mb-1 font-devanagari font-bold">
+            <div className="p-3.5 rounded-2xl border border-amber-500/20 bg-amber-500/[0.03] text-xs leading-relaxed text-stone-700 dark:text-slate-300 space-y-1">
+              <strong className="text-amber-600 dark:text-amber-400 block text-xs font-devanagari font-bold">
                 {locale.sphutaCard.title}
               </strong>
-              <p>
+              <p className="text-[11px] leading-relaxed">
+                {locale.sixPillars.planetaryDef}
+              </p>
+              <p className="text-[10px] text-stone-500 dark:text-slate-400">
                 {locale.sphutaCard.desc}
               </p>
             </div>
@@ -888,210 +1042,9 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
       );
     }
 
-    // Page 4 (Book Page 5): Navagraha Matrix & Purushartha Life Pillars
-    if (pageIdx === 4) {
-      return (
-        <div className="relative h-full flex flex-col justify-between p-6 sm:p-10 select-none">
-          <BookBorderFlourish theme={bookTheme} />
-
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-4 pt-2">
-            <div>
-              <span className="text-[9px] font-black uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400">
-                {locale.chapterLabels.chapter} 3 • Chapter III
-              </span>
-              <h3 className={`text-base sm:text-xl font-devanagari font-bold ${textTitleClass}`}>
-                {locale.chapterLabels.ch3Title}
-              </h3>
-            </div>
-            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400">
-              Navagraha Matrix
-            </span>
-          </div>
-
-          <div className="space-y-4 my-auto">
-            {/* 4 Purushartha Pillars */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              <div className={`p-3 rounded-xl border ${cardBgClass}`}>
-                <div className="flex items-center justify-between">
-                  <span className="text-xl">🕉️</span>
-                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">{getLocalizedPurushartha('Dharma', language)}</span>
-                </div>
-                <h4 className="font-bold text-xs mt-1">{locale.purusharthaDetails.dharmaTitle}</h4>
-                <p className="text-[9px] opacity-75 mt-0.5">{locale.purusharthaDetails.dharmaDesc}</p>
-              </div>
-              <div className={`p-3 rounded-xl border ${cardBgClass}`}>
-                <div className="flex items-center justify-between">
-                  <span className="text-xl">💰</span>
-                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">{getLocalizedPurushartha('Artha', language)}</span>
-                </div>
-                <h4 className="font-bold text-xs mt-1">{locale.purusharthaDetails.arthaTitle}</h4>
-                <p className="text-[9px] opacity-75 mt-0.5">{locale.purusharthaDetails.arthaDesc}</p>
-              </div>
-              <div className={`p-3 rounded-xl border ${cardBgClass}`}>
-                <div className="flex items-center justify-between">
-                  <span className="text-xl">💖</span>
-                  <span className="text-[10px] font-bold text-pink-600 dark:text-pink-400">{getLocalizedPurushartha('Kama', language)}</span>
-                </div>
-                <h4 className="font-bold text-xs mt-1">{locale.purusharthaDetails.kamaTitle}</h4>
-                <p className="text-[9px] opacity-75 mt-0.5">{locale.purusharthaDetails.kamaDesc}</p>
-              </div>
-              <div className={`p-3 rounded-xl border ${cardBgClass}`}>
-                <div className="flex items-center justify-between">
-                  <span className="text-xl">🌊</span>
-                  <span className="text-[10px] font-bold text-sky-600 dark:text-sky-400">{getLocalizedPurushartha('Moksha', language)}</span>
-                </div>
-                <h4 className="font-bold text-xs mt-1">{locale.purusharthaDetails.mokshaTitle}</h4>
-                <p className="text-[9px] opacity-75 mt-0.5">{locale.purusharthaDetails.mokshaDesc}</p>
-              </div>
-            </div>
-
-            {/* Navagraha 9 Planetary Disposition Cards */}
-            <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 sm:gap-2.5">
-              {planetaryPositionsData.slice(0, 9).map((pos) => {
-                const nameDisplay = getLocalizedPlanet(pos.planet, language);
-                const signDisplay = `${getLocalizedSign(pos.sign, language)} • ${getLocalizedHouse(pos.house, language)}`;
-
-                return (
-                  <div key={pos.planet} className={`p-2.5 rounded-xl border ${cardBgClass} flex items-center gap-2`}>
-                    <span className="text-xl flex-shrink-0">{pos.icon}</span>
-                    <div className="min-w-0 flex-1">
-                      <span className="font-bold text-xs break-words block leading-snug">{nameDisplay}</span>
-                      <span className="text-[9px] opacity-80 break-words block leading-snug">{signDisplay}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.03] text-xs leading-relaxed text-stone-700 dark:text-slate-300">
-              <strong className="text-amber-600 dark:text-amber-400 block mb-1">
-                {locale.insightCard.title}
-              </strong>
-              <p>
-                {locale.insightCard.desc}
-              </p>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-between border-t border-amber-500/20 pt-2 text-[10px] font-mono text-stone-500 dark:text-slate-400 px-4">
-            <span>{locale.footers.navagrahaFooter}</span>
-            <span>— {locale.footers.pagePrefix} 5 —</span>
-            <span>{locale.footers.bookName}</span>
-          </div>
-        </div>
-      );
-    }
-
-    // Page 5 (Book Page 6): Vimshottari Mahadasha Timeline & Shani Sade Sati
-    if (pageIdx === 5) {
-      return (
-        <div className="relative h-full flex flex-col justify-between p-6 sm:p-10 select-none">
-          <BookBorderFlourish theme={bookTheme} />
-
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-4 pt-2">
-            <div>
-              <span className="text-[9px] font-black uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400">
-                {locale.chapterLabels.chapter} 4 • Chapter IV
-              </span>
-              <h3 className={`text-base sm:text-xl font-devanagari font-bold ${textTitleClass}`}>
-                {locale.mahadasha.title}
-              </h3>
-            </div>
-            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400">
-              {locale.mahadasha.subtitle}
-            </span>
-          </div>
-
-          <div className="space-y-4 my-auto">
-            {/* 120-Year Vimshottari Mahadasha Chronological Table */}
-            {displayMahadashas.length > 0 && (
-              <div>
-                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 mb-2 flex items-center justify-between">
-                  <span>⏳ {locale.mahadasha.title}</span>
-                  <span className="text-[9px] font-normal text-stone-500 dark:text-slate-400">
-                    {locale.mahadasha.activeBadge}
-                  </span>
-                </h4>
-                <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-1.5 sm:gap-2">
-                  {displayMahadashas.map((dasha, idx) => {
-                    const isCurrent = isDashaActive(dasha);
-                    return (
-                      <div
-                        key={idx}
-                        className={`p-2 rounded-xl border text-center transition-all ${
-                          isCurrent
-                            ? 'bg-amber-500/25 border-amber-500 shadow-md ring-1 ring-amber-400 font-bold'
-                            : cardBgClass
-                        }`}
-                      >
-                        <span className="text-base block">{getPlanetIcon(dasha.planet)}</span>
-                        <span className="text-[10px] font-bold block break-words leading-tight">
-                          {getLocalizedPlanet(dasha.planet, language)}
-                        </span>
-                        <span className="text-[9px] font-mono text-amber-700 dark:text-amber-300 block whitespace-nowrap">
-                          {dasha.startYear}–{dasha.endYear}
-                        </span>
-                        {isCurrent && (
-                          <span className="text-[8px] uppercase tracking-widest font-black text-amber-900 dark:text-amber-200 block bg-amber-400/30 rounded mt-0.5">
-                            {locale.mahadasha.activeSeal}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Shani Sade Sati 3-Phase Transit Timeline */}
-            {displaySaadesati.length > 0 && (
-              <div className="pt-2">
-                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 mb-2 flex items-center gap-1.5">
-                  <span>🪐</span>
-                  <span>{locale.mahadasha.sadesatiTitle}</span>
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  {displaySaadesati.map((cycle, idx) => (
-                    <div key={idx} className={`p-3 rounded-xl border ${cardBgClass} flex flex-col justify-between`}>
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
-                            {cycle.status || 'Transit'}
-                          </span>
-                          <span className="font-mono text-xs font-bold text-amber-600 dark:text-amber-400">
-                            {cycle.startDate && cycle.endDate ? `${cycle.startDate}–${cycle.endDate}` : `${cycle.startYear}–${cycle.endYear}`}
-                          </span>
-                        </div>
-                        <h5 className="font-bold text-xs">{stripAsterisksAndMarkdown(cycle.phase)}</h5>
-                        {cycle.description && (
-                          <p className="text-[10px] opacity-90 mt-1 leading-relaxed break-words">
-                            {stripAsterisksAndMarkdown(cycle.description)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-between border-t border-amber-500/20 pt-2 text-[10px] font-mono text-stone-500 dark:text-slate-400 px-4">
-            <span>{locale.footers.mahadashaFooter}</span>
-            <span>— {locale.footers.pagePrefix} 6 —</span>
-            <span>{locale.footers.bookName}</span>
-          </div>
-        </div>
-      );
-    }
-
-    // Pages 5 .. (5 + bhavaPages.length - 1): DEDICATED SEPARATE PAGES FOR EACH BHAVA
+    // Pages 4 .. (4 + bhavaPages.length - 1): DEDICATED SEPARATE PAGES FOR EACH BHAVA (Pillar 2: Life Domains)
     // If details overflow from a single page, an extra continuation page (Part 2) is automatically inserted.
-    if (pageIdx >= bhavaStartPage && pageIdx < aiChaptersStartPage) {
+    if (pageIdx >= bhavaStartPage && pageIdx < dashaPageIdx) {
       const bhavaPageIdx = pageIdx - bhavaStartPage;
       const { bhava, part, totalParts, pageTitle, chapterNumber } = bhavaPages[bhavaPageIdx];
       const hasPlanets = bhava.planets.length > 0;
@@ -1405,6 +1358,685 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
             <span>{locale.footers.bhavaFooter}</span>
             <span>— {locale.footers.pagePrefix} {pageIdx + 1} —</span>
             <span>{getLocalizedHouse(bhava.houseNumber, language)} {totalParts > 1 ? `(${locale.chapterLabels.part} ${part}/${totalParts})` : ''}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // Page dashaPageIdx: Pillar 3 — Cosmic Timing (Dasha Systems)
+    if (pageIdx === dashaPageIdx) {
+      return (
+        <div className="relative h-full flex flex-col justify-between p-6 sm:p-10 select-none">
+          <BookBorderFlourish theme={bookTheme} />
+
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-3 pt-2">
+            <div>
+              <span className="text-[9px] font-black uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400">
+                {locale.sixPillars.pillar3Title}
+              </span>
+              <h3 className={`text-base sm:text-xl font-devanagari font-bold ${textTitleClass}`}>
+                {locale.mahadasha.title} • {locale.sixPillars.pillar3Subtitle}
+              </h3>
+            </div>
+            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400">
+              Vimshottari 120Y
+            </span>
+          </div>
+
+          <div className="space-y-3.5 my-auto overflow-y-auto max-h-[600px] no-scrollbar pr-1">
+            {/* Philosophical Framework Definition */}
+            <div className="p-3 rounded-2xl bg-amber-500/[0.04] border border-amber-500/20 text-xs text-stone-700 dark:text-slate-300 leading-relaxed">
+              <strong className="text-amber-700 dark:text-amber-300 block mb-1 font-bold">
+                ⏳ {locale.sixPillars.pillar3Title}
+              </strong>
+              <p>{locale.sixPillars.vimshottariDesc}</p>
+            </div>
+
+            {/* 120-Year Vimshottari Mahadasha 9 Major Planetary Cycles */}
+            {displayMahadashas.length > 0 && (
+              <div>
+                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 mb-1.5 flex items-center justify-between">
+                  <span>⏳ 120-Year Mahadasha Planetary Cycle</span>
+                  <span className="text-[9px] font-normal text-stone-500 dark:text-slate-400">
+                    {locale.mahadasha.activeBadge}
+                  </span>
+                </h4>
+                <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-9 gap-1.5">
+                  {displayMahadashas.map((dasha, idx) => {
+                    const isCurrent = isDashaActive(dasha);
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-2 rounded-xl border text-center transition-all ${
+                          isCurrent
+                            ? 'bg-amber-500/25 border-amber-500 shadow-md ring-1 ring-amber-400 font-bold'
+                            : cardBgClass
+                        }`}
+                      >
+                        <span className="text-base block">{getPlanetIcon(dasha.planet)}</span>
+                        <span className="text-[10px] font-bold block break-words leading-tight">
+                          {getLocalizedPlanet(dasha.planet, language)}
+                        </span>
+                        <span className="text-[9px] font-mono text-amber-700 dark:text-amber-300 block whitespace-nowrap">
+                          {dasha.startYear}–{dasha.endYear}
+                        </span>
+                        {isCurrent && (
+                          <span className="text-[8px] uppercase tracking-widest font-black text-amber-900 dark:text-amber-200 block bg-amber-400/30 rounded mt-0.5">
+                            {locale.mahadasha.activeSeal}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Active Mahadasha's Antardashas Sub-Periods Table */}
+            {antardashasData.length > 0 && (
+              <div className="p-3.5 rounded-2xl bg-amber-500/[0.03] border border-amber-500/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                    <span>🔮</span>
+                    <span>{locale.sixPillars.antardashaTitle} ({getLocalizedPlanet(activeMahadasha?.planet || 'Sun', language)} Mahadasha)</span>
+                  </h4>
+                  <span className="text-[9px] font-mono text-amber-700 dark:text-amber-300 font-bold">
+                    9 Sub-Periods
+                  </span>
+                </div>
+                <p className="text-[10px] text-stone-600 dark:text-slate-400 leading-snug">
+                  {locale.sixPillars.antardashaDesc}
+                </p>
+                <div className="overflow-x-auto rounded-xl border border-amber-500/20 bg-black/5 dark:bg-white/5">
+                  <table className="w-full text-left text-[11px]">
+                    <thead>
+                      <tr className="border-b border-amber-500/20 bg-amber-500/10 text-amber-800 dark:text-amber-300 font-bold">
+                        <th className="py-1.5 px-3">Sub-Period (Antardasha)</th>
+                        <th className="py-1.5 px-3">Start Date</th>
+                        <th className="py-1.5 px-3">End Date</th>
+                        <th className="py-1.5 px-3 text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-amber-500/10">
+                      {antardashasData.map((ad, idx) => (
+                        <tr key={idx} className={ad.isCurrent ? 'bg-amber-500/15 font-bold' : 'hover:bg-amber-500/5'}>
+                          <td className="py-1.5 px-3 flex items-center gap-1.5">
+                            <span>{getPlanetIcon(ad.planet)}</span>
+                            <span>{getLocalizedPlanet(ad.planet, language)}</span>
+                          </td>
+                          <td className="py-1.5 px-3 font-mono text-[10px]">{ad.startDate}</td>
+                          <td className="py-1.5 px-3 font-mono text-[10px]">{ad.endDate}</td>
+                          <td className="py-1.5 px-3 text-right">
+                            {ad.isCurrent ? (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                                Active Now
+                              </span>
+                            ) : (
+                              <span className="text-[9px] opacity-60">{ad.durationMonths} Months</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Shani Sade Sati 3-Phase Transit Timeline */}
+            {displaySaadesati.length > 0 && (
+              <div className="pt-1">
+                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 mb-1.5 flex items-center gap-1.5">
+                  <span>🪐</span>
+                  <span>{locale.mahadasha.sadesatiTitle}</span>
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {displaySaadesati.map((cycle, idx) => (
+                    <div key={idx} className={`p-2.5 rounded-xl border ${cardBgClass} flex flex-col justify-between`}>
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                            {cycle.status || 'Transit'}
+                          </span>
+                          <span className="font-mono text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                            {cycle.startDate && cycle.endDate ? `${cycle.startDate}–${cycle.endDate}` : `${cycle.startYear}–${cycle.endYear}`}
+                          </span>
+                        </div>
+                        <h5 className="font-bold text-xs">{stripAsterisksAndMarkdown(cycle.phase)}</h5>
+                        {cycle.description && (
+                          <p className="text-[10px] opacity-85 mt-1 leading-relaxed break-words">
+                            {stripAsterisksAndMarkdown(cycle.description)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between border-t border-amber-500/20 pt-2 text-[10px] font-mono text-stone-500 dark:text-slate-400 px-4">
+            <span>{locale.footers.mahadashaFooter}</span>
+            <span>— {locale.footers.pagePrefix} {pageIdx + 1} —</span>
+            <span>{locale.sixPillars.pillar3Title}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // Page shadbalaPageIdx: Pillar 4 (Part 1) — Karmic Blueprint & Strengths (Nakshatras & Shadbala Table)
+    if (pageIdx === shadbalaPageIdx) {
+      return (
+        <div className="relative h-full flex flex-col justify-between p-6 sm:p-10 select-none">
+          <BookBorderFlourish theme={bookTheme} />
+
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-3 pt-2">
+            <div>
+              <span className="text-[9px] font-black uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400">
+                {locale.sixPillars.pillar4Title} • {locale.chapterLabels.part} 1
+              </span>
+              <h3 className={`text-base sm:text-xl font-devanagari font-bold ${textTitleClass}`}>
+                {locale.sixPillars.shadbalaTitle} & {locale.cardinalPoints.nakshatra}
+              </h3>
+            </div>
+            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400">
+              Shadbala Granth
+            </span>
+          </div>
+
+          <div className="space-y-3.5 my-auto overflow-y-auto max-h-[600px] no-scrollbar pr-1">
+            {/* Nakshatras (Lunar Mansions) Core Psychology & Destiny Nuance */}
+            <div className="p-3.5 rounded-2xl bg-amber-500/[0.04] border border-amber-500/20 space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                  <span>✨</span>
+                  <span>Janma Nakshatra: {stripAsterisksAndMarkdown(analysis.nakshatra)} ({stripAsterisksAndMarkdown(avakahadaData?.nakshatra || 'Rohini')})</span>
+                </h4>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-800 dark:text-amber-200 font-bold">
+                  27 Lunar Mansions
+                </span>
+              </div>
+              <p className="text-xs leading-relaxed text-stone-700 dark:text-slate-300">
+                {locale.sixPillars.nakshatrasDesc}
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-[11px]">
+                <div className="p-2 rounded-xl bg-black/5 dark:bg-white/5 border border-amber-500/10">
+                  <span className="text-[9px] opacity-75 uppercase block font-bold text-amber-600 dark:text-amber-400">Star Lord</span>
+                  <span className="font-bold">{getLocalizedPlanet(analysis.starLord || 'Moon', language)}</span>
+                </div>
+                <div className="p-2 rounded-xl bg-black/5 dark:bg-white/5 border border-amber-500/10">
+                  <span className="text-[9px] opacity-75 uppercase block font-bold text-amber-600 dark:text-amber-400">Sub Lord</span>
+                  <span className="font-bold">{getLocalizedPlanet(analysis.subLord || 'Jupiter', language)}</span>
+                </div>
+                <div className="p-2 rounded-xl bg-black/5 dark:bg-white/5 border border-amber-500/10">
+                  <span className="text-[9px] opacity-75 uppercase block font-bold text-amber-600 dark:text-amber-400">Gana</span>
+                  <span className="font-bold">{stripAsterisksAndMarkdown(avakahadaData?.gana, language) || 'Deva'}</span>
+                </div>
+                <div className="p-2 rounded-xl bg-black/5 dark:bg-white/5 border border-amber-500/10">
+                  <span className="text-[9px] opacity-75 uppercase block font-bold text-amber-600 dark:text-amber-400">Yoni</span>
+                  <span className="font-bold">{stripAsterisksAndMarkdown(avakahadaData?.yoni, language) || 'Gaja'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Shadbala (Six-fold Mathematical Strength Table) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                    <span>⚖️</span>
+                    <span>{locale.sixPillars.shadbalaTitle}</span>
+                  </h4>
+                  <p className="text-[10px] text-stone-600 dark:text-slate-400 mt-0.5">
+                    {locale.sixPillars.shadbalaDesc}
+                  </p>
+                </div>
+              </div>
+
+              {shadbalaData.length > 0 ? (
+                <div className="overflow-x-auto rounded-2xl border-2 border-amber-500/30 bg-amber-500/[0.02] shadow-sm">
+                  <table className="w-full text-left text-[11px]">
+                    <thead>
+                      <tr className="border-b border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-300 font-bold">
+                        <th className="py-2 px-3">Graha</th>
+                        <th className="py-2 px-2 text-center" title="Sthana Bala (Positional Strength)">Sthana</th>
+                        <th className="py-2 px-2 text-center" title="Dig Bala (Directional Strength)">Dig</th>
+                        <th className="py-2 px-2 text-center" title="Kaala Bala (Temporal Strength)">Kaala</th>
+                        <th className="py-2 px-2 text-center" title="Cheshta Bala (Motional Strength)">Cheshta</th>
+                        <th className="py-2 px-2 text-center" title="Naisargika Bala (Natural Strength)">Naisargika</th>
+                        <th className="py-2 px-2 text-center" title="Drik Bala (Aspectual Strength)">Drik</th>
+                        <th className="py-2 px-2 text-center font-bold">Total / Req</th>
+                        <th className="py-2 px-3 text-right">Potency</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-amber-500/15">
+                      {shadbalaData.map((sb) => (
+                        <tr key={sb.planet} className="hover:bg-amber-500/10 transition-colors">
+                          <td className="py-1.5 px-3 font-semibold flex items-center gap-1.5">
+                            <span>{getPlanetIcon(sb.planet)}</span>
+                            <span>{getLocalizedPlanet(sb.planet, language)}</span>
+                          </td>
+                          <td className="py-1.5 px-2 text-center font-mono text-[10px]">{sb.sthanaBala}</td>
+                          <td className="py-1.5 px-2 text-center font-mono text-[10px]">{sb.digBala}</td>
+                          <td className="py-1.5 px-2 text-center font-mono text-[10px]">{sb.kaalaBala}</td>
+                          <td className="py-1.5 px-2 text-center font-mono text-[10px]">{sb.cheshtaBala}</td>
+                          <td className="py-1.5 px-2 text-center font-mono text-[10px]">{sb.naisargikaBala}</td>
+                          <td className="py-1.5 px-2 text-center font-mono text-[10px]">{sb.drikBala}</td>
+                          <td className="py-1.5 px-2 text-center font-mono font-bold text-[10px]">
+                            {sb.totalRupas} / {sb.requiredRupas} ({sb.ratioPercent}%)
+                          </td>
+                          <td className="py-1.5 px-3 text-right">
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                              sb.strengthStatus === 'Exceptional' || sb.strengthStatus === 'Strong'
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                : sb.strengthStatus === 'Sufficient' || sb.strengthStatus === 'Moderate'
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                            }`}>
+                              {sb.deliveringPower}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-8 text-center text-xs opacity-75">Compiling Shadbala six-fold mathematical matrices...</div>
+              )}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between border-t border-amber-500/20 pt-2 text-[10px] font-mono text-stone-500 dark:text-slate-400 px-4">
+            <span>{locale.footers.bookName}</span>
+            <span>— {locale.footers.pagePrefix} {pageIdx + 1} —</span>
+            <span>{locale.sixPillars.shadbalaTitle}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // Page yogasPageIdx: Pillar 4 (Part 2) — Karmic Blueprint & Strengths (Classical Vedic Yogas & Karmic Doshas)
+    if (pageIdx === yogasPageIdx) {
+      return (
+        <div className="relative h-full flex flex-col justify-between p-6 sm:p-10 select-none">
+          <BookBorderFlourish theme={bookTheme} />
+
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-3 pt-2">
+            <div>
+              <span className="text-[9px] font-black uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400">
+                {locale.sixPillars.pillar4Title} • {locale.chapterLabels.part} 2
+              </span>
+              <h3 className={`text-base sm:text-xl font-devanagari font-bold ${textTitleClass}`}>
+                {locale.sixPillars.yogasTitle} & {locale.sixPillars.doshasTitle}
+              </h3>
+            </div>
+            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400">
+              Yoga & Dosha
+            </span>
+          </div>
+
+          <div className="space-y-3.5 my-auto overflow-y-auto max-h-[600px] no-scrollbar pr-1">
+            {/* Special Planetary Combinations (Vedic Yogas) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                  <span>👑</span>
+                  <span>{locale.sixPillars.yogasTitle}</span>
+                </h4>
+                <span className="text-[10px] font-mono text-emerald-400 font-bold">
+                  {yogasData.filter(y => y.isActive).length} Formed
+                </span>
+              </div>
+              <p className="text-[10px] text-stone-600 dark:text-slate-400 leading-snug">
+                {locale.sixPillars.yogasDesc}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {yogasData.slice(0, 6).map((yoga, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-2.5 rounded-xl border flex flex-col justify-between transition-all ${
+                      yoga.isActive
+                        ? 'bg-amber-500/[0.06] border-amber-500/40 shadow-sm'
+                        : 'bg-black/5 dark:bg-white/5 border-amber-500/10 opacity-60'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-amber-800 dark:text-amber-200 text-xs">
+                          {stripAsterisksAndMarkdown(yoga.name)}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${
+                          yoga.isActive
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                            : 'bg-stone-500/20 text-stone-400 border border-stone-500/30'
+                        }`}>
+                          {yoga.category}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-stone-700 dark:text-slate-300 leading-snug">
+                        {stripAsterisksAndMarkdown(yoga.description)}
+                      </p>
+                    </div>
+                    <div className="mt-2 pt-1 border-t border-amber-500/15 flex items-center justify-between text-[9px] text-amber-700 dark:text-amber-300">
+                      <span>Planets: {yoga.planetsInvolved.join(', ')}</span>
+                      <span className="font-medium italic">{stripAsterisksAndMarkdown(yoga.lifeImpact)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Planetary Afflictions & Karmic Debts (Doshas) */}
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                  <span>🛡️</span>
+                  <span>{locale.sixPillars.doshasTitle}</span>
+                </h4>
+                <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400">
+                  Classical Parihara Check
+                </span>
+              </div>
+              <p className="text-[10px] text-stone-600 dark:text-slate-400 leading-snug">
+                {locale.sixPillars.doshasDesc}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {doshasData.map((dosha, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-2.5 rounded-xl border flex flex-col justify-between ${
+                      dosha.isActive
+                        ? 'bg-orange-500/[0.06] border-orange-500/30'
+                        : 'bg-emerald-500/[0.05] border-emerald-500/25'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-xs text-amber-900 dark:text-amber-100">
+                          {stripAsterisksAndMarkdown(dosha.name)}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${
+                          dosha.isActive
+                            ? dosha.cancellationText
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                              : 'bg-red-500/20 text-red-300 border border-red-500/40'
+                            : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                        }`}>
+                          {dosha.cancellationText ? 'Parihara Cancelled' : dosha.severity}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-stone-700 dark:text-slate-300 leading-snug">
+                        {stripAsterisksAndMarkdown(dosha.explanation)}
+                      </p>
+                    </div>
+                    <div className="mt-2 pt-1 border-t border-amber-500/15 text-[9px] text-amber-800 dark:text-amber-200">
+                      <strong>Remedy / Upaya:</strong> {stripAsterisksAndMarkdown(dosha.remedy)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between border-t border-amber-500/20 pt-2 text-[10px] font-mono text-stone-500 dark:text-slate-400 px-4">
+            <span>{locale.footers.bookName}</span>
+            <span>— {locale.footers.pagePrefix} {pageIdx + 1} —</span>
+            <span>{locale.sixPillars.yogasTitle}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // Page vargasPageIdx: Pillar 5 — Divisional Charts (Vargas: D9 Navamsha, D10 Dashamsha, D7 Saptamsha)
+    if (pageIdx === vargasPageIdx) {
+      const activeVargaKey = selectedVarga.toLowerCase() as 'd9' | 'd10' | 'd7';
+      const activeVargaDetail = divisionalChartsData[activeVargaKey] || divisionalChartsData.d9;
+
+      return (
+        <div className="relative h-full flex flex-col justify-between p-6 sm:p-10 select-none">
+          <BookBorderFlourish theme={bookTheme} />
+
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-3 pt-2">
+            <div>
+              <span className="text-[9px] font-black uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400">
+                {locale.sixPillars.pillar5Title}
+              </span>
+              <h3 className={`text-base sm:text-xl font-devanagari font-bold ${textTitleClass}`}>
+                {activeVargaDetail.name} ({selectedVarga}) • {locale.sixPillars.pillar5Subtitle}
+              </h3>
+            </div>
+            {/* Interactive Varga Selector Tabs */}
+            <div className="flex items-center gap-1 bg-amber-500/10 p-1 rounded-xl border border-amber-500/30">
+              {(['D9', 'D10', 'D7'] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setSelectedVarga(v)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                    selectedVarga === v
+                      ? 'bg-amber-500 text-amber-950 font-black shadow-sm'
+                      : 'text-stone-700 dark:text-slate-300 hover:bg-amber-500/20'
+                  }`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3.5 my-auto overflow-y-auto max-h-[600px] no-scrollbar pr-1">
+            {/* Varga Purpose & Description Card */}
+            <div className="p-3 rounded-2xl bg-amber-500/[0.04] border border-amber-500/20 text-xs text-stone-700 dark:text-slate-300 leading-relaxed">
+              <div className="flex items-center justify-between mb-1">
+                <strong className="text-amber-700 dark:text-amber-300 text-xs font-bold">
+                  🏛️ {activeVargaDetail.name} ({activeVargaDetail.id}) — {activeVargaDetail.title}
+                </strong>
+                <span className="text-[9px] font-mono text-amber-600 dark:text-amber-400 font-bold">
+                  Microscopic Divisional Analysis
+                </span>
+              </div>
+              <p>{stripAsterisksAndMarkdown(activeVargaDetail.description)}</p>
+            </div>
+
+            {/* Divisional North Indian Diamond Chart & Planetary Positions in Varga */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+              {/* Diamond Chart of the Selected Varga */}
+              <div className="md:col-span-7 flex justify-center p-3 rounded-2xl bg-amber-500/[0.03] border border-amber-500/20">
+                <div className="scale-95 sm:scale-100 transform origin-center">
+                  <KundaliChart
+                    data={activeVargaDetail.chart}
+                    lagnaSign={activeVargaDetail.lagnaSign}
+                  />
+                </div>
+              </div>
+
+              {/* Planetary Placements in this Varga */}
+              <div className="md:col-span-5 space-y-2">
+                <h4 className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                  Planetary Placements in {selectedVarga}
+                </h4>
+                <div className="grid grid-cols-2 gap-1.5 text-xs">
+                  {planetaryPositionsData.slice(0, 8).map((p) => {
+                    const houseInVarga = Object.entries(activeVargaDetail.chart).find(([_, planets]) =>
+                      (planets as string[]).some(pl => pl.toLowerCase().includes(p.planet.toLowerCase()))
+                    )?.[0] || '1';
+
+                    return (
+                      <div key={p.planet} className={`p-2 rounded-xl border ${cardBgClass} flex items-center gap-1.5`}>
+                        <span className="text-base">{p.icon}</span>
+                        <div>
+                          <span className="font-bold text-[11px] block">{getLocalizedPlanet(p.planet, language)}</span>
+                          <span className="text-[9px] opacity-75">{getLocalizedHouse(parseInt(houseInVarga, 10), language)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-black/5 dark:bg-white/5 border border-amber-500/15 text-[10px] text-stone-600 dark:text-slate-400 leading-snug">
+                  {selectedVarga === 'D9' && locale.sixPillars.d9Desc}
+                  {selectedVarga === 'D10' && locale.sixPillars.d10Desc}
+                  {selectedVarga === 'D7' && locale.sixPillars.d7Desc}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between border-t border-amber-500/20 pt-2 text-[10px] font-mono text-stone-500 dark:text-slate-400 px-4">
+            <span>{locale.footers.bookName}</span>
+            <span>— {locale.footers.pagePrefix} {pageIdx + 1} —</span>
+            <span>{locale.sixPillars.pillar5Title} ({selectedVarga})</span>
+          </div>
+        </div>
+      );
+    }
+
+    // Page remediesPageIdx: Pillar 6 — Practical Remedies (Upayas: Gemstones, Mantra & Japa, Charity & Rituals)
+    if (pageIdx === remediesPageIdx) {
+      return (
+        <div className="relative h-full flex flex-col justify-between p-6 sm:p-10 select-none">
+          <BookBorderFlourish theme={bookTheme} />
+
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-3 pt-2">
+            <div>
+              <span className="text-[9px] font-black uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400">
+                {locale.sixPillars.pillar6Title}
+              </span>
+              <h3 className={`text-base sm:text-xl font-devanagari font-bold ${textTitleClass}`}>
+                {locale.sixPillars.pillar6Subtitle}
+              </h3>
+            </div>
+            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400">
+              Vedic Upayas
+            </span>
+          </div>
+
+          <div className="space-y-3.5 my-auto overflow-y-auto max-h-[600px] no-scrollbar pr-1">
+            {/* Philosophical Framework */}
+            <div className="p-3 rounded-2xl bg-amber-500/[0.04] border border-amber-500/20 text-xs text-stone-700 dark:text-slate-300 leading-relaxed">
+              <strong className="text-amber-700 dark:text-amber-300 block mb-1 font-bold">
+                🪔 Vedic Karma Transformation
+              </strong>
+              <p>
+                Vedic astrology is anchored in the concept of transforming one's karma through conscious, disciplined effort. Actionable remedies balance celestial frequencies and mitigate karmic afflictions.
+              </p>
+            </div>
+
+            {/* 3 Core Remedy Pillars */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
+              {/* Gemstone Recommendations */}
+              <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-2 flex flex-col justify-between">
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5 mb-1">
+                    <span>💎</span>
+                    <span>{locale.sixPillars.gemstonesTitle}</span>
+                  </h4>
+                  <p className="text-[10px] text-stone-600 dark:text-slate-400 leading-snug">
+                    {locale.sixPillars.gemstonesDesc}
+                  </p>
+                  <div className="space-y-1.5 mt-2">
+                    <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                      <span className="text-[9px] uppercase font-bold text-emerald-600 dark:text-emerald-400 block">Primary Gemstone</span>
+                      <strong className="text-xs block">{practicalRemediesData.gemstones.primary.name} ({practicalRemediesData.gemstones.primary.sanskritName})</strong>
+                      <span className="text-[9px] opacity-75">
+                        {practicalRemediesData.gemstones.secondary ? `Substitute: ${practicalRemediesData.gemstones.secondary.name}` : `Planet: ${practicalRemediesData.gemstones.primary.planet}`}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1 text-[9px]">
+                      <div className="p-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-emerald-500/15">
+                        <span className="opacity-75 block">Weight</span>
+                        <strong>{practicalRemediesData.gemstones.primary.carat}</strong>
+                      </div>
+                      <div className="p-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-emerald-500/15">
+                        <span className="opacity-75 block">Metal</span>
+                        <strong>{practicalRemediesData.gemstones.primary.metal}</strong>
+                      </div>
+                      <div className="p-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-emerald-500/15">
+                        <span className="opacity-75 block">Finger</span>
+                        <strong>{practicalRemediesData.gemstones.primary.finger}</strong>
+                      </div>
+                      <div className="p-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-emerald-500/15">
+                        <span className="opacity-75 block">Auspicious Day</span>
+                        <strong>{practicalRemediesData.gemstones.primary.dayTime}</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-2 rounded-xl bg-black/5 dark:bg-white/5 border border-emerald-500/20 text-[9px] italic">
+                  <strong>Mantra:</strong> {practicalRemediesData.gemstones.primary.mantra}
+                </div>
+              </div>
+
+              {/* Mantra & Japa */}
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2 flex flex-col justify-between">
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 flex items-center gap-1.5 mb-1">
+                    <span>🕉️</span>
+                    <span>{locale.sixPillars.mantraTitle}</span>
+                  </h4>
+                  <p className="text-[10px] text-stone-600 dark:text-slate-400 leading-snug">
+                    {locale.sixPillars.mantraDesc}
+                  </p>
+                  <div className="space-y-1.5 mt-2">
+                    {practicalRemediesData.mantras.slice(0, 2).map((m, mIdx) => (
+                      <div key={mIdx} className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                        <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">{m.type} ({m.planet})</span>
+                        <strong className="text-[11px] block">{m.mantraText}</strong>
+                        <span className="text-[9px] opacity-75">{m.repetitions} • {m.optimalTiming}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="p-2 rounded-xl bg-black/5 dark:bg-white/5 border border-amber-500/20 text-[9px] flex items-center justify-between">
+                  <span>Count: 108 Repetitions</span>
+                  <span className="font-bold">Mala: {practicalRemediesData.mantras[0]?.rosary || 'Rudraksha / Tulsi'}</span>
+                </div>
+              </div>
+
+              {/* Charity (Daan) & Rituals */}
+              <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 space-y-2 flex flex-col justify-between">
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-purple-700 dark:text-purple-300 flex items-center gap-1.5 mb-1">
+                    <span>🕊️</span>
+                    <span>{locale.sixPillars.charityTitle}</span>
+                  </h4>
+                  <p className="text-[10px] text-stone-600 dark:text-slate-400 leading-snug">
+                    {locale.sixPillars.charityDesc}
+                  </p>
+                  <div className="space-y-1.5 mt-2">
+                    {practicalRemediesData.charities.slice(0, 2).map((c, cIdx) => (
+                      <div key={cIdx} className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                        <span className="text-[9px] uppercase font-bold text-purple-600 dark:text-purple-400 block">{c.planet} Daan • {c.targetDay}</span>
+                        <span className="text-[11px] font-semibold block">{c.items}</span>
+                        <span className="text-[9px] opacity-75">Recipient: {c.recipient}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="p-2 rounded-xl bg-black/5 dark:bg-white/5 border border-purple-500/20 text-[9px]">
+                  <strong>Karmic Benefit:</strong> {practicalRemediesData.charities[0]?.karmicBenefit || 'Mitigates malefic planetary affliction'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between border-t border-amber-500/20 pt-2 text-[10px] font-mono text-stone-500 dark:text-slate-400 px-4">
+            <span>{locale.footers.bookName}</span>
+            <span>— {locale.footers.pagePrefix} {pageIdx + 1} —</span>
+            <span>{locale.sixPillars.pillar6Title}</span>
           </div>
         </div>
       );
@@ -1745,16 +2377,19 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
                   className="bg-black/60 border border-amber-500/30 text-amber-200 text-xs rounded-xl px-3 py-2 outline-none font-medium cursor-pointer"
                 >
                   <option value={0}>Page 1: {locale.navigation.coverOption}</option>
-                  <option value={1}>Page 2: {locale.navigation.chartOption}</option>
-                  <option value={2}>Page 3: {locale.navigation.sphutaOption}</option>
+                  <option value={1}>Page 2: {locale.sixPillars.pillar1Title} • {locale.cardinalPoints.lagna} & {locale.cardinalPoints.moonSign}</option>
+                  <option value={2}>Page 3: {locale.sixPillars.pillar1Title} • {locale.planetHeaders.planet} Sphuta</option>
                   <option value={3}>Page 4: {locale.navigation.panchangaOption}</option>
-                  <option value={4}>Page 5: {locale.navigation.navagrahaOption}</option>
-                  <option value={5}>Page 6: {locale.navigation.mahadashaOption}</option>
                   {bhavaPages.map((bp, bpIdx) => (
                     <option key={`bhava-pg-${bpIdx}`} value={bhavaStartPage + bpIdx}>
                       Page {bhavaStartPage + bpIdx + 1}: {getLocalizedHouse(bp.bhava.houseNumber, language)} ({getLocalizedSign(bp.bhava.rashiName, language)}) {bp.totalParts > 1 ? `[${bp.part}/2]` : ''}
                     </option>
                   ))}
+                  <option value={dashaPageIdx}>Page {dashaPageIdx + 1}: {locale.sixPillars.pillar3Title}</option>
+                  <option value={shadbalaPageIdx}>Page {shadbalaPageIdx + 1}: {locale.sixPillars.pillar4Title} (Part 1) • {locale.sixPillars.shadbalaTitle}</option>
+                  <option value={yogasPageIdx}>Page {yogasPageIdx + 1}: {locale.sixPillars.pillar4Title} (Part 2) • {locale.sixPillars.yogasTitle}</option>
+                  <option value={vargasPageIdx}>Page {vargasPageIdx + 1}: {locale.sixPillars.pillar5Title}</option>
+                  <option value={remediesPageIdx}>Page {remediesPageIdx + 1}: {locale.sixPillars.pillar6Title}</option>
                   {aiPages.map((ap, idx) => (
                     <option key={`ai-pg-${idx}`} value={aiChaptersStartPage + idx}>
                       Page {aiChaptersStartPage + idx + 1}: {ap.cleanTitle} {ap.totalParts > 1 ? `[${ap.part}/2]` : ''}

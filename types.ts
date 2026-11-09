@@ -154,6 +154,97 @@ export interface BhavaDetailedAnalysis {
   remedies: string[];
 }
 
+export interface ShadbalaDetail {
+  planet: string;
+  planetLocalized: string;
+  icon: string;
+  sthanaBala: number;   // Positional strength
+  digBala: number;      // Directional strength
+  kaalaBala: number;    // Temporal strength
+  cheshtaBala: number;  // Motional strength
+  naisargikaBala: number; // Natural strength
+  drikBala: number;     // Aspectual strength
+  totalShashtiamsas: number;
+  totalRupas: number;
+  requiredRupas: number;
+  ratioPercent: number;
+  strengthStatus: 'Exceptional' | 'Strong' | 'Sufficient' | 'Moderate' | 'Weak';
+  deliveringPower: string;
+}
+
+export interface VedicYogaDetail {
+  name: string;
+  category: 'Raja' | 'Dhana' | 'Mahapurusha' | 'Auspicious' | 'Spiritual';
+  planetsInvolved: string[];
+  description: string;
+  lifeImpact: string;
+  isActive: boolean;
+}
+
+export interface VedicDoshaDetail {
+  name: string;
+  severity: 'None' | 'Mild' | 'Moderate' | 'Severe';
+  isActive: boolean;
+  explanation: string;
+  cancellationText?: string;
+  remedy: string;
+}
+
+export interface DivisionalChartDetail {
+  id: 'D1' | 'D9' | 'D10' | 'D7';
+  name: string;
+  title: string;
+  description: string;
+  lagnaSign: number;
+  chart: KundaliChartData;
+}
+
+export interface AntardashaDetail {
+  planet: string;
+  startDate: string;
+  endDate: string;
+  durationMonths: number;
+  isCurrent: boolean;
+  effectSummary: string;
+}
+
+export interface PracticalRemedyDetail {
+  gemstones: {
+    primary: {
+      name: string;
+      sanskritName: string;
+      planet: string;
+      carat: string;
+      metal: string;
+      finger: string;
+      dayTime: string;
+      mantra: string;
+    };
+    secondary?: {
+      name: string;
+      sanskritName: string;
+      planet: string;
+      metal: string;
+      finger: string;
+    };
+  };
+  mantras: Array<{
+    planet: string;
+    type: string;
+    mantraText: string;
+    repetitions: string;
+    optimalTiming: string;
+    rosary: string;
+  }>;
+  charities: Array<{
+    planet: string;
+    items: string;
+    targetDay: string;
+    recipient: string;
+    karmicBenefit: string;
+  }>;
+}
+
 export interface KundaliResponse {
   report: string;
   chart: KundaliChartData;
@@ -162,11 +253,23 @@ export interface KundaliResponse {
   subLord: string;
   nakshatra: string;
   moonSign: string;
+  sunSign?: string;
   system?: KundaliSystem;
   mahadashas?: MahadashaPeriod[];
   saadesatiCycles?: SaadesatiPhase[];
   avakahada?: AvakahadaDetails;
   planetaryPositions?: PlanetaryPositionDetail[];
+  shadbala?: ShadbalaDetail[];
+  yogas?: VedicYogaDetail[];
+  doshas?: VedicDoshaDetail[];
+  divisionalCharts?: {
+    d1: DivisionalChartDetail;
+    d9: DivisionalChartDetail;
+    d10: DivisionalChartDetail;
+    d7: DivisionalChartDetail;
+  };
+  antardashas?: AntardashaDetail[];
+  practicalRemedies?: PracticalRemedyDetail;
 }
 
 export interface PlanetaryTransitInfo {

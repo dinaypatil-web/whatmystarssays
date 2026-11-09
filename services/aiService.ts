@@ -1,7 +1,20 @@
 import { GoogleGenAI } from "@google/genai";
 import { BirthDetails, MatchmakingDetails, Timeframe, Language, ChatMessage, KundaliResponse, KundaliSystem, PlanetaryTransitInfo } from "../types";
 import { StorageService } from "./storageService";
-import { calculateAshtakootMilan, calculateMoonDetails, calculateSaadesatiPhases, calculateAvakahadaDetails, calculatePlanetaryPositions, ensureValidKundaliChart } from "./astrologyHelper";
+import {
+  calculateAshtakootMilan,
+  calculateMoonDetails,
+  calculateSaadesatiPhases,
+  calculateAvakahadaDetails,
+  calculatePlanetaryPositions,
+  ensureValidKundaliChart,
+  calculateShadbala,
+  calculateYogas,
+  calculateDoshas,
+  calculateDivisionalCharts,
+  calculateAntardashas,
+  calculatePracticalRemedies
+} from "./astrologyHelper";
 import { getLocalizedPlanet, getLocalizedSign, getKundaliLocale } from "./kundaliLocalization";
 import { getLocalizedBhavaData } from "./bhavaLocalization";
 
@@ -572,6 +585,19 @@ Chart keys must be "1" through "12" with planet name arrays. lagnaSign is 1-12.`
       parsed.chart
     );
 
+    // Calculate complete 6 foundational pillars
+    parsed.shadbala = calculateShadbala(parsed.planetaryPositions, parsed.lagnaSign || 1, details.dob, details.tob, language);
+    parsed.yogas = calculateYogas(parsed.planetaryPositions, parsed.lagnaSign || 1, language);
+    parsed.doshas = calculateDoshas(parsed.planetaryPositions, parsed.lagnaSign || 1, parsed.avakahada, language);
+    parsed.divisionalCharts = calculateDivisionalCharts(parsed.planetaryPositions, parsed.lagnaSign || 1);
+
+    const activeMaha = (parsed.mahadashas || []).find(m => m.isCurrent) || (parsed.mahadashas || [])[0];
+    parsed.antardashas = calculateAntardashas(activeMaha, details.dob, language);
+    parsed.practicalRemedies = calculatePracticalRemedies(parsed.planetaryPositions, parsed.lagnaSign || 1, parsed.doshas, language);
+
+    const sunPos = parsed.planetaryPositions.find(p => p.planet === 'Sun');
+    if (sunPos) parsed.sunSign = getLocalizedSign(sunPos.sign, language);
+
     return parsed;
   });
 
@@ -596,9 +622,9 @@ const generateOfflineKundali = (
   const minute = parseInt((details.tob || '12:00').split(':')[1], 10) || 0;
   const month = parseInt((details.dob || '1990-01-01').split('-')[1], 10) || 1;
   const day = parseInt((details.dob || '1990-01-01').split('-')[2], 10) || 15;
-  const sunSign = ((month + 1) % 12) + 1;
+  const approxSunSign = ((month + 1) % 12) + 1;
   const hoursSinceSunrise = (hour + minute / 60 - 6 + 24) % 24;
-  const lagnaSign = ((sunSign - 1 + Math.floor(hoursSinceSunrise / 2)) % 12) + 1;
+  const lagnaSign = ((approxSunSign - 1 + Math.floor(hoursSinceSunrise / 2)) % 12) + 1;
 
   const moonSignName = moonCalc?.rashi.name || 'Taurus';
   const moonSignLocalized = getLocalizedSign(moonSignName, language);
@@ -763,6 +789,17 @@ ${language === 'English'
     chart
   );
 
+  const shadbala = calculateShadbala(planetaryPositions, lagnaSign, details.dob, details.tob, language);
+  const yogas = calculateYogas(planetaryPositions, lagnaSign, language);
+  const doshas = calculateDoshas(planetaryPositions, lagnaSign, avakahada, language);
+  const divisionalCharts = calculateDivisionalCharts(planetaryPositions, lagnaSign);
+  const activeMaha = mahadashas.find(m => m.isCurrent) || mahadashas[0];
+  const antardashas = calculateAntardashas(activeMaha, details.dob, language);
+  const practicalRemedies = calculatePracticalRemedies(planetaryPositions, lagnaSign, doshas, language);
+
+  const sunPos = planetaryPositions.find(p => p.planet === 'Sun');
+  const sunSignStr = sunPos ? getLocalizedSign(sunPos.sign, language) : getLocalizedSign(approxSunSign, language);
+
   return {
     report,
     chart,
@@ -771,11 +808,18 @@ ${language === 'English'
     subLord,
     nakshatra: nakshatraName,
     moonSign: moonSignLocalized,
+    sunSign: sunSignStr,
     system,
     mahadashas,
     saadesatiCycles: exactSaadesati,
     avakahada,
-    planetaryPositions
+    planetaryPositions,
+    shadbala,
+    yogas,
+    doshas,
+    divisionalCharts,
+    antardashas,
+    practicalRemedies
   };
 };
 
