@@ -251,14 +251,142 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
     return getLocalizedSign('Scorpio', language);
   }, [avakahadaData?.sunSign, sunPosition, analysis.sunSign, language]);
 
-  // Compute 12 Bhavas exhaustive Vedic analysis
+  // Helper to detect if a chapter title corresponds to one of the 12 Bhavas
+  const getHouseNumberFromTitle = (title: string): number | null => {
+    const t = (title || '').toLowerCase().trim();
+    if (/\b(1st|first)\s+(house|bhava)\b/i.test(t) || /\b(house|bhava)\s*1\b/i.test(t)) return 1;
+    if (/\b(2nd|second)\s+(house|bhava)\b/i.test(t) || /\b(house|bhava)\s*2\b/i.test(t)) return 2;
+    if (/\b(3rd|third)\s+(house|bhava)\b/i.test(t) || /\b(house|bhava)\s*3\b/i.test(t)) return 3;
+    if (/\b(4th|fourth)\s+(house|bhava)\b/i.test(t) || /\b(house|bhava)\s*4\b/i.test(t)) return 4;
+    if (/\b(5th|fifth)\s+(house|bhava)\b/i.test(t) || /\b(house|bhava)\s*5\b/i.test(t)) return 5;
+    if (/\b(6th|sixth)\s+(house|bhava)\b/i.test(t) || /\b(house|bhava)\s*6\b/i.test(t)) return 6;
+    if (/\b(7th|seventh)\s+(house|bhava)\b/i.test(t) || /\b(house|bhava)\s*7\b/i.test(t)) return 7;
+    if (/\b(8th|eighth)\s+(house|bhava)\b/i.test(t) || /\b(house|bhava)\s*8\b/i.test(t)) return 8;
+    if (/\b(9th|ninth)\s+(house|bhava)\b/i.test(t) || /\b(house|bhava)\s*9\b/i.test(t)) return 9;
+    if (/\b(10th|tenth)\s+(house|bhava)\b/i.test(t) || /\b(house|bhava)\s*10\b/i.test(t)) return 10;
+    if (/\b(11th|eleventh)\s+(house|bhava)\b/i.test(t) || /\b(house|bhava)\s*11\b/i.test(t)) return 11;
+    if (/\b(12th|twelfth)\s+(house|bhava)\b/i.test(t) || /\b(house|bhava)\s*12\b/i.test(t)) return 12;
+
+    if (/प्रथम\s*(भाव|स्थान|घर)/.test(t) || /पहिला\s*(भाव|घर)/.test(t) || /भाव\s*(१|1)\b/.test(t)) return 1;
+    if (/द्वितीय\s*(भाव|स्थान|घर)/.test(t) || /दुसरा\s*(भाव|घर)/.test(t) || /भाव\s*(२|2)\b/.test(t)) return 2;
+    if (/तृतीय\s*(भाव|स्थान|घर)/.test(t) || /तिसरा\s*(भाव|घर)/.test(t) || /भाव\s*(३|3)\b/.test(t)) return 3;
+    if (/चतुर्थ\s*(भाव|स्थान|घर)/.test(t) || /चौथा\s*(भाव|घर)/.test(t) || /भाव\s*(४|4)\b/.test(t)) return 4;
+    if (/पंचम\s*(भाव|स्थान|घर)/.test(t) || /पाचवा\s*(भाव|घर)/.test(t) || /भाव\s*(५|5)\b/.test(t)) return 5;
+    if (/षष्ठ\s*(भाव|स्थान|घर)/.test(t) || /सहावा\s*(भाव|घर)/.test(t) || /भाव\s*(६|6)\b/.test(t)) return 6;
+    if (/सप्तम\s*(भाव|स्थान|घर)/.test(t) || /सातवा\s*(भाव|घर)/.test(t) || /भाव\s*(७|7)\b/.test(t)) return 7;
+    if (/अष्टम\s*(भाव|स्थान|घर)/.test(t) || /आठवा\s*(भाव|घर)/.test(t) || /भाव\s*(८|8)\b/.test(t)) return 8;
+    if (/नवम\s*(भाव|स्थान|घर)/.test(t) || /नववा\s*(भाव|घर)/.test(t) || /भाव\s*(९|9)\b/.test(t)) return 9;
+    if (/दशम\s*(भाव|स्थान|घर)/.test(t) || /दहावा\s*(भाव|घर)/.test(t) || /भाव\s*(१०|10)\b/.test(t)) return 10;
+    if (/एकादश\s*(भाव|स्थान|घर)/.test(t) || /अकरावा\s*(भाव|घर)/.test(t) || /भाव\s*(११|11)\b/.test(t)) return 11;
+    if (/द्वादश\s*(भाव|स्थान|घर)/.test(t) || /बारावा\s*(भाव|घर)/.test(t) || /भाव\s*(१२|12)\b/.test(t)) return 12;
+
+    if (/12\s*(bhava|houses|भाव)/i.test(t) || /द्वादश\s*भाव/i.test(t) || /house-by-house/i.test(t)) return 0;
+    return null;
+  };
+
+  // Parse markdown report into structured chapters and extract House predictions without duplicating Bhavas
+  const { aiBhavaMap, parsedChapters } = useMemo(() => {
+    const reportText = typeof analysis.report === 'string' ? analysis.report : JSON.stringify(analysis.report);
+    const bhavaMap: Record<number, { content: string; boons: string[]; cautions: string[]; remedies: string[] }> = {};
+    if (!reportText) return { aiBhavaMap: bhavaMap, parsedChapters: [] };
+
+    const lines = reportText.split('\n');
+    const chapters: ParsedChapter[] = [];
+    let curTitle = locale.chapterLabels.ch1Title;
+    let curLines: string[] = [];
+
+    const flush = () => {
+      const rawContent = curLines.join('\n').trim();
+      const content = stripAsterisksAndMarkdown(rawContent);
+      if (content || chapters.length === 0) {
+        const clean = stripAsterisksAndMarkdown(curTitle.replace(/^[#\d\.\s\-\*]+/, '').trim()) || 
+          locale.bhavaPillars.analysisTitle;
+        
+        // Scan for strengths, cautions, remedies without asterisks
+        const strengths: string[] = [];
+        const cautions: string[] = [];
+        const remedies: string[] = [];
+        const bLines = rawContent.split('\n').filter(l => l.trim().startsWith('-') || l.trim().startsWith('*') || /^\d+\./.test(l.trim()));
+
+        for (const line of bLines) {
+          const lower = line.toLowerCase();
+          const cleanLine = stripAsterisksAndMarkdown(line.replace(/^[-*\d\.]+\s*/, '').trim());
+          if ((lower.includes('remedy') || lower.includes('upaya') || lower.includes('mantra') || lower.includes('gemstone') || lower.includes('उपाय') || lower.includes('मन्त्र') || lower.includes('मंत्र') || lower.includes('दान')) && remedies.length < 4) {
+            remedies.push(cleanLine);
+          } else if ((lower.includes('caution') || lower.includes('delay') || lower.includes('challenge') || lower.includes('stress') || lower.includes('सतर्क') || lower.includes('चुनौती') || lower.includes('बाधा') || lower.includes('कठिनाई')) && cautions.length < 4) {
+            cautions.push(cleanLine);
+          } else if ((lower.includes('favor') || lower.includes('strength') || lower.includes('boon') || lower.includes('gain') || lower.includes('शुभ') || lower.includes('वरदान') || lower.includes('लाभ') || lower.includes('सफलता')) && strengths.length < 4) {
+            strengths.push(cleanLine);
+          }
+        }
+
+        const houseNum = getHouseNumberFromTitle(curTitle);
+        if (houseNum !== null) {
+          if (houseNum >= 1 && houseNum <= 12) {
+            bhavaMap[houseNum] = {
+              content,
+              boons: strengths,
+              cautions,
+              remedies
+            };
+          }
+          // Do NOT add Bhava chapters or general 12-Bhava header to parsedChapters to prevent repeating Bhavas!
+        } else {
+          const lowerClean = clean.toLowerCase();
+          let icon = '📜';
+          if (lowerClean.includes('career') || lowerClean.includes('karma') || lowerClean.includes('कर्म') || lowerClean.includes('व्यवसाय')) {
+            icon = '💼';
+          } else if (lowerClean.includes('marriage') || lowerClean.includes('love') || lowerClean.includes('विवाह') || lowerClean.includes('दाम्पत्य')) {
+            icon = '💖';
+          } else if (lowerClean.includes('wealth') || lowerClean.includes('finance') || lowerClean.includes('धन') || lowerClean.includes('सम्पत्ति')) {
+            icon = '💰';
+          } else if (lowerClean.includes('health') || lowerClean.includes('vitality') || lowerClean.includes('स्वास्थ्य') || lowerClean.includes('आरोग्य') || lowerClean.includes('आयुर्वेद')) {
+            icon = '🩺';
+          } else if (lowerClean.includes('remed') || lowerClean.includes('upaya') || lowerClean.includes('उपाय') || lowerClean.includes('मन्त्र')) {
+            icon = '🪔';
+          } else if (lowerClean.includes('overview') || lowerClean.includes('lagna') || lowerClean.includes('लग्न')) {
+            icon = '☀️';
+          } else if (lowerClean.includes('भाग्य') || lowerClean.includes('dharma')) {
+            icon = '🕉️';
+          }
+
+          chapters.push({
+            id: `chap-${chapters.length}`,
+            title: curTitle,
+            cleanTitle: clean,
+            icon,
+            content,
+            strengths,
+            cautions,
+            remedies
+          });
+        }
+      }
+      curLines = [];
+    };
+
+    for (const l of lines) {
+      if (l.startsWith('# ') || l.startsWith('## ') || l.startsWith('### ')) {
+        flush();
+        curTitle = l.replace(/^[#]+\s*/, '').trim();
+      } else {
+        curLines.push(l);
+      }
+    }
+    flush();
+
+    return { aiBhavaMap: bhavaMap, parsedChapters: chapters };
+  }, [analysis.report, language, locale]);
+
+  // Compute 12 Bhavas exhaustive Vedic analysis with integrated AI predictions
   const bhavasDetailed: BhavaDetailedAnalysis[] = useMemo(() => {
     return calculate12BhavasDetailedAnalysis(
       analysis.lagnaSign || 1,
       planetaryPositionsData,
-      language
+      language,
+      aiBhavaMap
     );
-  }, [analysis.lagnaSign, planetaryPositionsData, language]);
+  }, [analysis.lagnaSign, planetaryPositionsData, language, aiBhavaMap]);
 
   // Shadbala calculation
   const shadbalaData = useMemo(() => {
@@ -300,89 +428,7 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
     return calculatePracticalRemedies(planetaryPositionsData, analysis.lagnaSign || 1, doshasData, language);
   }, [analysis.practicalRemedies, planetaryPositionsData, analysis.lagnaSign, doshasData, language]);
 
-  // Parse markdown report into structured chapters
-  const parsedChapters: ParsedChapter[] = useMemo(() => {
-    const reportText = typeof analysis.report === 'string' ? analysis.report : JSON.stringify(analysis.report);
-    if (!reportText) return [];
 
-    const lines = reportText.split('\n');
-    const chapters: ParsedChapter[] = [];
-    let curTitle = locale.chapterLabels.ch1Title;
-    let curLines: string[] = [];
-
-    const flush = () => {
-      const rawContent = curLines.join('\n').trim();
-      const content = stripAsterisksAndMarkdown(rawContent);
-      if (content || chapters.length === 0) {
-        const clean = stripAsterisksAndMarkdown(curTitle.replace(/^[#\d\.\s\-\*]+/, '').trim()) || 
-          locale.bhavaPillars.analysisTitle;
-        
-        // Scan for strengths, cautions, remedies without asterisks
-        const strengths: string[] = [];
-        const cautions: string[] = [];
-        const remedies: string[] = [];
-        const bLines = rawContent.split('\n').filter(l => l.trim().startsWith('-') || l.trim().startsWith('*') || /^\d+\./.test(l.trim()));
-
-        for (const line of bLines) {
-          const lower = line.toLowerCase();
-          const cleanLine = stripAsterisksAndMarkdown(line.replace(/^[-*\d\.]+\s*/, '').trim());
-          if ((lower.includes('remedy') || lower.includes('upaya') || lower.includes('mantra') || lower.includes('gemstone') || lower.includes('उपाय') || lower.includes('मन्त्र') || lower.includes('मंत्र') || lower.includes('दान')) && remedies.length < 3) {
-            remedies.push(cleanLine);
-          } else if ((lower.includes('caution') || lower.includes('delay') || lower.includes('challenge') || lower.includes('stress') || lower.includes('सतर्क') || lower.includes('चुनौती') || lower.includes('बाधा') || lower.includes('कठिनाई')) && cautions.length < 3) {
-            cautions.push(cleanLine);
-          } else if ((lower.includes('favor') || lower.includes('strength') || lower.includes('boon') || lower.includes('gain') || lower.includes('शुभ') || lower.includes('वरदान') || lower.includes('लाभ') || lower.includes('सफलता')) && strengths.length < 3) {
-            strengths.push(cleanLine);
-          }
-        }
-
-        const lowerClean = clean.toLowerCase();
-        let icon = '📜';
-        if (lowerClean.includes('career') || lowerClean.includes('karma') || lowerClean.includes('कर्म') || lowerClean.includes('व्यवसाय') || lowerClean.includes('दशम भाव')) {
-          icon = '💼';
-        } else if (lowerClean.includes('marriage') || lowerClean.includes('love') || lowerClean.includes('विवाह') || lowerClean.includes('दाम्पत्य') || lowerClean.includes('सप्तम भाव')) {
-          icon = '💖';
-        } else if (lowerClean.includes('wealth') || lowerClean.includes('finance') || lowerClean.includes('धन') || lowerClean.includes('सम्पत्ति') || lowerClean.includes('द्वितीय भाव') || lowerClean.includes('एकादश भाव')) {
-          icon = '💰';
-        } else if (lowerClean.includes('health') || lowerClean.includes('vitality') || lowerClean.includes('स्वास्थ्य') || lowerClean.includes('आरोग्य') || lowerClean.includes('आयुर्वेद') || lowerClean.includes('षष्ठ भाव')) {
-          icon = '🩺';
-        } else if (lowerClean.includes('remed') || lowerClean.includes('upaya') || lowerClean.includes('उपाय') || lowerClean.includes('मन्त्र')) {
-          icon = '🪔';
-        } else if (lowerClean.includes('overview') || lowerClean.includes('lagna') || lowerClean.includes('लग्न') || lowerClean.includes('प्रथम भाव')) {
-          icon = '☀️';
-        } else if (lowerClean.includes('भाग्य') || lowerClean.includes('dharma') || lowerClean.includes('नवम भाव')) {
-          icon = '🕉️';
-        } else if (lowerClean.includes('सुख') || lowerClean.includes('चतुर्थ भाव')) {
-          icon = '🏡';
-        } else if (lowerClean.includes('पुत्र') || lowerClean.includes('बुद्धि') || lowerClean.includes('पंचम भाव')) {
-          icon = '💡';
-        }
-
-        chapters.push({
-          id: `chap-${chapters.length}`,
-          title: curTitle,
-          cleanTitle: clean,
-          icon,
-          content,
-          strengths,
-          cautions,
-          remedies
-        });
-      }
-      curLines = [];
-    };
-
-    for (const l of lines) {
-      if (l.startsWith('# ') || l.startsWith('## ') || l.startsWith('### ')) {
-        flush();
-        curTitle = l.replace(/^[#]+\s*/, '').trim();
-      } else {
-        curLines.push(l);
-      }
-    }
-    flush();
-
-    return chapters;
-  }, [analysis.report, language]);
 
   // Dynamic AI chapters cleanly paginated so overflowing text flows across pages!
   const aiPages = useMemo(() => {
@@ -1128,78 +1174,54 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
             {/* PART 1 or SINGLE PAGE: Celestial Coordinates, Occupant Grahas & Exhaustive Analysis */}
             {part === 1 && (
               <>
-                {/* 4 Core Attributes Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                  <div className="p-2 rounded-xl bg-amber-500/[0.04] border border-amber-500/15">
-                    <span className="text-[8px] uppercase tracking-wider block font-bold text-amber-600 dark:text-amber-400">{locale.bhavaPillars.rashi}</span>
-                    <span className="font-bold text-xs leading-snug block">{getLocalizedSign(bhava.rashiName, language)}</span>
-                    <span className="text-[8px] text-stone-500 dark:text-slate-400">Sign #{bhava.rashiNumber}</span>
+                {/* Compact "Little Technical" Astrological Header Strip */}
+                <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-amber-500/[0.04] border border-amber-500/20 text-xs">
+                  <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                    <span className="font-bold text-amber-800 dark:text-amber-300">
+                      {getLocalizedSign(bhava.rashiName, language)} (#{bhava.rashiNumber})
+                    </span>
+                    <span className="text-amber-500/40">•</span>
+                    <span className="text-stone-700 dark:text-slate-300">
+                      {locale.bhavaPillars.lord}: <strong>{getLocalizedPlanet(bhava.rashiLord, language)}</strong>
+                    </span>
+                    <span className="text-amber-500/40">•</span>
+                    <span className="text-stone-700 dark:text-slate-300">
+                      {locale.bhavaPillars.karaka}: <strong>{getLocalizedPlanet(bhava.karakaPlanet, language)}</strong>
+                    </span>
+                    <span className="text-amber-500/40">•</span>
+                    <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-800 dark:text-amber-300 font-mono text-[9px] font-bold">
+                      {bhava.purushartha.split('(')[0]?.trim()}
+                    </span>
                   </div>
-                  <div className="p-2 rounded-xl bg-amber-500/[0.04] border border-amber-500/15">
-                    <span className="text-[8px] uppercase tracking-wider block font-bold text-amber-600 dark:text-amber-400">{locale.bhavaPillars.lord}</span>
-                    <span className="font-bold text-xs leading-snug block">{getLocalizedPlanet(bhava.rashiLord, language)}</span>
-                    <span className="text-[8px] text-stone-500 dark:text-slate-400">{locale.bhavaPillars.rulerLabel}</span>
-                  </div>
-                  <div className="p-2 rounded-xl bg-amber-500/[0.04] border border-amber-500/15">
-                    <span className="text-[8px] uppercase tracking-wider block font-bold text-amber-600 dark:text-amber-400">{locale.bhavaPillars.karaka}</span>
-                    <span className="font-bold text-xs leading-snug block">{getLocalizedPlanet(bhava.karakaPlanet, language)}</span>
-                    <span className="text-[8px] text-stone-500 dark:text-slate-400">{locale.bhavaPillars.karakaLabel}</span>
-                  </div>
-                  <div className="p-2 rounded-xl bg-amber-500/[0.04] border border-amber-500/15">
-                    <span className="text-[8px] uppercase tracking-wider block font-bold text-amber-600 dark:text-amber-400">{locale.bhavaPillars.anatomy}</span>
-                    <span className="font-semibold text-[10px] leading-tight block truncate" title={bhava.bodyParts}>{stripAsterisksAndMarkdown(bhava.bodyParts)}</span>
-                    <span className="text-[8px] text-stone-500 dark:text-slate-400">{bhava.element}</span>
-                  </div>
-                </div>
-
-                {/* Life Domain / Karakatva Overview */}
-                <div className="p-2.5 rounded-xl bg-amber-500/[0.03] border border-amber-500/15 text-xs flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">🏛️</span>
-                    <div>
-                      <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-400 block">
-                        {locale.bhavaPillars.lifeDomain}
-                      </span>
-                      <p className="text-[11px] font-medium text-stone-700 dark:text-slate-300 leading-snug">
-                        {stripAsterisksAndMarkdown(bhava.lifeDomain)}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-800 dark:text-amber-200 border border-amber-500/30 flex-shrink-0">
-                    {bhava.purushartha}
-                  </span>
-                </div>
-
-                {/* Occupying Grahas in this Bhava */}
-                <div className="p-2.5 rounded-xl bg-amber-500/[0.03] border border-amber-500/15 flex items-center justify-between gap-2">
-                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5 flex-shrink-0">
-                    <span>🪐</span>
-                    <span>{locale.bhavaPillars.occupyingPlanets}</span>
-                  </span>
-                  <div className="flex flex-wrap items-center gap-1.5 justify-end">
+                  <div className="flex items-center gap-1.5 text-[10px]">
                     {hasPlanets ? (
                       bhava.planets.map(p => (
-                        <span key={p.planet} className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/30 flex items-center gap-1 shadow-sm">
+                        <span key={p.planet} className="px-2 py-0.5 rounded-md font-semibold bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-500/30 flex items-center gap-1 shadow-sm">
                           <span>{p.icon}</span>
                           <span>{getLocalizedPlanet(p.planet, language)}</span>
                           <span className="text-[8px] opacity-75">({getLocalizedDignity(p.dignity, language)})</span>
                         </span>
                       ))
                     ) : (
-                      <span className="text-[10px] text-stone-500 dark:text-slate-400 italic">
+                      <span className="text-stone-500 dark:text-slate-400 italic text-[10px]">
                         {locale.bhavaPillars.noPlanets}
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* Detailed Astrological Narrative (100% Free of Asterisks) */}
-                <div className="p-3.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-amber-500/15 space-y-2">
-                  <h4 className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                    <span>📜</span>
-                    <span>{locale.bhavaPillars.analysisTitle}</span>
-                  </h4>
-                  <div className="text-xs leading-relaxed text-stone-800 dark:text-slate-200 whitespace-pre-line font-serif sm:text-[13px]">
+                {/* Deep Detailed Bhava Report */}
+                <div className="p-4 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-amber-500/20 space-y-2.5">
+                  <div className="flex items-center justify-between border-b border-amber-500/15 pb-2">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                      <span>📜</span>
+                      <span>{locale.bhavaPillars.analysisTitle}</span>
+                    </h4>
+                    <span className="text-[10px] text-stone-600 dark:text-slate-400 font-medium">
+                      {stripAsterisksAndMarkdown(bhava.lifeDomain)}
+                    </span>
+                  </div>
+                  <div className="text-xs leading-relaxed text-stone-800 dark:text-slate-200 whitespace-pre-line font-serif sm:text-[13px] space-y-2">
                     {stripAsterisksAndMarkdown(bhava.detailedAnalysis)}
                   </div>
                 </div>
