@@ -27,7 +27,9 @@ import {
   calculateDoshas,
   calculateDivisionalCharts,
   calculateAntardashas,
-  calculatePracticalRemedies
+  calculatePracticalRemedies,
+  getAuthenticMoonSign,
+  getAuthenticSunSign
 } from '../services/astrologyHelper';
 import KundaliChart from './KundaliChart';
 import ReactMarkdown from 'react-markdown';
@@ -232,12 +234,15 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
     return planetaryPositionsData.find(p => p.planet === 'Moon');
   }, [planetaryPositionsData]);
 
+  const nakshatraName = useMemo(() => {
+    return stripAsterisksAndMarkdown(avakahadaData?.nakshatra || analysis.nakshatra) || '';
+  }, [avakahadaData?.nakshatra, analysis.nakshatra]);
+
   const moonSignDisplay = useMemo(() => {
-    if (avakahadaData?.moonSign) return getLocalizedSign(avakahadaData.moonSign, language);
-    if (moonPosition?.sign) return getLocalizedSign(moonPosition.sign, language);
-    if (analysis.moonSign) return getLocalizedSign(analysis.moonSign, language);
-    return getLocalizedSign('Taurus', language);
-  }, [avakahadaData?.moonSign, moonPosition, analysis.moonSign, language]);
+    const candidateSign = avakahadaData?.moonSign || moonPosition?.sign || analysis.moonSign;
+    const authenticSign = getAuthenticMoonSign(candidateSign, nakshatraName, details?.dob, details?.tob);
+    return getLocalizedSign(authenticSign, language);
+  }, [avakahadaData?.moonSign, moonPosition?.sign, analysis.moonSign, nakshatraName, details?.dob, details?.tob, language]);
 
   // Sun position and Sun Sign display
   const sunPosition = useMemo(() => {
@@ -245,11 +250,10 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
   }, [planetaryPositionsData]);
 
   const sunSignDisplay = useMemo(() => {
-    if (avakahadaData?.sunSign) return getLocalizedSign(avakahadaData.sunSign, language);
-    if (sunPosition?.sign) return getLocalizedSign(sunPosition.sign, language);
-    if (analysis.sunSign) return getLocalizedSign(analysis.sunSign, language);
-    return getLocalizedSign('Scorpio', language);
-  }, [avakahadaData?.sunSign, sunPosition, analysis.sunSign, language]);
+    const candidateSign = avakahadaData?.sunSign || sunPosition?.sign || analysis.sunSign;
+    const authenticSign = getAuthenticSunSign(candidateSign, details?.dob, details?.tob);
+    return getLocalizedSign(authenticSign, language);
+  }, [avakahadaData?.sunSign, sunPosition?.sign, analysis.sunSign, details?.dob, details?.tob, language]);
 
   // Helper to detect if a chapter title corresponds to one of the 12 Bhavas
   const getHouseNumberFromTitle = (title: string): number | null => {
@@ -334,20 +338,20 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
         } else {
           const lowerClean = clean.toLowerCase();
           let icon = '📜';
-          if (lowerClean.includes('career') || lowerClean.includes('karma') || lowerClean.includes('कर्म') || lowerClean.includes('व्यवसाय')) {
+          if (lowerClean.includes('career') || lowerClean.includes('profession') || lowerClean.includes('business') || lowerClean.includes('job') || lowerClean.includes('karma') || lowerClean.includes('कर्म') || lowerClean.includes('व्यवसाय') || lowerClean.includes('करिअर') || lowerClean.includes('आजीविका') || lowerClean.includes('કારકિર્દી') || lowerClean.includes('জীবিকা') || lowerClean.includes('தொழில்') || lowerClean.includes('వృత్తి') || lowerClean.includes('ಉದ್ಯೋಗ') || lowerClean.includes('തൊഴിൽ') || lowerClean.includes('ਰੋਜ਼ਗਾਰ')) {
             icon = '💼';
-          } else if (lowerClean.includes('marriage') || lowerClean.includes('love') || lowerClean.includes('विवाह') || lowerClean.includes('दाम्पत्य')) {
+          } else if (lowerClean.includes('marriage') || lowerClean.includes('relationship') || lowerClean.includes('partner') || lowerClean.includes('love') || lowerClean.includes('विवाह') || lowerClean.includes('नातेसंबंध') || lowerClean.includes('संबंध') || lowerClean.includes('दांपत्य') || lowerClean.includes('दाम्पत्य') || lowerClean.includes('લગ્ન') || lowerClean.includes('দাম্পত্য') || lowerClean.includes('திருமணம்') || lowerClean.includes('వివాహం') || lowerClean.includes('ಸಂಬಂಧ') || lowerClean.includes('വിവാഹം')) {
             icon = '💖';
-          } else if (lowerClean.includes('wealth') || lowerClean.includes('finance') || lowerClean.includes('धन') || lowerClean.includes('सम्पत्ति')) {
+          } else if (lowerClean.includes('wealth') || lowerClean.includes('finance') || lowerClean.includes('asset') || lowerClean.includes('money') || lowerClean.includes('धन') || lowerClean.includes('संपत्ती') || lowerClean.includes('वित्त') || lowerClean.includes('સંપત્તિ') || lowerClean.includes('সম্পত্তি') || lowerClean.includes('செல்வம்') || lowerClean.includes('సంపద') || lowerClean.includes('ಸಂಪತ್ತು') || lowerClean.includes('സാമ്പത്തികം')) {
             icon = '💰';
-          } else if (lowerClean.includes('health') || lowerClean.includes('vitality') || lowerClean.includes('स्वास्थ्य') || lowerClean.includes('आरोग्य') || lowerClean.includes('आयुर्वेद')) {
+          } else if (lowerClean.includes('health') || lowerClean.includes('vitality') || lowerClean.includes('ayurved') || lowerClean.includes('well-being') || lowerClean.includes('स्वास्थ्य') || lowerClean.includes('आरोग्य') || lowerClean.includes('आयुर्वेद') || lowerClean.includes('जीवनशक्ती') || lowerClean.includes('ஆரோக்கியம்') || lowerClean.includes('ఆరోగ్యం') || lowerClean.includes('ಆರೋಗ್ಯ') || lowerClean.includes('ആരോഗ്യം')) {
             icon = '🩺';
-          } else if (lowerClean.includes('remed') || lowerClean.includes('upaya') || lowerClean.includes('उपाय') || lowerClean.includes('मन्त्र')) {
+          } else if (lowerClean.includes('purpose') || lowerClean.includes('mission') || lowerClean.includes('milestone') || lowerClean.includes('atmakaraka') || lowerClean.includes('उद्देश') || lowerClean.includes('प्रारब्ध') || lowerClean.includes('टप्पे') || lowerClean.includes('पड़ाव') || lowerClean.includes('भाग्य') || lowerClean.includes('dharma')) {
+            icon = '🕉️';
+          } else if (lowerClean.includes('remed') || lowerClean.includes('upaya') || lowerClean.includes('mantra') || lowerClean.includes('उपाय') || lowerClean.includes('मन्त्र') || lowerClean.includes('मंत्र') || lowerClean.includes('साधना') || lowerClean.includes('பரிகாரம்')) {
             icon = '🪔';
           } else if (lowerClean.includes('overview') || lowerClean.includes('lagna') || lowerClean.includes('लग्न')) {
             icon = '☀️';
-          } else if (lowerClean.includes('भाग्य') || lowerClean.includes('dharma')) {
-            icon = '🕉️';
           }
 
           chapters.push({
@@ -434,8 +438,8 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
   const aiPages = useMemo(() => {
     const pages: Array<{
       chapter: ParsedChapter;
-      part: 1 | 2;
-      totalParts: 1 | 2;
+      part: number;
+      totalParts: number;
       content: string;
       cleanTitle: string;
       icon: string;
@@ -446,51 +450,43 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
 
     parsedChapters.forEach((ch) => {
       const cleanContent = stripAsterisksAndMarkdown(ch.content);
-      const isOverflowing = cleanContent.length > 900 || (ch.strengths.length + ch.cautions.length + ch.remedies.length > 3);
 
-      if (isOverflowing && cleanContent.length > 600) {
-        // Find a paragraph or newline break near the midpoint
-        const paragraphs = cleanContent.split('\n\n');
-        const midpoint = Math.ceil(paragraphs.length / 2);
-        const part1Content = paragraphs.slice(0, midpoint).join('\n\n');
-        const part2Content = paragraphs.slice(midpoint).join('\n\n');
+      // Target ~750 characters per page for comfortable, spacious reading without overflowing
+      const paragraphs = cleanContent.split('\n\n').filter(p => p.trim());
+      const chunks: string[] = [];
+      let curChunk: string[] = [];
+      let curLen = 0;
 
-        pages.push({
-          chapter: ch,
-          part: 1,
-          totalParts: 2,
-          content: part1Content,
-          cleanTitle: ch.cleanTitle,
-          icon: ch.icon,
-          strengths: ch.strengths,
-          cautions: ch.cautions,
-          remedies: []
-        });
-
-        pages.push({
-          chapter: ch,
-          part: 2,
-          totalParts: 2,
-          content: part2Content,
-          cleanTitle: ch.cleanTitle,
-          icon: ch.icon,
-          strengths: [],
-          cautions: [],
-          remedies: ch.remedies
-        });
-      } else {
-        pages.push({
-          chapter: ch,
-          part: 1,
-          totalParts: 1,
-          content: cleanContent,
-          cleanTitle: ch.cleanTitle,
-          icon: ch.icon,
-          strengths: ch.strengths,
-          cautions: ch.cautions,
-          remedies: ch.remedies
-        });
+      for (const p of paragraphs) {
+        // If adding this paragraph exceeds 750 characters, flush current chunk to its own page
+        if (curLen + p.length > 750 && curChunk.length > 0) {
+          chunks.push(curChunk.join('\n\n'));
+          curChunk = [p];
+          curLen = p.length;
+        } else {
+          curChunk.push(p);
+          curLen += p.length;
+        }
       }
+      if (curChunk.length > 0) {
+        chunks.push(curChunk.join('\n\n'));
+      }
+
+      const totalParts = Math.max(1, chunks.length);
+
+      chunks.forEach((chunkContent, idx) => {
+        pages.push({
+          chapter: ch,
+          part: idx + 1,
+          totalParts,
+          content: chunkContent,
+          cleanTitle: ch.cleanTitle,
+          icon: ch.icon,
+          strengths: idx === 0 ? ch.strengths : [],
+          cautions: idx === 0 ? ch.cautions : [],
+          remedies: idx === totalParts - 1 ? ch.remedies : []
+        });
+      });
     });
 
     return pages;
@@ -2082,7 +2078,8 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
     const aiOffset = pageIdx - aiChaptersStartPage;
     if (aiOffset >= 0 && aiOffset < aiPages.length) {
       const ap = aiPages[aiOffset];
-      const chapterNumber = bhavaPages.length + 5 + Math.floor(aiOffset / 2) + 1;
+      const chapIdx = parsedChapters.findIndex(c => c.id === ap.chapter.id);
+      const chapterNumber = bhavaPages.length + 5 + (chapIdx >= 0 ? chapIdx : Math.floor(aiOffset / 2)) + 1;
 
       return (
         <div className="relative h-full flex flex-col justify-between p-6 sm:p-10 select-none">
@@ -2157,9 +2154,49 @@ export const KundaliBookViewer: React.FC<KundaliBookViewerProps> = ({
               </div>
             )}
 
-            {/* Markdown Chapter Text without Asterisks */}
-            <div className={`p-4 rounded-2xl border ${cardBgClass} prose prose-sm dark:prose-invert leading-relaxed text-xs`}>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{stripAsterisksAndMarkdown(ap.content)}</ReactMarkdown>
+            {/* Markdown Chapter Text with Structured Cards & Pure Script */}
+            <div className={`p-4 rounded-2xl border ${cardBgClass} leading-relaxed text-xs`}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  h3: ({ children }) => (
+                    <div className="mt-3.5 mb-2 pb-1 border-b border-amber-500/30 flex items-center gap-2">
+                      <span className="w-1.5 h-3.5 bg-gradient-to-b from-amber-400 to-amber-600 rounded-full inline-block shrink-0"></span>
+                      <h4 className="text-xs sm:text-sm font-bold font-devanagari text-amber-800 dark:text-amber-200 tracking-wide m-0">
+                        {children}
+                      </h4>
+                    </div>
+                  ),
+                  h4: ({ children }) => (
+                    <h5 className="text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-2 mb-1">
+                      {children}
+                    </h5>
+                  ),
+                  p: ({ children }) => (
+                    <p className="mb-2 leading-relaxed text-xs text-stone-700 dark:text-slate-300">
+                      {children}
+                    </p>
+                  ),
+                  ul: ({ children }) => (
+                    <ul className="space-y-1.5 my-2 list-none pl-0">
+                      {children}
+                    </ul>
+                  ),
+                  li: ({ children }) => (
+                    <li className="flex items-start gap-1.5 text-xs text-stone-700 dark:text-slate-300">
+                      <span className="text-amber-500 font-bold shrink-0 mt-0.5">•</span>
+                      <span className="leading-relaxed">{children}</span>
+                    </li>
+                  ),
+                  strong: ({ children }) => (
+                    <strong className="font-bold text-amber-900 dark:text-amber-200">
+                      {children}
+                    </strong>
+                  )
+                }}
+              >
+                {stripAsterisksAndMarkdown(ap.content)}
+              </ReactMarkdown>
             </div>
           </div>
 

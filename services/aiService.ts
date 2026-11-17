@@ -14,9 +14,11 @@ import {
   calculateDoshas,
   calculateDivisionalCharts,
   calculateAntardashas,
-  calculatePracticalRemedies
+  calculatePracticalRemedies,
+  getAuthenticMoonSign,
+  getAuthenticSunSign
 } from "./astrologyHelper";
-import { getLocalizedPlanet, getLocalizedSign, getKundaliLocale } from "./kundaliLocalization";
+import { getLocalizedPlanet, getLocalizedSign, getKundaliLocale, getSeekerPillars } from "./kundaliLocalization";
 import { getLocalizedBhavaData } from "./bhavaLocalization";
 
 // ---------------------------------------------------------------------------
@@ -486,14 +488,39 @@ The "report" field must be an exhaustive, deeply detailed, beautifully written m
    - Provide an individual, deeply detailed multi-paragraph evaluation for ALL 12 HOUSES (1 to 12).
    - In EVERY house analysis, detail BOTH positive strengths/fruits and negative challenges/friction points.
    - For every challenging placement, immediately integrate constructive insights and specific Vedic remedial countermeasures.
-3. Navagraha Deep Interpretation: Detailed assessment of all 9 Grahas (Sun through Ketu) in their respective signs and houses with dignity, aspects (Drishti), and functional indications.
-4. Career, Profession & Financial Trajectory: In-depth analysis of optimal career industries, job vs business suitability, financial accumulation capacity, and peak earning years, alongside periods of professional struggle, career stagnation, or financial leakages, paired with actionable remedies.
-5. Marriage, Love & Relationship Dynamics: In-depth analysis of the 7th house, Venus/Jupiter placements, spouse characteristics, natural harmonies, and potential friction/misunderstandings, provided with constructive communication habits and Vedic relationship remedies.
-6. Health, Vitality & Preventive Ayurveda: Physical constitution (Vata/Pitta/Kapha), strengths, sensitive bodily areas, potential stress cycles, and preventative Ayurvedic/Vedic lifestyle remedies.
-7. Major Planetary Yogas, Doshas & Gochara Transits: Raja Yogas, Dhana Yogas, Gajakesari Yoga, Manglik / Kalsarp / Pitri Rin analysis with specific classical cancellations and uplifting mitigation remedies.
-8. Vimshottari Mahadasha Lifelong Timeline Table (120-Year): Complete 9-Mahadasha table with exact years, plus detailed interpretation of active Mahadasha and Antardasha detailing both favorable boons and challenging test periods with targeted planetary remedies.
-9. Shani Saadesati Exact Timeline: Exact start and end dates for all 3 phases (~2.5 years each) with real-time status and reassuring, protective remedial guidance.
-10. Prescriptive Classical Vedic Remedies: Comprehensive dedicated section detailing Primary gemstone (carats, metal, finger, day, ritual), Rudraksha mukhi, Vedic Beej mantras with exact counts, charitable acts (Daan), and daily spiritual disciplines to balance all identified karmic challenges.
+3. Navagraha Deep Interpretation: Assessment of all 9 Grahas (Sun through Ketu) in their respective signs and houses with dignity, aspects (Drishti), and functional indications.
+4. Career and Business Direction (The Seeker's Practical Blueprint):
+   Must contain clear structured subsections:
+   ### Path and Suitability: What career fields, industries, or roles align best with this chart (e.g., job versus entrepreneurship/business).
+   ### Timing and Transitions: Favorable planetary windows for a job switch, promotion, or starting a new business venture.
+   ### Stagnation or Obstacles: What causes professional delays, workplace friction, or career plateaus, and how to navigate it.
+5. Relationships and Marriage Blueprint (The Seeker's Practical Blueprint):
+   Must contain clear structured subsections:
+   ### Marriage Timing and Type: When marriage is indicated, and what the chart suggests regarding love versus arranged marriage.
+   ### Compatibility and Partner Traits: The traits, background, and temperament of prospective spouse (7th house & D9 Navamsha).
+   ### Conflict Resolution: Managing recurring communication or emotional patterns in relationships.
+6. Finances, Wealth and Asset Growth (The Seeker's Practical Blueprint):
+   Must contain clear structured subsections:
+   ### Earning and Stability Periods: Planetary periods (dashas) favoring wealth accumulation versus conservative budgeting phases.
+   ### Investments and Risk: Long-term asset creation, real estate/property purchases (4th house), and speculative/market risk (5th house).
+   ### Financial Risk and Wealth Protection: Practical expenditure management and protecting assets.
+7. Health, Vitality and Well-being (The Seeker's Practical Blueprint):
+   Must contain clear structured subsections:
+   ### Vulnerable Periods: Health concerns or physical zones requiring extra care during specific planetary transits.
+   ### Ayurvedic Constitution: Bio-energetic balance (Vata / Pitta / Kapha) and physical stamina.
+   ### Root Causes and Remedies: Dietary adjustments, traditional remedies, and daily mental-peace practices.
+8. Life Purpose, Karmic Patterns and Major Milestones (The Seeker's Practical Blueprint):
+   Must contain clear structured subsections:
+   ### Self-Understanding and Karmic Lessons: Personal growth blueprint, inherited karma, and spiritual evolution.
+   ### Major Life Milestones: Timelines regarding foreign travel/settlement, parenthood/children, and legal resolution.
+9. Major Planetary Yogas, Doshas & Gochara Transits: Raja Yogas, Dhana Yogas, Gajakesari Yoga, Manglik / Kalsarp / Pitri Rin analysis with specific classical cancellations and uplifting mitigation remedies.
+10. Vimshottari Mahadasha Lifelong Timeline Table (120-Year): Complete 9-Mahadasha table with exact years, plus detailed interpretation of active Mahadasha and Antardasha detailing both favorable boons and challenging test periods with targeted planetary remedies.
+11. Shani Saadesati Exact Timeline: Exact start and end dates for all 3 phases (~2.5 years each) with real-time status and reassuring, protective remedial guidance.
+12. Prescriptive Classical Vedic Remedies:
+   Must contain clear structured subsections:
+   ### Sacred Beej Mantras: Exact mantras and daily japa counts.
+   ### Auspicious Gemstones: Gemstone, metal, finger, day, and ritual.
+   ### Charitable Daan & Daily Rituals: Actions designed to mitigate heavy karmic debts.
 
 CRITICAL SCRIPT & LANGUAGE PURITY MANDATE:
 - The user has chosen the language: ${language}.
@@ -612,18 +639,12 @@ Chart keys must be "1" through "12" with planet name arrays. lagnaSign is 1-12.`
     parsed.practicalRemedies = calculatePracticalRemedies(parsed.planetaryPositions, parsed.lagnaSign || 1, parsed.doshas, language);
 
     const sunPos = parsed.planetaryPositions.find(p => p.planet === 'Sun');
-    if (sunPos) {
-      parsed.sunSign = sunPos.sign;
-    } else if (sunCalc) {
-      parsed.sunSign = sunCalc.rashi.name;
-    }
+    const candSun = sunPos ? sunPos.sign : (sunCalc?.rashi?.name || parsed.sunSign);
+    parsed.sunSign = getAuthenticSunSign(candSun, details.dob, details.tob);
 
     const moonPos = parsed.planetaryPositions.find(p => p.planet === 'Moon');
-    if (moonPos) {
-      parsed.moonSign = moonPos.sign;
-    } else if (moonCalc) {
-      parsed.moonSign = moonCalc.rashi.name;
-    }
+    const candMoon = moonPos ? moonPos.sign : (moonCalc?.rashi?.name || parsed.moonSign);
+    parsed.moonSign = getAuthenticMoonSign(candMoon, parsed.nakshatra, details.dob, details.tob);
 
     return parsed;
   });
@@ -707,61 +728,7 @@ ${data.coreThemes}
 - ${locale.bhavaPillars.upayasTitle} ${data.baseRemedies.join(' • ')}`;
   }).join('\n\n');
 
-  const careerTitles: Record<Language, string> = {
-    English: 'Career, Profession & Wealth Mastery',
-    Marathi: 'आजीविका, व्यवसाय व आर्थिक प्रगती',
-    Gujarati: 'કારકિર્દી, વ્યવસાય અને આર્થિક સમૃદ્ધિ',
-    Bengali: 'জীবিকা, কর্ম ও আর্থিক সমৃদ্ধি',
-    Tamil: 'தொழில், வேலைவாய்ப்பு மற்றும் நிதி வளம்',
-    Telugu: 'వృత్తి, ఉద్యోగం మరియు ఆర్థిక అభివృద్ధి',
-    Kannada: 'ಉದ್ಯೋಗ, ವೃತ್ತಿ ಮತ್ತು ಆರ್ಥಿಕ ಸಮೃದ್ಧಿ',
-    Malayalam: 'തൊഴിൽ, ഉപജീവനം, സാമ്പത്തിക അഭിവൃദ്ധി',
-    Punjabi: 'ਰੋਜ਼ਗਾਰ, ਵਪਾਰ ਅਤੇ ਆਰਥਿਕ ਤਰੱਕੀ',
-    Odia: 'ଜୀବିକା, ବ୍ୟବସାୟ ଓ ଆର୍ଥିକ ସମୃଦ୍ଧି',
-    Hindi: 'आजीविका, कर्म एवं आर्थिक समृद्धि'
-  };
-
-  const marriageTitles: Record<Language, string> = {
-    English: 'Marriage, Partnerships & Relationships',
-    Marathi: 'विवाह व दांपत्य जीवन',
-    Gujarati: 'વિવાહ અને દાંપત્ય જીવન',
-    Bengali: 'বিবাহ ও দাম্পত্য সম্পর্ক',
-    Tamil: 'திருமணம் மற்றும் குடும்ப வாழ்க்கை',
-    Telugu: 'వివాహం మరియు వైవాహిక జీవితం',
-    Kannada: 'ವಿವಾಹ ಮತ್ತು ಕೌಟುಂಬಿಕ ಸಾಮರಸ್ಯ',
-    Malayalam: 'വിവാഹവും കുടുംബ ജീവിതവും',
-    Punjabi: 'ਵਿਆਹ ਅਤੇ ਸੁਖੀ ਗ੍ਰਹਿਸਥੀ',
-    Odia: 'ବିବାହ ଓ ଦାମ୍ପତ୍ୟ ସମ୍ପର୍କ',
-    Hindi: 'विवाह, प्रेम एवं संबंध सामंजस्य'
-  };
-
-  const healthTitles: Record<Language, string> = {
-    English: 'Vitality, Physical Well-being & Ayurveda',
-    Marathi: 'आरोग्य व शारीरिक जीवन ऊर्जा',
-    Gujarati: 'આરોગ્ય, જીવનશક્તિ અને આયુર્વેદ',
-    Bengali: 'স্বাস্থ্য, জীবনীশক্তি ও আয়ুর্বেদ',
-    Tamil: 'உடல் நலம் மற்றும் ஆயுர்வேத நலன்',
-    Telugu: 'ఆరోగ్యం మరియు శారీరక జీవన శక్తి',
-    Kannada: 'ಆರೋಗ್ಯ ಮತ್ತು ಶಾರೀರಿಕ ಚೈತನ್ಯ',
-    Malayalam: 'ആരോഗ്യം, ജീവശക്തി, ആയുർവേദം',
-    Punjabi: 'ਸਿਹਤ ਅਤੇ ਸਰੀਰਕ ਊਰਜਾ',
-    Odia: 'ସ୍ୱାସ୍ଥ୍ୟ, ଜୀବନଶକ୍ତି ଓ ଆୟୁର୍ବେଦ',
-    Hindi: 'स्वास्थ्य, जीवन शक्ति एवं आयुर्वेद'
-  };
-
-  const yogaTitles: Record<Language, string> = {
-    English: 'Classical Vedic Remedies & Spiritual Upayas',
-    Marathi: 'ग्रह योग व शास्त्रीय वैदिक उपाय',
-    Gujarati: 'ગ્રહ યોગ અને શાસ્ત્રીય વૈદિક ઉપાયો',
-    Bengali: 'গ্রহ যোগ ও শাস্ত্রীয় বৈদিক প্রতিকার',
-    Tamil: 'கிரக யோகங்கள் மற்றும் வேத பரிகாரங்கள்',
-    Telugu: 'గ్రహ యోగాలు మరియు వైదిక పరిహారాలు',
-    Kannada: 'ಗ್ರಹ ಯೋಗಗಳು ಮತ್ತು ವೈದಿಕ ಪರಿಹಾರಗಳು',
-    Malayalam: 'ഗ്രഹ യോഗങ്ങളും വൈദಿಕ പരിഹാരങ്ങളും',
-    Punjabi: 'ਗ੍ਰਹਿ ਯੋਗ ਅਤੇ ਵੈਦਿਕ ਉਪਾਅ',
-    Odia: 'ଗ୍ରହ ଯୋଗ ଓ ବୈଦିକ ଉପାୟ',
-    Hindi: 'ग्रह योग, दोष एवं शास्त्रीय उपाय'
-  };
+  const seekerPillars = getSeekerPillars(language);
 
   const introParagraphs: Record<Language, string> = {
     English: `The native ${seekerName} was born under the auspicious ascendant of ${localizedLagnaSign}. The natal Moon occupies ${moonSignLocalized} in the sacred constellation of ${nakshatraName}. The ascendant lord bestows acute intellect, moral steadfastness, and an innate capacity for visionary leadership. Your mind operates with profound sensitivity and philosophical depth.`,
@@ -777,39 +744,254 @@ ${data.coreThemes}
     Hindi: `जातक ${seekerName} का जन्म शुभ ${localizedLagnaSign} लग्न में हुआ है। आपका जन्म चन्द्रमा ${moonSignLocalized} राशि में तथा पावन ${nakshatraName} नक्षत्र में स्थित है। लग्न स्वामी का प्रभाव आपके व्यक्तित्व में उच्च आत्मबल, नैतिक निष्ठा, दृढ इच्छाशक्ति तथा स्वाभाविक नेतृत्व क्षमता का संचार करता है। आपका मन संवेदनशील, दूरदर्शी और दार्शनिक दृष्टिकोण से परिपूर्ण है।`
   };
 
+  // 1. Career and Business Chapter
+  const careerContent = language === 'English'
+    ? `### ${seekerPillars.career.pathSuitabilityTitle}
+The alignment of the 10th house of Karma with the 2nd (wealth) and 11th (gains) houses indicates exceptional suitability for strategic executive leadership, specialized administration, technological architecture, financial analysis, or independent consulting. Your chart reveals strong entrepreneurial acumen balanced with organizational discipline. If choosing employment, leadership roles with autonomous decision-making yield highest growth.
+
+### ${seekerPillars.career.timingTransitionsTitle}
+Favorable windows for major career advancement, promotions, or establishing new enterprise ventures occur during the operative sub-periods (Antardashas) of the 10th and 9th house lords, as well as during Jupiter's beneficial transits over the 10th house or natal Moon. Mid-career transitions between ages 28 and 36 trigger enduring elevation.
+
+### ${seekerPillars.career.obstaclesTitle}
+Periods of perceived workplace stagnation or delay typically align with Saturn transits across natal houses or minor Dasha friction. These phases are designed to build patience, refine master skills, and weed out inefficient processes. Refrain from impulsive career exits; channel energy into skill accreditation and team mentorship.
+- ${locale.bhavaPillars.boonsTitle} Executive vision, strategic endurance, and lasting institutional respect.
+- ${locale.bhavaPillars.cautionsTitle} Avoid taking solitary burdens without structured team accountability.
+- ${locale.bhavaPillars.upayasTitle} Install a consecrated Shree Yantra in your professional space and practice Wednesday green grain charity.`
+    : language === 'Marathi'
+    ? `### ${seekerPillars.career.pathSuitabilityTitle}
+दशम कर्म भाव आणि द्वितीय धन भावाचा परस्पर संबंध दर्शवतो की आपल्या कुंडलीत बौद्धिक, प्रशासकीय आणि धोरणात्मक कौशल्यांना मोठे प्राधान्य आहे. व्यवस्थापन, तंत्रज्ञान, वित्त, शिक्षण, सल्लागार किंवा स्वतंत्र व्यवसाय या क्षेत्रांमध्ये आपल्याला विशेष यश आणि सन्मान मिळेल. नोकरीत असल्यास स्वायत्त निर्णय घेण्याचे अधिकार असलेली पदे आपल्यासाठी सर्वोत्तम ठरतील.
+
+### ${seekerPillars.career.timingTransitionsTitle}
+पदोन्नती, नवीन नोकरीत बदल किंवा स्वतंत्र व्यवसाय सुरू करण्यासाठी दशमेश आणि नवमेशाच्या अंतर्दशांचा काळ अत्यंत शुभ आणि फलदायी ठरतो. तसेच गुरु ग्रहाचे शुभ गोचर आपल्या व्यावसायिक प्रगतीला मोठी गती देईल. वयाच्या २८ ते ३६ व्या वर्षातील कालखंड भाग्योदयाचा महत्त्वाचा टप्पा ठरेल.
+
+### ${seekerPillars.career.obstaclesTitle}
+कामाच्या ठिकाणी तात्पुरता विलंब किंवा तणाव जाणवल्यास तो शनीच्या गोचराचा किंवा आत्मपरीक्षणाचा काळ असतो. हा काळ कौशल्ये वाढवण्यासाठी आणि भविष्यातील मोठ्या यशाची पायाभरणी करण्यासाठी वापरावा. तडकाफडकी निर्णय घेणे टाळावे.
+- ${locale.bhavaPillars.boonsTitle} व्यावसायिक नेतृत्व, कायमस्वरूपी संपत्ती निर्मिती आणि समाजात मान-सन्मान.
+- ${locale.bhavaPillars.cautionsTitle} भागीदारी करताना किंवा करारांवर स्वाक्षरी करताना सर्व अटी नीट तपासून घ्याव्यात.
+- ${locale.bhavaPillars.upayasTitle} कार्यस्थळी श्रीयंत्राची स्थापना करावी आणि बुधवारी हिरव्या मुगाचे दान करावे.`
+    : `### ${seekerPillars.career.pathSuitabilityTitle}
+दशम कर्म भाव एवं द्वितीय धन भाव का संबंध यह स्पष्ट करता है कि आपकी कुंडली में रणनीतिक नेतृत्व, प्रबंधन, वित्त, शिक्षण, परामर्श एवं तकनीकी उद्यम के प्रति असाधारण क्षमता है। नौकरी में स्वतंत्र निर्णय लेने वाले उच्च पद तथा स्वतंत्र व्यापार अथवा उद्यमशीलता दोनों में आपकी स्वाभाविक प्रगति के योग हैं।
+
+### ${seekerPillars.career.timingTransitionsTitle}
+पदोन्नति, कार्यक्षेत्र में अनुकूल बदलाव अथवा नए व्यापार की शुरुआत के लिए दशमेश व नवमेश की अंतर्दशाएं तथा बृहस्पति का शुभ गोचर स्वर्णिम अवसर प्रदान करते हैं। २८ से ३६ वर्ष की आयु के मध्य जीवन में स्थायी व्यावसायिक उत्थान प्राप्त होता है।
+
+### ${seekerPillars.career.obstaclesTitle}
+कार्यक्षेत्र में आने वाला तात्कालिक ठहराव अथवा मतभेद वास्तव में आंतरिक धैर्य और रणनीतिक परिपक्वता को तराशने के लिए आते हैं। उत्तेजना में आकर कोई भी निर्णय न लें; अपनी कार्यकुशलता और नेटवर्किंग को सुदृढ़ करें।
+- ${locale.bhavaPillars.boonsTitle} व्यावसायिक नेतृत्व, स्थायी प्रतिष्ठा एवं दीर्घकालिक सफलता।
+- ${locale.bhavaPillars.cautionsTitle} अनियोजित अनुबंधों में बिना पूर्ण समीक्षा के कोई जोखिम न उठाएं।
+- ${locale.bhavaPillars.upayasTitle} कार्यस्थल पर श्रीयंत्र स्थापित करें तथा बुधवार को मूंग दाल का दान करें।`;
+
+  // 2. Relationships and Marriage Chapter
+  const relationshipsContent = language === 'English'
+    ? `### ${seekerPillars.relationships.timingTypeTitle}
+The 7th house and Venus aspects suggest that marriage timing is heavily activated during the primary Dasha or Antardasha of the 7th lord, or when transiting Jupiter casts an auspicious aspect on the natal 7th house or Moon. The chart exhibits strong mutual affinity indicators where shared intellectual values and emotional maturity form the cornerstone, harmonizing elements of both personal choice and traditional family blessings.
+
+### ${seekerPillars.relationships.partnerTraitsTitle}
+Your prospective spouse is characterized by dignity, intellectual discernment, emotional sensitivity, and strong ethical grounding. They are likely to possess creative inclinations, refined aesthetic sensibilities, and a supportive, encouraging disposition toward your career ambitions.
+
+### ${seekerPillars.relationships.conflictResolutionTitle}
+Recurring communication frictions or expectations during intense transits can be easily resolved through mindful listening, transparent emotional check-ins, and avoiding pride-driven debates. Nurturing shared spiritual or travel rituals reinforces domestic serenity.
+- ${locale.bhavaPillars.boonsTitle} Devoted soul connection, mutual intellectual respect, and domestic warmth.
+- ${locale.bhavaPillars.cautionsTitle} Avoid bringing professional stress into personal family conversations.
+- ${locale.bhavaPillars.upayasTitle} Offer sweet white rice preparation (Kheer) on Fridays and share with loved ones.`
+    : language === 'Marathi'
+    ? `### ${seekerPillars.relationships.timingTypeTitle}
+सप्तम भाव आणि शुक्राची स्थिती दर्शवते की विवाहाचा शुभ योग सप्तमेशाच्या किंवा गुरुच्या अनुकूल गोचर काळात सक्रिय होतो. कुंडलीत परस्पर वैचारिक सामंजस्य आणि कौटुंबिक आशीर्वादांचा सुंदर मिलाफ दिसून येतो. जोडीदाराची निवड करताना वैचारिक सुसंगतता अत्यंत महत्त्वाची ठरेल.
+
+### ${seekerPillars.relationships.partnerTraitsTitle}
+आपल्या जोडीदाराचे व्यक्तिमत्त्व सुसंस्कृत, संवेदनशील, समजूतदार आणि स्वाभिमानी असेल. ते आपल्या कार्यक्षेत्राला समजून घेणारे, कौटुंबिक मूल्यांना जपणारे आणि संकटाच्या वेळी खंबीर साथ देणारे असतील.
+
+### ${seekerPillars.relationships.conflictResolutionTitle}
+नातेसंबंधात कधीही गैरसमज किंवा संवादहीनता निर्माण होऊ देऊ नका. नियमित खुला संवाद आणि एकमेकांच्या मतांचा आदर केल्याने नात्यातील गोडवा आणि जवळीक वृद्धिंगत होईल.
+- ${locale.bhavaPillars.boonsTitle} सुखी गृहस्थ जीवन, कौटुंबिक ऐक्य आणि निरंतर परस्पर सहकार्य.
+- ${locale.bhavaPillars.cautionsTitle} बाहेरच्या तणावाचा प्रभाव घरगुती संवादावर पडू देऊ नये.
+- ${locale.bhavaPillars.upayasTitle} दर शुक्रवारी देवी लक्ष्मीची उपासना करावी आणि पांढऱ्या वस्तूंचे दान करावे.`
+    : `### ${seekerPillars.relationships.timingTypeTitle}
+सप्तम भाव तथा शुक्र की शुभ स्थिति इंगित करती है कि विवाह के अनुकूल योग सप्तमेश की दशा अथवा देवगुरु बृहस्पति के शुभ गोचर में बनते हैं। कुंडली में बौद्धिक सामंजस्य और पारिवारिक सौहार्द के साथ परिपक्व निर्णय लेने की प्रवृत्ति स्पष्ट है।
+
+### ${seekerPillars.relationships.partnerTraitsTitle}
+जीवनसाथी का व्यक्तित्व मर्यादित, बौद्धिक, संवेदनशील एवं उच्च नैतिक मूल्यों से संपन्न होगा। वे आपकी महत्वाकांक्षाओं का सम्मान करेंगे तथा पारिवारिक व सामाजिक प्रतिष्ठा को बढ़ाने में सहयोगी सिद्ध होंगे।
+
+### ${seekerPillars.relationships.conflictResolutionTitle}
+पारस्परिक संवाद में अहम् के टकराव से बचें। किसी भी मतभेद की स्थिति में शांत मन से वार्तालाप करने से संबंध सदैव प्रगाढ़ और माधुर्यपूर्ण बने रहते हैं।
+- ${locale.bhavaPillars.boonsTitle} निष्ठावान जीवनसाथी, गृहस्थ सुख एवं पारिवारिक प्रतिष्ठा में वृद्धि।
+- ${locale.bhavaPillars.cautionsTitle} कार्यक्षेत्र के मानसिक तनाव को निजी जीवन पर हावी न होने दें।
+- ${locale.bhavaPillars.upayasTitle} शुक्रवार को देवी लक्ष्मी की पूजा करें तथा खीर का भोग लगाकर परिवार में बांटें।`;
+
+  // 3. Finances and Wealth Chapter
+  const financesContent = language === 'English'
+    ? `### ${seekerPillars.finances.earningPeriodsTitle}
+Wealth accumulation is governed by the Dhana (2nd) and Labha (11th) houses. Peak financial expansion occurs during the planetary cycles of friendly benefics, particularly Jupiter and Mercury. These phases reward strategic investments, business dividends, and executive compensation leaps.
+
+### ${seekerPillars.finances.investmentsRiskTitle}
+The 4th house and Mars/Venus alignments provide strong auspicious indications for long-term real estate, residential property acquisitions, and land holdings. Diversification into reliable long-term instruments is favored over hasty speculative day-trading. Real estate acquired after age 30 yields magnificent generational appreciation.
+
+### ${seekerPillars.finances.wealthProtectionTitle}
+The 12th house indicates occasional sudden expenditure leakages on luxury upgrades or unplanned obligations. Instituting automated monthly savings and maintaining liquid emergency reserves fully safeguards your financial empire against transit shocks.
+- ${locale.bhavaPillars.boonsTitle} Sustained financial growth, multiple income channels, and asset security.
+- ${locale.bhavaPillars.cautionsTitle} Refrain from signing financial guarantees or lending money without formal security.
+- ${locale.bhavaPillars.upayasTitle} Donate yellow pulses on Thursdays and maintain a clean north-east zone in your home.`
+    : language === 'Marathi'
+    ? `### ${seekerPillars.finances.earningPeriodsTitle}
+द्वितीय धन भाव आणि एकादश लाभ भावाच्या बलानुसार आपल्या जीवनात उत्पन्नाचे एकापेक्षा जास्त स्रोत निर्माण होण्याचे उत्तम योग आहेत. गुरु आणि बुध यांच्या शुभ दशाकाळात धनसंचय आणि आर्थिक भरभराट वेगाने होते.
+
+### ${seekerPillars.finances.investmentsRiskTitle}
+चतुर्थ भाव आणि मंगळाची स्थिती दर्शवते की स्थावर संपत्ती, स्वतःचे घर आणि जमीन खरेदीसाठी कुंडली अत्यंत अनुकूल आहे. तात्पुरत्या फायद्याच्या सट्टेबाजीपेक्षा दीर्घकालीन आणि सुरक्षित गुंतवणुकीला प्राधान्य द्यावे. वयाच्या ३० नंतर केलेली स्थावर गुंतवणूक उत्तम परतावा देईल.
+
+### ${seekerPillars.finances.wealthProtectionTitle}
+व्यय भावावर असणाऱ्या ग्रहांच्या प्रभावामुळे अचानक होणारे अनावश्यक खर्च टाळण्यासाठी मासिक बजेट आणि नियमित बचतीची सवय ठेवावी. कोणालाही उसने पैसे देताना योग्य खबरदारी घ्यावी.
+- ${locale.bhavaPillars.boonsTitle} अखंड धनप्रवाह, स्वतःच्या घराचे स्वप्न साकार आणि आर्थिक स्थैर्य.
+- ${locale.bhavaPillars.cautionsTitle} घाईघाईत किंवा कोणाच्या सांगण्यावरून धोकादायक आर्थिक निर्णय घेऊ नयेत.
+- ${locale.bhavaPillars.upayasTitle} गुरुवारी हरभरा डाळीचे दान करावे आणि ईशान्य कोपरा स्वच्छ व पवित्र ठेवावा.`
+    : `### ${seekerPillars.finances.earningPeriodsTitle}
+द्वितीय एवं एकादश भाव की स्थिति दर्शाती है कि जीवन में धन संचय एवं एकाधिक स्रोतों से नियमित आय के मजबूत योग हैं। बृहस्पति एवं बुध की शुभ दशाओं में वित्तीय समृद्धि और व्यापारिक मुनाफे में तीव्र वृद्धि होती है।
+
+### ${seekerPillars.finances.investmentsRiskTitle}
+चतुर्थ भाव एवं मंगल-शुक्र के प्रभाव से भूमि, भवन एवं अचल संपत्ति का निर्माण अत्यंत मंगलकारी रहेगा। शेयर बाजार या सट्टेबाजी में अत्यधिक जोखिम उठाने की बजाय दीर्घकालिक व स्थिर संपत्तियों में निवेश सर्वोत्तम रहेगा।
+
+### ${seekerPillars.finances.wealthProtectionTitle}
+द्वादश भाव के प्रभाव से अप्रत्याशित खर्चों की संभावना रहती है। इसके निवारण हेतु सुनियोजित बजट बनाएं और अनावश्यक दिखावे से बचें।
+- ${locale.bhavaPillars.boonsTitle} स्थायी धन संचय, भूमि-भवन का सुख एवं सुदृढ़ आर्थिक आधार।
+- ${locale.bhavaPillars.cautionsTitle} बिना लिखित अनुबंध के किसी को ऋण न दें और वित्तीय गारंटी से बचें।
+- ${locale.bhavaPillars.upayasTitle} गुरुवार को चने की दाल या बेसन का दान करें तथा घर का ईशान कोण स्वच्छ रखें।`;
+
+  // 4. Health and Well-being Chapter
+  const healthContent = language === 'English'
+    ? `### ${seekerPillars.health.vulnerablePeriodsTitle}
+Planetary configurations highlight the nervous system, digestive fire, and upper respiratory tract as sensitive somatic zones requiring conscious care. Seasonal weather transitions and stressful work sprints require extra hydration and restorative rest to prevent physical fatigue.
+
+### ${seekerPillars.health.ayurvedaTitle}
+Your natural bio-energetic constitution is anchored in a predominant Vata-Pitta disposition. Vata grants agile mental cognition and rapid ideation, while Pitta supplies metabolic drive. When balanced, this constitution confers vibrant vitality and swift healing.
+
+### ${seekerPillars.health.lifestyleRemediesTitle}
+Incorporate warm, cooked, grounding meals, minimize late-night screen time, and adopt morning breathing exercises (Anulom-Vilom and Surya Namaskar). Drinking water stored overnight in a copper vessel harmonizes cellular vitality.
+- ${locale.bhavaPillars.boonsTitle} High physical resilience, quick natural recuperation, and mental agility.
+- ${locale.bhavaPillars.cautionsTitle} Avoid irregular meal timings and excessive caffeine during workload peaks.
+- ${locale.bhavaPillars.upayasTitle} Practice daily 15-minute meditation and Surya Namaskar at sunrise.`
+    : language === 'Marathi'
+    ? `### ${seekerPillars.health.vulnerablePeriodsTitle}
+कुंडलीतील लग्न व षष्ठ भावानुसार पचनसंस्था, डोके व मानेचे स्नायू आणि मज्जासंस्था हे संवेदनशील अवयव आहेत. कामाचा अतिताण आणि अपुरी झोप यांमुळे शारीरिक थकवा जाणवू शकतो; यासाठी नियमित विश्रांती आवश्यक आहे.
+
+### ${seekerPillars.health.ayurvedaTitle}
+आपली नैसर्गिक प्रकृती वात-पित्त प्रधान आहे. वात दोषाने आपल्याला तीक्ष्ण विचारशक्ती दिली आहे आणि पित्त दोषाने उत्साह दिला आहे. या दोन्ही दोषांचे संतुलन राहिल्यास शरीर निरोगी आणि उत्साही राहते.
+
+### ${seekerPillars.health.lifestyleRemediesTitle}
+वेळेवर पौष्टिक जेवण, तेलकट पदार्थांवर नियंत्रण आणि सकाळी प्राणायाम केल्यास आरोग्य उत्तम राहील. तांब्याच्या भांड्यातील पाणी पिणे शरीरासाठी अत्यंत गुणकारी ठरेल.
+- ${locale.bhavaPillars.boonsTitle} चांगली रोगप्रतिकारशक्ती आणि आजारातून जलद बरे होण्याची क्षमता.
+- ${locale.bhavaPillars.cautionsTitle} जेवणाच्या वेळा अनियमित ठेवू नयेत आणि रात्री जागरण टाळावे.
+- ${locale.bhavaPillars.upayasTitle} रोज सकाळी सूर्यनमस्कार आणि ॐ चा जप करावा.`
+    : `### ${seekerPillars.health.vulnerablePeriodsTitle}
+लग्न एवं षष्ठ भाव की स्थिति के अनुसार पाचन तंत्र, स्नायु तंत्र एवं सिर-नेत्र क्षेत्र अधिक संवेदनशील हैं। अत्यधिक मानसिक भागदौड़ और अनियमित दिनचर्या से शारीरिक ऊर्जा का क्षय हो सकता है।
+
+### ${seekerPillars.health.ayurvedaTitle}
+आपकी शारीरिक प्रकृति वात-पित्त प्रधान है। वात मानसिक गतिशीलता और पित्त तेजस्विता प्रदान करता है। इनका उचित संतुलन आपको दीर्घायु और निरोगी जीवन प्रदान करता है।
+
+### ${seekerPillars.health.lifestyleRemediesTitle}
+सात्विक व सुपाच्य भोजन ग्रहण करें, रात्रि जागरण से बचें तथा प्रातःकाल अनुलोम-विलोम प्राणायाम का अभ्यास करें। तांबे के पात्र में रखा जल पीना अत्यंत लाभकारी है।
+- ${locale.bhavaPillars.boonsTitle} सुदृढ़ रोग प्रतिरोधक क्षमता एवं स्वाभाविक जीवन शक्ति।
+- ${locale.bhavaPillars.cautionsTitle} अत्यधिक गरिष्ठ भोजन तथा क्रोध व मानसिक तनाव से बचें।
+- ${locale.bhavaPillars.upayasTitle} नित्य सूर्य देव को जल अर्पित करें तथा गायत्री मंत्र का जप करें।`;
+
+  // 5. Life Purpose and Major Milestones Chapter
+  const lifePurposeContent = language === 'English'
+    ? `### ${seekerPillars.lifePurpose.soulMissionTitle}
+Your Atmakaraka and Lagna configuration reveal that your soul's supreme incarnation goal is mastering compassionate leadership, ethical self-reliance, and uplifting your family lineage. Transforming past-life karmic anxieties into steady wisdom is your highest dharma.
+
+### ${seekerPillars.lifePurpose.foreignTravelTitle}
+The 9th (long journeys) and 12th (foreign lands) houses show auspicious indications for foreign travel, higher learning abroad, cross-cultural collaborations, or temporary overseas relocation during major planetary periods. These journeys accelerate professional prestige.
+
+### ${seekerPillars.lifePurpose.milestonesTitle}
+The 5th house of progeny and Purva Punya (past meritorious deeds) confirms auspicious generational fulfillment, noble and accomplished children, and successful resolution of legal disputes or administrative challenges through truth and patience.
+- ${locale.bhavaPillars.boonsTitle} Spiritual clarity, noble generational lineage, and global perspective.
+- ${locale.bhavaPillars.cautionsTitle} Guard against cynicism during temporary karmic testing cycles.
+- ${locale.bhavaPillars.upayasTitle} Support orphaned children's education and plant a peepal or banyan sapling.`
+    : language === 'Marathi'
+    ? `### ${seekerPillars.lifePurpose.soulMissionTitle}
+आपल्या आत्मकारकाची स्थिती दर्शवते की या जन्मात आपले मुख्य ध्येय स्वावलंबन, नैतिक नेतृत्व आणि समाजाला विधायक दिशा देणे हे आहे. भूतकाळातील कर्मांचे सोने करून जीवनात आध्यात्मिक आणि व्यावहारिक संतुलन साधणे हा आपला खरा धर्म आहे.
+
+### ${seekerPillars.lifePurpose.foreignTravelTitle}
+नवम आणि द्वादश भावाच्या शुभ योगामुळे परदेश प्रवास, दूरचे तीर्थाटन आणि आंतरराष्ट्रीय संबंधांतून प्रगतीचे उत्तम योग आहेत. दूरच्या प्रवासाने आपल्या ज्ञानात आणि अनुभवात मोठी भर पडेल.
+
+### ${seekerPillars.lifePurpose.milestonesTitle}
+पंचम भावातील शुभ प्रभावामुळे सुसंस्कृत व हुशार संतान लाभेल. कायदेशीर बाबी किंवा जुने वाद असतील तर ते संयम आणि नैतिकतेने आपल्या बाजूने सुटतील.
+- ${locale.bhavaPillars.boonsTitle} उच्च आध्यात्मिक प्रगती, उत्कृष्ट कौटुंबिक वारसा आणि व्यापक दृष्टी.
+- ${locale.bhavaPillars.cautionsTitle} संकटाच्या वेळी निराश न होता धैर्याने पुढे जात राहावे.
+- ${locale.bhavaPillars.upayasTitle} गरजू विद्यार्थ्यांच्या शिक्षणासाठी मदत करावी आणि पिंपळाच्या झाडाची सेवा करावी.`
+    : `### ${seekerPillars.lifePurpose.soulMissionTitle}
+आत्मकारक ग्रह की स्थिति यह दर्शाती है कि आपकी आत्मा का मुख्य उद्देश्य नैतिक नेतृत्व, आत्मिक जागरण तथा कुल की प्रतिष्ठा को नई ऊंचाइयों पर ले जाना है। पूर्वजन्म के संचित पुण्यों को लोककल्याण में लगाना आपका धर्म है।
+
+### ${seekerPillars.lifePurpose.foreignTravelTitle}
+नवम एवं द्वादश भाव के योग से विदेश यात्रा, दूरस्थ स्थानों पर कार्य तथा अंतरराष्ट्रीय संपर्कों से लाभ के प्रबल योग बनते हैं। ये यात्राएं आपके भाग्य को जागृत करेंगी।
+
+### ${seekerPillars.lifePurpose.milestonesTitle}
+पंचम भाव के प्रभाव से सुयोग्य, संस्कारी एवं प्रतिभाशाली संतान का सुख प्राप्त होगा। कानूनी व प्रशासनिक विवादों में सत्य और धैर्य से विजय प्राप्त होगी।
+- ${locale.bhavaPillars.boonsTitle} आत्मिक विकास, उज्ज्वल कुल परंपरा एवं वैश्विक ख्याति।
+- ${locale.bhavaPillars.cautionsTitle} अस्थायी असफलताओं से विचलित हुए बिना अपने कर्तव्य पथ पर अग्रसर रहें।
+- ${locale.bhavaPillars.upayasTitle} निर्धन बच्चों की शिक्षा में सहायता करें तथा पीपल वृक्ष की सेवा करें।`;
+
+  // 6. Prescriptive Classical Vedic Remedies Chapter
+  const remediesContent = language === 'English'
+    ? `### ${seekerPillars.remedies.mantrasTitle}
+- Maha Mrityunjaya Mantra: Chant 108 times at dawn for health, mental clarity, and energetic shielding.
+- Gayatri Mantra: Chant 24 or 108 times facing East at sunrise for cognitive illumination and administrative power.
+- Navagraha Shanti: Recite Om Namo Bhagavate Vasudevaya daily for all-round peace and planetary harmony.
+
+### ${seekerPillars.remedies.gemstonesTitle}
+- Primary Auspicious Gem: Natural Yellow Sapphire (Pukhraj) or Red Coral (Moonga) set in auspicious metal, energized on an auspicious weekday morning.
+- Sacred Metal: Wear gold or pure copper to ground planetary frequencies.
+
+### ${seekerPillars.remedies.charityTitle}
+- Saturday Compassion: Feed stray animals and donate black sesame or warm clothes to the underprivileged.
+- Thursday Wisdom Seva: Offer bananas or yellow flowers to holy sanctuaries and support education for students in need.`
+    : language === 'Marathi'
+    ? `### ${seekerPillars.remedies.mantrasTitle}
+- महामृत्युंजय मंत्र: दररोज सकाळी १०८ वेळा जप करावा; यामुळे आरोग्य, मानसिक शांती आणि नकारात्मकतेपासून संरक्षण मिळते.
+- गायत्री मंत्र: सूर्योदयाच्या वेळी पूर्वाभिमुख बसून २४ किंवा १०८ वेळा जप करावा.
+- मूल वैदिक मंत्र: ॐ नमो भगवते वासुदेवाय या मंत्राचा नियमित जप सर्व ग्रहांची अनुकूलता प्रदान करतो.
+
+### ${seekerPillars.remedies.gemstonesTitle}
+- भाग्यवान रत्न: योग्य ज्योतिषी सल्ल्याने भाग्योदयासाठी पुखराज किंवा पोवळे योग्य धातूत (सोने किंवा तांबे) धारण करावे.
+- शुभ धातू: शरीरात सकारात्मक ऊर्जा टिकवण्यासाठी तांब्याचे कडे किंवा सोन्याची अंगठी अनुकूल ठरते.
+
+### ${seekerPillars.remedies.charityTitle}
+- शनिवार सेवा: गरजूंना अन्नदान करावे आणि मुक्या प्राण्यांना अन्न द्यावे.
+- गुरुवार सेवा: गुरुवारी गरजू विद्यार्थ्यांना वह्या-पुस्तके दान करावीत आणि गोसेवा करावी.`
+    : `### ${seekerPillars.remedies.mantrasTitle}
+- महामृत्युंजय मंत्र: नित्य प्रातः १०८ बार जप करें; इससे आरोग्य, दीर्घायु एवं ग्रह बाधाओं से पूर्ण रक्षा होती है।
+- गायत्री मंत्र: सूर्योदय के समय पूर्व दिशा की ओर मुख करके २४ अथवा १०८ बार जप करें।
+- मूल वैदिक मंत्र: ॐ नमो भगवते वासुदेवाय का नित्य जप संपूर्ण ग्रह दोषों का शमन करता है।
+
+### ${seekerPillars.remedies.gemstonesTitle}
+- शुभ रत्न: योग्य ज्योतिषी परामर्श से पुखराज अथवा मूंगा शुभ मुहूर्त में प्राण-प्रतिष्ठा करके धारण करें।
+- अनुकूल धातु: स्वर्ण अथवा शुद्ध तांबे की अंगूठी/कड़ा धारण करना ग्रह ऊर्जा को संतुलित करता है।
+
+### ${seekerPillars.remedies.charityTitle}
+- शनिवार दान: निर्धनों को भोजन, काले तिल अथवा ऊनी वस्त्रों का दान करें और श्वान की सेवा करें।
+- गुरुवार सेवा: विद्यार्थियों को पठन सामग्री भेंट करें तथा गौमाता को गुड़-रोटी खिलाएं।`;
+
   const report = `# ${locale.chapterLabels.ch1Part1Title}
 ${introParagraphs[language] || introParagraphs.English}
 
 ## ${locale.footers.bhavaFooter}
 ${bhavaSections}
 
-## ${careerTitles[language] || careerTitles.English}
-${language === 'English'
-  ? `The alignment of the 10th house of Karma with the 2nd and 11th houses indicates distinguished achievements in strategic, executive, academic, administrative, or technological sectors.\n- ${locale.bhavaPillars.boonsTitle} Executive leadership, ethical professional standing, and sustained lifetime prestige.\n- ${locale.bhavaPillars.cautionsTitle} Resist taking unilateral responsibilities without establishing proper team accountability.\n- ${locale.bhavaPillars.upayasTitle} Keep a consecrated Shree Yantra at your workspace and offer charity on Wednesdays.`
-  : language === 'Marathi'
-  ? `दशम आणि द्वितीय भावाचा परस्पर संबंध दर्शवतो की आपल्या कारकीर्दीत बौद्धिक आणि व्यवस्थापकीय कौशल्याला मोठे महत्त्व असेल. प्रशासन, व्यवस्थापन, वित्त, शिक्षण किंवा तंत्रज्ञान क्षेत्रात आपल्याला विशेष प्रतिष्ठा मिळेल.\n- ${locale.bhavaPillars.boonsTitle} व्यावसायिक नेतृत्व, कायमस्वरूपी संपत्तीची निर्मिती आणि प्रतिष्ठित पद.\n- ${locale.bhavaPillars.cautionsTitle} भागीदार निवडताना किंवा करारांवर स्वाक्षरी करताना कायदेशीर सल्ला आवर्जून घ्या.\n- ${locale.bhavaPillars.upayasTitle} आपल्या कामाच्या ठिकाणी श्रीयंत्राची स्थापना करावी.`
-  : `दशम व द्वितीय भाव का संबंध यह दर्शाता है कि आपकी आजीविका में बौद्धिक, रणनीतिक तथा संगठनात्मक कौशल की प्रमुख भूमिका रहेगी। शासन, प्रबंधन, वित्त, परामर्श, शिक्षा अथवा तकनीकी उद्यम में आपकी विशिष्ट प्रतिष्ठा बनेगी।\n- ${locale.bhavaPillars.boonsTitle} व्यावसायिक नेतृत्व, स्थायी धन संग्रह तथा प्रतिष्ठित पदों की प्राप्ति।\n- ${locale.bhavaPillars.cautionsTitle} साझेदारी अथवा अनियोजित अनुबंधों में बिना कानूनी परामर्श के हस्ताक्षर न करें।\n- ${locale.bhavaPillars.upayasTitle} कार्यस्थल पर श्रीयंत्र की स्थापना करें एवं बुधवार को हरी मूंग का दान करें।`}
+## ${seekerPillars.career.title}
+${careerContent}
 
-## ${marriageTitles[language] || marriageTitles.English}
-${language === 'English'
-  ? `The 7th house and Venus aspects confirm a devoted, intellectually attuned, and culturally grounded partner. Mature communication and mutual reverence will deepen marital bliss across the decades.\n- ${locale.bhavaPillars.boonsTitle} Empathic soul bond, shared life philosophy, and domestic stability.\n- ${locale.bhavaPillars.cautionsTitle} Consciously practice calm patience during planetary transit stress periods.\n- ${locale.bhavaPillars.upayasTitle} Offer sweet milk preparation (Kheer) to deities on Fridays and share with family.`
-  : language === 'Marathi'
-  ? `सप्तमेश व शुक्र यांची स्थिती दर्शवते की आपल्याला निष्ठावान, सुविद्य आणि समजूतदार जीवनसाथी लाभेल. परस्पर विश्वास आणि खुला संवाद आपल्या वैवाहिक जीवनात अखंड गोडवा टिकवून ठेवेल.\n- ${locale.bhavaPillars.boonsTitle} सुखी गृहस्थ जीवन, कौटुंबिक प्रतिष्ठा आणि परस्पर आदर.\n- ${locale.bhavaPillars.cautionsTitle} कामाच्या तणावाखाली जोडीदारावर राग काढणे टाळावे.\n- ${locale.bhavaPillars.upayasTitle} शुक्रवारी खीर बनवून सहकुटुंब प्रसाद ग्रहण करावा.`
-  : `सप्तमेश और शुक्र की स्थिति एक निष्ठावान, बौद्धिक एवं संवेदनशील जीवनसाथी के आगमन का संकेत देती है। परस्पर विश्वास और परिपक्व संवाद आपके वैवाहिक जीवन को चिरस्थायी माधुर्य प्रदान करेगा।\n- ${locale.bhavaPillars.boonsTitle} गृहस्थ जीवन में सौहार्द, पारिवारिक प्रतिष्ठा में वृद्धि और साझा जीवन लक्ष्य।\n- ${locale.bhavaPillars.cautionsTitle} गोचर के दबाव में संवेदनशील विषयों पर अनावश्यक वाद-विवाद से बचें।\n- ${locale.bhavaPillars.upayasTitle} शुक्रवार को खीर का भोग लगाकर परिवार सहित प्रसाद ग्रहण करें।`}
+## ${seekerPillars.relationships.title}
+${relationshipsContent}
 
-## ${healthTitles[language] || healthTitles.English}
-${language === 'English'
-  ? `Your bio-energetic constitution is grounded in a healthy Vata-Pitta equilibrium. Maintaining rhythmic sleep intervals and balanced hydration sustains your natural recuperative stamina.\n- ${locale.bhavaPillars.boonsTitle} Robust baseline vitality, swift recovery from illness, and mental stamina under pressure.\n- ${locale.bhavaPillars.cautionsTitle} Guard against digestive heat or neck/shoulder stiffness during high-intensity periods.\n- ${locale.bhavaPillars.upayasTitle} Consume pure water stored in a copper vessel in the morning and practice daily Pranayama.`
-  : language === 'Marathi'
-  ? `लग्न व षष्ठ भावाच्या विश्लेषणानुसार आपली प्रकृती वात-पित्त प्रधान आहे. मेंदूची व विचारांची गती वेगवान असल्याने पचनसंस्था व मज्जासंस्थेची काळजी घेणे आवश्यक आहे.\n- ${locale.bhavaPillars.boonsTitle} उत्तम रोगप्रतिकारशक्ती, नैसर्गिक शारीरिक संतुलन.\n- ${locale.bhavaPillars.cautionsTitle} तेलकट किंवा अवेळी जेवण टाळावे; पुरेशी झोप घ्यावी.\n- ${locale.bhavaPillars.upayasTitle} दररोज सकाळी प्राणायाम आणि सूर्यनमस्कार करावेत.`
-  : `लग्न व षष्ठ भाव के समीकरण के अनुसार आपकी प्रकृति वात-पित्त प्रधान है। मानसिक सक्रियता उच्च रहने के कारण स्नायु तंत्र और पाचन तंत्र को नियमित रखना अत्यंत आवश्यक है।\n- ${locale.bhavaPillars.boonsTitle} सुदृढ़ जीवन शक्ति, त्वरित रोगमुक्ति तथा प्राकृतिक शारीरिक संतुलन।\n- ${locale.bhavaPillars.cautionsTitle} गरिष्ठ भोजन तथा अत्यधिक मानसिक परिश्रम से एसिडिटी व अनिद्रा की संभावना।\n- ${locale.bhavaPillars.upayasTitle} तांबे के पात्र में रखा जल प्रातः पिएं तथा अनुलोम-विलोम प्राणायाम का नित्य अभ्यास करें।`}
+## ${seekerPillars.finances.title}
+${financesContent}
 
-## ${yogaTitles[language] || yogaTitles.English}
-${language === 'English'
-  ? `1. Sacred Protective Mantra: Daily chanting of Om Namo Bhagavate Vasudevaya (108 times) for peace and prosperity.\n2. Auspicious Gemstone: Consult your astrological chart before setting Yellow Sapphire or Ruby in sacred gold.\n3. Charitable Daan: Feed stray cows and support shelter animals on Saturdays to harmonize karmic transits.`
-  : language === 'Marathi'
-  ? `1. मूळ वैदिक मंत्र: दररोज सकाळी ॐ नमो भगवते वासुदेवाय किंवा महामृत्युंजय मंत्राचा जप करावा.\n2. शुभ रत्न: योग्य ज्योतिषी सल्ल्याने भाग्योदयासाठी योग्य रत्न परिधान करावे.\n3. सेवा व दान: शनिवारी गरजूंना अन्न किंवा वस्त्र दान करावे आणि गोसेवा करावी.`
-  : `1. मूल वैदिक मन्त्र: नित्य प्रातः ॐ नमो भगवते वासुदेवाय (१०८ बार) अथवा महामृत्युंजय मन्त्र का जप करें।\n2. शुभ रत्न: योग्य ज्योतिषी परामर्श अनुसार भाग्योदय हेतु अनुकूल रत्न धारण करें।\n3. सेवा एवं दान: शनिवार को निर्धनों को भोजन व वस्त्र का दान करें तथा गौसेवा करें।`}`;
+## ${seekerPillars.health.title}
+${healthContent}
+
+## ${seekerPillars.lifePurpose.title}
+${lifePurposeContent}
+
+## ${seekerPillars.remedies.title}
+${remediesContent}`;
 
   const avakahada = calculateAvakahadaDetails(
     details.dob,
@@ -827,9 +1009,10 @@ ${language === 'English'
   const practicalRemedies = calculatePracticalRemedies(planetaryPositions, lagnaSign, doshas, language);
 
   const sunPos = planetaryPositions.find(p => p.planet === 'Sun');
-  const sunSignStr = sunPos ? sunPos.sign : sunSignName;
+  const sunSignStr = getAuthenticSunSign(sunPos ? sunPos.sign : sunSignName, details.dob, details.tob);
   const moonPos = planetaryPositions.find(p => p.planet === 'Moon');
-  const finalMoonSign = moonPos ? moonPos.sign : moonSignName;
+  const finalMoonSign = getAuthenticMoonSign(moonPos ? moonPos.sign : moonSignName, nakshatraName, details.dob, details.tob);
+
 
   return {
     report,

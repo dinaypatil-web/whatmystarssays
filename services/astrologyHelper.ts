@@ -472,15 +472,77 @@ export const VEDIC_RASHIS: RashiData[] = [
 ];
 
 /**
+ * Universal date parser that robustly parses YYYY-MM-DD, DD-MM-YYYY, DD/MM/YYYY, etc.
+ * Returns authentic [year, month, day] numbers.
+ */
+export const parseDobToYMD = (dob?: string): [number, number, number] | null => {
+  if (!dob || typeof dob !== 'string') return null;
+  const clean = dob.trim();
+  const sep = clean.includes('-') ? '-' : clean.includes('/') ? '/' : clean.includes('.') ? '.' : null;
+  if (!sep) return null;
+  const rawParts = clean.split(sep).map(p => parseInt(p, 10));
+  if (rawParts.length < 3 || rawParts.some(isNaN)) return null;
+
+  let y: number, m: number, d: number;
+  if (rawParts[0] > 1000) {
+    // YYYY-MM-DD
+    [y, m, d] = rawParts;
+  } else if (rawParts[2] > 1000) {
+    // DD-MM-YYYY
+    [d, m, y] = rawParts;
+  } else {
+    // 2-digit year or ambiguous
+    [y, m, d] = rawParts[0] > 31 ? rawParts : [rawParts[2] + 2000, rawParts[1], rawParts[0]];
+  }
+
+  if (y < 1900 || y > 2100 || m < 1 || m > 12 || d < 1 || d > 31) return null;
+  return [y, m, d];
+};
+
+/**
+ * Vedic Shastra constellation-to-sign astronomical mapping.
+ * Each of the 27 Nakshatras spans 13°20' and belongs to strictly 1 or 2 Rashis.
+ */
+export const NAKSHATRA_TO_RASHIS: Record<string, string[]> = {
+  Ashwini: ['Aries'],
+  Bharani: ['Aries'],
+  Krittika: ['Aries', 'Taurus'],
+  Rohini: ['Taurus'],
+  Mrigashira: ['Taurus', 'Gemini'],
+  Ardra: ['Gemini'],
+  Punarvasu: ['Gemini', 'Cancer'],
+  Pushya: ['Cancer'],
+  Ashlesha: ['Cancer'],
+  Magha: ['Leo'],
+  'Purva Phalguni': ['Leo'],
+  'Uttara Phalguni': ['Leo', 'Virgo'],
+  Hasta: ['Virgo'],
+  Chitra: ['Virgo', 'Libra'],
+  Swati: ['Libra'],
+  Vishakha: ['Libra', 'Scorpio'],
+  Anuradha: ['Scorpio'],
+  Jyeshtha: ['Scorpio'],
+  Mula: ['Sagittarius'],
+  'Purva Ashadha': ['Sagittarius'],
+  'Uttara Ashadha': ['Sagittarius', 'Capricorn'],
+  Shravana: ['Capricorn'],
+  Dhanishta: ['Capricorn', 'Aquarius'],
+  Shatabhisha: ['Aquarius'],
+  'Purva Bhadrapada': ['Aquarius', 'Pisces'],
+  'Uttara Bhadrapada': ['Pisces'],
+  Revati: ['Pisces']
+};
+
+/**
  * Calculates authentic sidereal Moon position, Nakshatra, and Pada from DOB and TOB.
  * Uses high-precision Meeus lunar perturbation series with Lahiri Ayanamsha.
  */
 export const calculateMoonDetails = (dob: string, tob: string = '12:00') => {
   if (!dob) return null;
-  const parts = dob.split('-').map(Number);
-  if (parts.length < 3 || isNaN(parts[0])) return null;
+  const ymd = parseDobToYMD(dob);
+  if (!ymd) return null;
 
-  const [y, m, d] = parts;
+  const [y, m, d] = ymd;
   const [hh, mm] = (tob || '12:00').split(':').map(Number);
   const hour = isNaN(hh) ? 12 : hh;
   const minute = isNaN(mm) ? 0 : mm;
@@ -551,10 +613,10 @@ export const calculateMoonDetails = (dob: string, tob: string = '12:00') => {
  */
 export const calculateSunDetails = (dob: string, tob: string = '12:00') => {
   if (!dob) return null;
-  const parts = dob.split('-').map(Number);
-  if (parts.length < 3 || isNaN(parts[0])) return null;
+  const ymd = parseDobToYMD(dob);
+  if (!ymd) return null;
 
-  const [y, m, d] = parts;
+  const [y, m, d] = ymd;
   const [hh, mm] = (tob || '12:00').split(':').map(Number);
   const hour = isNaN(hh) ? 12 : hh;
   const minute = isNaN(mm) ? 0 : mm;
@@ -584,6 +646,52 @@ export const calculateSunDetails = (dob: string, tob: string = '12:00') => {
     degree,
     degreesInSign: degInSign.toFixed(2)
   };
+};
+
+/**
+ * Resolves the mathematically authentic Moon Sign, ensuring it is 100% harmonious
+ * with the native's Janma Nakshatra and DOB coordinates.
+ */
+export const getAuthenticMoonSign = (
+  candidateSign?: string,
+  nakshatraName?: string,
+  dob?: string,
+  tob?: string
+): string => {
+  if (dob) {
+    const moonCalc = calculateMoonDetails(dob, tob || '12:00');
+    if (moonCalc?.rashi?.name) return moonCalc.rashi.name;
+  }
+
+  // Cross-reference with authentic Nakshatra boundaries
+  if (nakshatraName) {
+    const cleanNak = nakshatraName.trim();
+    for (const [nak, validSigns] of Object.entries(NAKSHATRA_TO_RASHIS)) {
+      if (cleanNak.toLowerCase().includes(nak.toLowerCase()) || nak.toLowerCase().includes(cleanNak.toLowerCase())) {
+        if (candidateSign && validSigns.some(s => s.toLowerCase() === candidateSign.toLowerCase())) {
+          return candidateSign;
+        }
+        return validSigns[0]; // Anchor to authentic sign
+      }
+    }
+  }
+
+  return candidateSign || 'Taurus';
+};
+
+/**
+ * Resolves the mathematically authentic Sun Sign from DOB coordinates.
+ */
+export const getAuthenticSunSign = (
+  candidateSign?: string,
+  dob?: string,
+  tob?: string
+): string => {
+  if (dob) {
+    const sunCalc = calculateSunDetails(dob, tob || '12:00');
+    if (sunCalc?.rashi?.name) return sunCalc.rashi.name;
+  }
+  return candidateSign || 'Aries';
 };
 
 export interface AshtakootKootaResult {
@@ -1213,8 +1321,8 @@ export const calculateAvakahadaDetails = (
   };
 
   // 1. Calculate Sidereal Sun Longitude for Tithi, Yoga, Karana
-  const parts = (dob || '2000-01-01').split('-').map(Number);
-  const [y, m, d] = parts.length >= 3 ? parts : [2000, 1, 1];
+  const ymd = parseDobToYMD(dob) || [2000, 1, 1];
+  const [y, m, d] = ymd;
   const [hh, mm] = (tob || '12:00').split(':').map(Number);
   const hour = isNaN(hh) ? 12 : hh;
   const minute = isNaN(mm) ? 0 : mm;
@@ -1507,11 +1615,9 @@ export const calculatePlanetaryPositions = (
   let birthYear = 1990;
   let birthMonth = 5;
   let birthDay = 15;
-  if (dob && /^\d{4}-\d{2}-\d{2}/.test(dob)) {
-    const parts = dob.split('-');
-    birthYear = parseInt(parts[0], 10) || 1990;
-    birthMonth = parseInt(parts[1], 10) || 5;
-    birthDay = parseInt(parts[2], 10) || 15;
+  const parsedYmd = parseDobToYMD(dob);
+  if (parsedYmd) {
+    [birthYear, birthMonth, birthDay] = parsedYmd;
   }
 
   // Sidereal Sun Rashi Index (0-11, Mesha to Meena via standard Sankranti calendar)

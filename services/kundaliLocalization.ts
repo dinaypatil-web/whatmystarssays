@@ -3015,3 +3015,467 @@ export const getKundaliLocale = (language: Language): KundaliLocaleData => {
     sixPillars: SIX_PILLARS_DATA[language] || SIX_PILLARS_DATA.English
   };
 };
+
+export interface SeekerPillarsLocale {
+  career: {
+    title: string;
+    pathSuitabilityTitle: string;
+    timingTransitionsTitle: string;
+    obstaclesTitle: string;
+  };
+  relationships: {
+    title: string;
+    timingTypeTitle: string;
+    partnerTraitsTitle: string;
+    conflictResolutionTitle: string;
+  };
+  finances: {
+    title: string;
+    earningPeriodsTitle: string;
+    investmentsRiskTitle: string;
+    wealthProtectionTitle: string;
+  };
+  health: {
+    title: string;
+    vulnerablePeriodsTitle: string;
+    ayurvedaTitle: string;
+    lifestyleRemediesTitle: string;
+  };
+  lifePurpose: {
+    title: string;
+    soulMissionTitle: string;
+    foreignTravelTitle: string;
+    milestonesTitle: string;
+  };
+  remedies: {
+    title: string;
+    mantrasTitle: string;
+    gemstonesTitle: string;
+    charityTitle: string;
+  };
+}
+
+export const SEEKER_FIVE_PILLARS: Record<Language, SeekerPillarsLocale> = {
+  English: {
+    career: {
+      title: 'Career & Business Direction',
+      pathSuitabilityTitle: 'Path & Suitability: Job vs. Business Alignment',
+      timingTransitionsTitle: 'Timing & Transitions: Favorable Promotion & Venture Windows',
+      obstaclesTitle: 'Stagnation & Obstacles: Navigating Delays & Workplace Friction'
+    },
+    relationships: {
+      title: 'Relationships & Marriage Blueprint',
+      timingTypeTitle: 'Marriage Timing & Nature: Love vs. Arranged Indicators',
+      partnerTraitsTitle: 'Compatibility & Partner Traits: 7th House & Spouse Persona',
+      conflictResolutionTitle: 'Conflict Resolution: Emotional Harmony & Communication'
+    },
+    finances: {
+      title: 'Finances, Wealth & Asset Growth',
+      earningPeriodsTitle: 'Earning & Stability Cycles: Peak Wealth Dashas',
+      investmentsRiskTitle: 'Investments & Asset Creation: Real Estate & Property',
+      wealthProtectionTitle: 'Financial Risk Management & Wealth Protection'
+    },
+    health: {
+      title: 'Health, Vitality & Well-being',
+      vulnerablePeriodsTitle: 'Vulnerable Periods: Sensitive Bodily Zones & Planetary Transits',
+      ayurvedaTitle: 'Ayurvedic Constitution: Vata, Pitta & Kapha Bio-Equilibrium',
+      lifestyleRemediesTitle: 'Root Causes & Lifestyle Adjustments: Daily Vitality Routine'
+    },
+    lifePurpose: {
+      title: 'Life Purpose, Karmic Patterns & Milestones',
+      soulMissionTitle: 'Atmakaraka & Core Karmic Mission: Soul Evolution',
+      foreignTravelTitle: 'Foreign Relocation, Travel & Global Opportunities',
+      milestonesTitle: 'Major Life Milestones: Children, Lineage & Legal Resolution'
+    },
+    remedies: {
+      title: 'Prescriptive Classical Vedic Remedies',
+      mantrasTitle: 'Sacred Beej Mantras & Sound Frequency Japa',
+      gemstonesTitle: 'Auspicious Gemstones, Sacred Metals & Wearing Rules',
+      charityTitle: 'Charitable Daan, Seva & Daily Spiritual Practices'
+    }
+  },
+  Marathi: {
+    career: {
+      title: 'करिअर, व्यवसाय आणि आजीविका',
+      pathSuitabilityTitle: 'मार्ग आणि अनुकूलता: नोकरी की व्यवसाय',
+      timingTransitionsTitle: 'वेळ आणि संक्रमण: पदोन्नती, नोकरी बदल व नवीन व्यवसायाचे अनुकूल काळ',
+      obstaclesTitle: 'अडचणी व विलंब: कामातील अडथळे, तणाव व मात करण्याचे उपाय'
+    },
+    relationships: {
+      title: 'नातेसंबंध आणि वैवाहिक जीवन',
+      timingTypeTitle: 'विवाहाची वेळ आणि स्वरूप: प्रेम की पारंपरिक विवाह योग',
+      partnerTraitsTitle: 'जोडीदाराचे स्वभाववैशिष्ट्ये, पार्श्वभूमी आणि सुसंगतता',
+      conflictResolutionTitle: 'भावनिक समन्वय, संवाद आणि मतभेद निवारण'
+    },
+    finances: {
+      title: 'वित्त, संपत्ती आणि आर्थिक स्थैर्य',
+      earningPeriodsTitle: 'कमाई आणि स्थैर्याचा काळ: दशा व धनलाभाचे सुवर्णकाळ',
+      investmentsRiskTitle: 'गुंतवणूक, स्थावर संपत्ती, जमीन-जुमला आणि जोखीम',
+      wealthProtectionTitle: 'आर्थिक जोखीम नियंत्रण आणि संपत्तीचे रक्षण'
+    },
+    health: {
+      title: 'आरोग्य, जीवनशक्ती आणि स्वास्थ्य',
+      vulnerablePeriodsTitle: 'संवेदनशील काळ आणि शारीरिक अवयवांची विशेष काळजी',
+      ayurvedaTitle: 'आयुर्वेदिक प्रकृती: वात, पित्त आणि कफ दोष संतुलन',
+      lifestyleRemediesTitle: 'जीवनशैलीतील बदल, आहार आणि मानसिक शांततेचे उपाय'
+    },
+    lifePurpose: {
+      title: 'जीवनाचा उद्देश, प्रारब्ध कर्म आणि महत्त्वाचे टप्पे',
+      soulMissionTitle: 'आत्म्याचा मूळ उद्देश, आत्मकारक आणि प्रारब्ध कर्माचे धडे',
+      foreignTravelTitle: 'परदेश गमन, दूरचे प्रवास आणि स्थलांतर योग',
+      milestonesTitle: 'जीवनातील महत्त्वाचे टप्पे: संतान सुख, वंशवृद्धी आणि कायदेशीर बाबी'
+    },
+    remedies: {
+      title: 'अचूक शास्त्रीय वैदिक उपाय व साधना',
+      mantrasTitle: 'सिद्ध वैदिक बीज मंत्र आणि नित्य जपाची संख्या',
+      gemstonesTitle: 'शुभ रत्न, अनुकूल धातू आणि परिधान करण्याची शास्त्रीय पद्धत',
+      charityTitle: 'कल्याणकारी दान, भूतदया, गोसेवा आणि नित्य आध्यात्मिक आचरण'
+    }
+  },
+  Hindi: {
+    career: {
+      title: 'करियर, आजीविका एवं व्यवसाय',
+      pathSuitabilityTitle: 'मार्ग एवं उपयुक्तता: नौकरी या व्यवसाय की अनुकूलता',
+      timingTransitionsTitle: 'समय एवं बदलाव: पदोन्नति, स्थानांतरण व नए उद्यम का समय',
+      obstaclesTitle: 'बाधाएं एवं विलंब: कार्यक्षेत्र में संघर्ष व पार पाने की रणनीतियां'
+    },
+    relationships: {
+      title: 'संबंध, प्रेम एवं वैवाहिक जीवन',
+      timingTypeTitle: 'विवाह समय एवं प्रकार: प्रेम विवाह या पारंपरिक विवाह',
+      partnerTraitsTitle: 'जीवनसाथी के गुण, स्वभाव, पृष्ठभूमि एवं अनुकूलता',
+      conflictResolutionTitle: 'कलह निवारण, भावनात्मक संवाद एवं वैवाहिक सामंजस्य'
+    },
+    finances: {
+      title: 'वित्त, धन संपदा एवं आर्थिक समृद्धि',
+      earningPeriodsTitle: 'धनार्जन एवं स्थिरता का समय: महादशा अनुसार आर्थिक उत्थान',
+      investmentsRiskTitle: 'निवेश, भूमि-भवन, स्थायी संपत्ति एवं वित्तीय जोखिम',
+      wealthProtectionTitle: 'वित्तीय जोखिम प्रबंधन एवं धन संरक्षण'
+    },
+    health: {
+      title: 'स्वास्थ्य, शारीरिक ऊर्जा एवं आरोग्य',
+      vulnerablePeriodsTitle: 'संवेदनशील समय एवं विशेष सावधानी वाले शारीरिक अंग',
+      ayurvedaTitle: 'आयुर्वेदिक प्रकृति: वात, पित्त एवं कफ का त्रिदोष संतुलन',
+      lifestyleRemediesTitle: 'जीवनशैली सुधार, पथ्य-अपथ्य एवं मानसिक शांति के उपाय'
+    },
+    lifePurpose: {
+      title: 'आत्मिक उद्देश्य, प्रारब्ध कर्म एवं जीवन पड़ाव',
+      soulMissionTitle: 'आत्मकारक ग्रह एवं आत्मा की आध्यात्मिक यात्रा का उद्देश्य',
+      foreignTravelTitle: 'विदेश यात्रा, प्रवास एवं अन्यत्र बसने के योग',
+      milestonesTitle: 'जीवन के प्रमुख पड़ाव: संतान सुख, वंशवृद्धि एवं विधिक मामले'
+    },
+    remedies: {
+      title: 'अचूक शास्त्रीय वैदिक उपाय एवं साधना',
+      mantrasTitle: 'सिद्ध वैदिक बीज मंत्र एवं नित्य जप विधान',
+      gemstonesTitle: 'शुभ रत्न, अनुकूल धातु एवं प्राण-प्रतिष्ठा धारण विधि',
+      charityTitle: 'कल्याणकारी दान, गौसेवा एवं नित्य आध्यात्मिक दिनचर्या'
+    }
+  },
+  Gujarati: {
+    career: {
+      title: 'કારકિર્દી, વ્યવસાય અને આજીવિકા',
+      pathSuitabilityTitle: 'માર્ગ અને યોગ્યતા: નોકરી કે વ્યવસાય',
+      timingTransitionsTitle: 'સમય અને પરિવર્તન: પ્રમોશન અને નવા સાહસ માટે શુભ સમય',
+      obstaclesTitle: 'અડચણો અને વિલંબ: કાર્યક્ષેત્રમાં અવરોધો અને નિવારણ'
+    },
+    relationships: {
+      title: 'સંબંધો અને વૈવાહિક જીવન',
+      timingTypeTitle: 'વિવાહ સમય અને પ્રકાર: પ્રેમ કે પરંપરાગત લગ્ન',
+      partnerTraitsTitle: 'જીવનસાથીના ગુણધર્મો અને અનુકૂળતા',
+      conflictResolutionTitle: 'મતભેદ નિવારણ અને ભાવનાત્મક સંવાદ'
+    },
+    finances: {
+      title: 'નાણાં, સંપત્તિ અને આર્થિક સમૃદ્ધિ',
+      earningPeriodsTitle: 'કમાણી અને સ્થિરતાનો સમયગાળો: ધનલાભના યોગ',
+      investmentsRiskTitle: 'રોકાણ, મિલકત અને લાંબા ગાળાની સંપત્તિ',
+      wealthProtectionTitle: 'આર્થિક જોખમ નિયંત્રણ અને સુરક્ષા'
+    },
+    health: {
+      title: 'આરોગ્ય, જીવનશક્તિ અને આયુર્વેદ',
+      vulnerablePeriodsTitle: 'સંવેદનશીલ સમય અને સ્વાસ્થ્ય સાવચેતી',
+      ayurvedaTitle: 'આયુર્વેદિક પ્રકૃતિ: વાત, પિત્ત અને કફ સંતુલન',
+      lifestyleRemediesTitle: 'જીવનશૈલીમાં સુધારો અને માનસિક શાંતિ'
+    },
+    lifePurpose: {
+      title: 'જીવનનો ઉદ્દેશ્ય, પ્રારબ્ધ કર્મ અને મહત્વના તબક્કા',
+      soulMissionTitle: 'આત્માનો મૂળ ઉદ્દેશ્ય અને આધ્યાત્મિક વિકાસ',
+      foreignTravelTitle: 'વિદેશ યાત્રા અને સ્થળાંતર યોગ',
+      milestonesTitle: 'જીવનના મુખ્ય તબક્કા: સંતાન સુખ અને કાયદાકીય બાબતો'
+    },
+    remedies: {
+      title: 'શાસ્ત્રીય વૈદિક ઉપાયો અને સાધના',
+      mantrasTitle: 'સિદ્ધ વૈદિક બીજ મંત્રો અને જપ વિધાન',
+      gemstonesTitle: 'શુભ રત્નો, ધાતુ અને ધારણ વિધિ',
+      charityTitle: 'દાન, પુણ્ય અને ગૌસેવા'
+    }
+  },
+  Bengali: {
+    career: {
+      title: 'কর্মজীবন, ব্যবসা ও জীবিকা',
+      pathSuitabilityTitle: 'পথ ও উপযোগিতা: চাকরি বনাম ব্যবসা',
+      timingTransitionsTitle: 'সময় ও পরিবর্তন: পদোন্নতি ও নতুন উদ্যোগের শুভ সময়',
+      obstaclesTitle: 'বাধা ও বিলম্ব: কর্মক্ষেত্রে সমস্যা ও প্রতিকার'
+    },
+    relationships: {
+      title: 'সম্পর্ক ও দাম্পত্য জীবন',
+      timingTypeTitle: 'বিবাহের সময় ও ধরন: প্রেম নাকি দেখাশোনা বিবাহ',
+      partnerTraitsTitle: 'জীবনসঙ্গীর বৈশিষ্ট্য ও পারস্পরিক মিল',
+      conflictResolutionTitle: 'মনোমালিন্য দূরীকরণ ও মানসিক সামঞ্জস্য'
+    },
+    finances: {
+      title: 'অর্থ, সম্পত্তি ও আর্থিক উন্নতি',
+      earningPeriodsTitle: 'উপার্জন ও স্থিতিশীলতার সময়: শুভ মহাদশায় ধনলাভ',
+      investmentsRiskTitle: 'বিনিয়োগ, জমি-বাড়ি ও দীর্ঘমেয়াদী সম্পত্তি',
+      wealthProtectionTitle: 'আর্থিক ঝুঁকি নিয়ন্ত্রণ ও সুরক্ষা'
+    },
+    health: {
+      title: 'স্বাস্থ্য, জীবনীশক্তি ও সুস্থতা',
+      vulnerablePeriodsTitle: 'সংবেদনশীল সময় ও স্বাস্থ্য সচেতনতা',
+      ayurvedaTitle: 'আয়ুর্বেদিক প্রকৃতি: বাত, পিত্ত ও কফ ভারসাম্য',
+      lifestyleRemediesTitle: 'জীবনযাত্রার পরিবর্তন ও মানসিক শান্তি'
+    },
+    lifePurpose: {
+      title: 'জীবনের উদ্দেশ্য, কর্ম ও গুরুত্বপূর্ণ পর্যায়',
+      soulMissionTitle: 'আত্মার উদ্দেশ্য ও আধ্যাত্মিক উত্তরণ',
+      foreignTravelTitle: 'বিদেশ ভ্রমণ ও প্রবাস যোগ',
+      milestonesTitle: 'জীবনের মাইলফলক: সন্তান সুখ ও আইনি সমাধান'
+    },
+    remedies: {
+      title: 'শাস্ত্রীয় বৈদিক প্রতিকার ও সাধনা',
+      mantrasTitle: 'সিদ্ধ বৈদিক বীজ মন্ত্র ও জপ সংখ্যা',
+      gemstonesTitle: 'শুভ রত্ন, অনুকূল ধাতু ও ধারণ বিধি',
+      charityTitle: 'দান, পরোপকার ও ঈশ্বর সাধনা'
+    }
+  },
+  Tamil: {
+    career: {
+      title: 'தொழில், வேலைவாய்ப்பு மற்றும் ஆளுமை',
+      pathSuitabilityTitle: 'பாதை மற்றும் பொருத்தம்: வேலை அல்லது தொழில்',
+      timingTransitionsTitle: 'காலம் மற்றும் மாற்றம்: பதவி உயர்வு மற்றும் புதிய முயற்சிகள்',
+      obstaclesTitle: 'தடைகள் மற்றும் தாமதங்கள்: சவால்களை சமாளிக்கும் வழிகள்'
+    },
+    relationships: {
+      title: 'உறவுகள் மற்றும் திருமண வாழ்க்கை',
+      timingTypeTitle: 'திருமண காலம் மற்றும் வகை: காதல் அல்லது பெற்றோர் பார்த்த திருமணம்',
+      partnerTraitsTitle: 'வாழ்க்கைத் துணையின் குணங்கள் மற்றும் பொருத்தம்',
+      conflictResolutionTitle: 'மனக்கசப்பு நீக்குதல் மற்றும் நல்லிணக்கம்'
+    },
+    finances: {
+      title: 'நிதி, செல்வம் மற்றும் சொத்து வளர்ச்சி',
+      earningPeriodsTitle: 'வருவாய் மற்றும் ஸ்திரத்தன்மை காலங்கள்: யோக தசா காலம்',
+      investmentsRiskTitle: 'முதலீடுகள், நிலம், வீடு மற்றும் சொத்து சேர்க்கை',
+      wealthProtectionTitle: 'நிதி அபாய மேலாண்மை மற்றும் பாதுகாப்பு'
+    },
+    health: {
+      title: 'உடல்நலம், ஆயுள் மற்றும் ஆரோக்கியம்',
+      vulnerablePeriodsTitle: 'கவனமாக இருக்க வேண்டிய காலங்கள் மற்றும் உடல் உறுப்புகள்',
+      ayurvedaTitle: 'ஆயுர்வேத சமநிலை: வாத, பித்த, கப சீரமைப்பு',
+      lifestyleRemediesTitle: 'வாழ்க்கைமுறை மாற்றங்கள் மற்றும் மன அமைதி'
+    },
+    lifePurpose: {
+      title: 'வாழ்க்கை நோக்கம், கர்மா மற்றும் முக்கிய மைல்கற்கள்',
+      soulMissionTitle: 'ஆத்ம காரகன் மற்றும் ஆன்மாவின் நோக்கம்',
+      foreignTravelTitle: 'வெளிநாட்டு பயணம் மற்றும் இடப்பெயர்வு வாய்ப்புகள்',
+      milestonesTitle: 'முக்கிய மைல்கற்கள்: குழந்தை பாக்கியம் மற்றும் சட்ட தீர்வுகள்'
+    },
+    remedies: {
+      title: 'சாஸ்திர வேத பரிகாரங்கள் மற்றும் ஆன்மீக பயிற்சிகள்',
+      mantrasTitle: 'புனித பீஜ மந்திரங்கள் மற்றும் ஜப எண்ணிக்கை',
+      gemstonesTitle: 'அதிர்ஷ்ட ரத்தினங்கள், உலோகம் மற்றும் அணியும் முறை',
+      charityTitle: 'தான தர்மங்கள், பசு சேவை மற்றும் தினசரி வழிபாடு'
+    }
+  },
+  Telugu: {
+    career: {
+      title: 'వృత్తి, ఉద్యోగం మరియు వ్యాపారం',
+      pathSuitabilityTitle: 'మార్గం మరియు అనుకూలత: ఉద్యోగమా లేక వ్యాపారమా',
+      timingTransitionsTitle: 'సమయం మరియు మార్పు: ప్రమోషన్ మరియు నూతన వ్యాపార సమయం',
+      obstaclesTitle: 'అడ్డంకులు మరియు జాప్యాలు: పరిష్కారాలు మరియు వ్యూహాలు'
+    },
+    relationships: {
+      title: 'సంబంధాలు మరియు వైవాహిక జీవితం',
+      timingTypeTitle: 'వివాహ సమయం మరియు రకం: ప్రేమ లేక పెద్దలు కుదిర్చిన వివాహం',
+      partnerTraitsTitle: 'జీవిత భాగస్వామి లక్షణాలు మరియు అనుకూలత',
+      conflictResolutionTitle: 'సమస్యల పరిష్కారం మరియు భావోద్వేగ సామరస్యం'
+    },
+    finances: {
+      title: 'ఆర్థికం, సంపద మరియు ఆస్తుల వృద్ధి',
+      earningPeriodsTitle: 'ఆదాయం మరియు స్థిరత్వ సమయాలు: ధన యోగ దశలు',
+      investmentsRiskTitle: 'పెట్టుబడులు, స్థిరాస్తి, భూములు మరియు రిస్క్ మేనేజ్‌మెంట్',
+      wealthProtectionTitle: 'ఆర్థిక రక్షణ మరియు సంపద పరిరక్షణ'
+    },
+    health: {
+      title: 'ఆరోగ్యం, జీవనశక్తి మరియు శారీరక దారుఢ్యం',
+      vulnerablePeriodsTitle: 'జాగ్రత్త వహించాల్సిన కాలాలు మరియు శారీరక భాగాలు',
+      ayurvedaTitle: 'ఆయుర్వేద ప్రకృతి: వాత, పిత్త, కఫ సమతుల్యత',
+      lifestyleRemediesTitle: 'జీవనశైలి మార్పులు మరియు మానసిక ప్రశాంతత'
+    },
+    lifePurpose: {
+      title: 'జీవిత లక్ష్యం, పూర్వజన్మ కర్మ మరియు మైలురాళ్లు',
+      soulMissionTitle: 'ఆత్మకారకుడు మరియు ఆధ్యాత్మిక ఉన్నతి లక్ష్యం',
+      foreignTravelTitle: 'విదేశీ ప్రయాణం మరియు స్థిరపడే యోగం',
+      milestonesTitle: 'ముఖ్యమైన మైలురాళ్లు: సంతాన యోగం మరియు న్యాయ పరిష్కారాలు'
+    },
+    remedies: {
+      title: 'శాస్త్రీయ వైదిక పరిహారాలు మరియు సాధన',
+      mantrasTitle: 'సిద్ధ వైదిక బీజ మంత్రాలు మరియు జప విధానం',
+      gemstonesTitle: 'శుభ రత్నాలు, లోహాలు మరియు ధారణ పద్ధతి',
+      charityTitle: 'దానం, సేవ మరియు నిత్య దైవారాధన'
+    }
+  },
+  Kannada: {
+    career: {
+      title: 'ವೃತ್ತಿ, ಉದ್ಯೋಗ ಮತ್ತು ವ್ಯಾಪಾರ',
+      pathSuitabilityTitle: 'ಮಾರ್ಗ ಮತ್ತು ಸೂಕ್ತತೆ: ಉದ್ಯೋಗವೋ ಅಥವಾ ವ್ಯಾಪಾರವೋ',
+      timingTransitionsTitle: 'ಸಮಯ ಮತ್ತು ಬದಲಾವಣೆ: ಬಡ್ತಿ ಮತ್ತು ಹೊಸ ಉದ್ಯಮದ ಯೋಗ',
+      obstaclesTitle: 'ಅಡೆತಡೆಗಳು ಮತ್ತು ವಿಳಂಬ: ಸವಾಲುಗಳ ನಿವಾರಣೋಪಾಯ'
+    },
+    relationships: {
+      title: 'ಸಂಬಂಧಗಳು ಮತ್ತು ವೈವಾಹಿಕ ಜೀವನ',
+      timingTypeTitle: 'ವಿವಾಹದ ಸಮಯ ಮತ್ತು ಸ್ವರೂಪ: ಪ್ರೇಮ ಅಥವಾ ನಿಶ್ಚಿತ ವಿವಾಹ',
+      partnerTraitsTitle: 'ಜೀವನ ಸಂಗಾತಿಯ ಗುಣಲಕ್ಷಣಗಳು ಮತ್ತು ಹೊಂದಾಣಿಕೆ',
+      conflictResolutionTitle: 'ಸಂಘರ್ಷ ನಿವಾರಣೆ ಮತ್ತು ಭಾವನಾತ್ಮಕ ಸಾಮರಸ್ಯ'
+    },
+    finances: {
+      title: 'ಹಣಕಾಸು, ಸಂಪತ್ತು ಮತ್ತು ಆಸ್ತಿ ವೃದ್ಧಿ',
+      earningPeriodsTitle: 'ಆದಾಯ ಮತ್ತು ಸ್ಥಿರತೆಯ ಅವಧಿ: ಧನ ಲಾಭದ ಕಾಲ',
+      investmentsRiskTitle: 'ಹೂಡಿಕೆ, ಭೂಮಿ, ಮನೆ ಮತ್ತು ದೀರ್ಘಕಾಲೀನ ಆಸ್ತಿ',
+      wealthProtectionTitle: 'ಆರ್ಥಿಕ ಭದ್ರತೆ ಮತ್ತು ಸಂಪತ್ತು ರಕ್ಷಣೆ'
+    },
+    health: {
+      title: 'ಆರೋಗ್ಯ, ಜೀವಶಕ್ತಿ ಮತ್ತು ಕ್ಷೇಮ',
+      vulnerablePeriodsTitle: 'ಎಚ್ಚರ ವಹಿಸಬೇಕಾದ ಸಮಯ ಮತ್ತು ಶಾರೀರಿಕ ಅಂಗಗಳು',
+      ayurvedaTitle: 'ಆಯುರ್ವೇದ ಪ್ರಕೃತಿ: ವಾತ, ಪಿತ್ತ ಮತ್ತು ಕಫ ಸಮತೋಲನ',
+      lifestyleRemediesTitle: 'ಜೀವನಶೈಲಿ ಸುಧಾರಣೆ ಮತ್ತು ಮಾನಸಿಕ ಶಾಂತಿ'
+    },
+    lifePurpose: {
+      title: 'ಜೀವನದ ಉದ್ದೇಶ, ಕರ್ಮ ಮತ್ತು ಪ್ರಮುಖ ಹಂತಗಳು',
+      soulMissionTitle: 'ಆತ್ಮಕಾರಕ ಗ್ರಹ ಮತ್ತು ಆತ್ಮದ ಆಧ್ಯಾತ್ಮಿಕ ಗುರಿ',
+      foreignTravelTitle: 'ವಿದೇಶ ಪ್ರಯಾಣ ಮತ್ತು ನೆಲೆಸುವ ಯೋಗ',
+      milestonesTitle: 'ಪ್ರಮುಖ ಮೈಲಿಗಲ್ಲುಗಳು: ಸಂತಾನ ಸುಖ ಮತ್ತು ಕಾನೂನು ಪರಿಹಾರ'
+    },
+    remedies: {
+      title: 'ಶಾಸ್ತ್ರೋಕ್ತ ವೈದಿಕ ಪರಿಹಾರಗಳು ಮತ್ತು ಸಾಧನೆ',
+      mantrasTitle: 'ಸಿದ್ಧ ವೈದಿಕ ಬೀಜ ಮಂತ್ರಗಳು ಮತ್ತು ಜಪ ಸಂಖ್ಯೆ',
+      gemstonesTitle: 'ಶುಭ ರತ್ನಗಳು, ಸೂಕ್ತ ಲೋಹ ಮತ್ತು ಧಾರಣೆ ನಿಯಮಗಳು',
+      charityTitle: 'ದಾನ, ಗೋಸೇವೆ ಮತ್ತು ನಿತ್ಯ ಆಧ್ಯಾತ್ಮಿಕ ಆಚರಣೆ'
+    }
+  },
+  Malayalam: {
+    career: {
+      title: 'തൊഴിൽ, ഉപജീവനം, ബിസിനസ്സ്',
+      pathSuitabilityTitle: 'പാതയും അനുയോജ്യതയും: ജോലിയോ അതോ ബിസിനസ്സോ',
+      timingTransitionsTitle: 'സമയവും മാറ്റങ്ങളും: പ്രമോഷനും പുതിയ സംരംഭങ്ങളും',
+      obstaclesTitle: 'തടസ്സങ്ങളും കാലതാമസങ്ങളും: പ്രതിസന്ധി പരിഹാരങ്ങൾ'
+    },
+    relationships: {
+      title: 'ബന്ധങ്ങളും വൈവാഹിക ജീവിതവും',
+      timingTypeTitle: 'വിവാഹ സമയവും രീതിയും: പ്രേമവിവാഹമോ അതോ നിശ്ചയിച്ച വിവാഹമോ',
+      partnerTraitsTitle: 'ജീവിതപങ്കാളിയുടെ സ്വഭാവവും പൊരുത്തവും',
+      conflictResolutionTitle: 'കലഹ പരിഹാരവും മാനസിക ഐക്യവും'
+    },
+    finances: {
+      title: 'സാമ്പത്തികം, സമ്പത്ത്, സമൃദ്ധി',
+      earningPeriodsTitle: 'വരുമാനവും സ്ഥിരതയും: ധനലാഭ കാലഘട്ടങ്ങൾ',
+      investmentsRiskTitle: 'നിക്ഷേപങ്ങൾ, വസ്തുവകകൾ, ദീർഘകാല സമ്പാദ്യം',
+      wealthProtectionTitle: 'സാമ്പത്തിക സുരക്ഷയും സമ്പത്ത് സംരക്ഷണവും'
+    },
+    health: {
+      title: 'ആരോഗ്യം, ജീവശക്തി, ആയുർവേദം',
+      vulnerablePeriodsTitle: 'ശ്രദ്ധിക്കേണ്ട സമയങ്ങളും ശാരീരിക മേഖലകളും',
+      ayurvedaTitle: 'ആയുർവേദ പ്രകൃതി: വാത, പിത്ത, കഫ സന്തുലനം',
+      lifestyleRemediesTitle: 'ജീവിതശൈലി മാറ്റങ്ങളും മാനസിക സമാധാനവും'
+    },
+    lifePurpose: {
+      title: 'ജീവിതലക്ഷ്യം, കർമ്മം, നാഴികക്കല്ലുകൾ',
+      soulMissionTitle: 'ആത്മകാരകനും ആത്മാവിന്റെ ആത്മീയ ലക്ഷ്യവും',
+      foreignTravelTitle: 'വിദേശയാത്രയും താമസ യോഗങ്ങളും',
+      milestonesTitle: 'പ്രധാന ഘട്ടങ്ങൾ: സന്താനഭാഗ്യവും നിയമ പരിഹാരങ്ങളും'
+    },
+    remedies: {
+      title: 'ശാസ്ത്രീയ വൈദിക പരിഹാരങ്ങൾ',
+      mantrasTitle: 'പവിത്ര ബീജ മന്ത്രങ്ങളും ജപ ക്രമവും',
+      gemstonesTitle: 'ഭാഗ്യ രത്നങ്ങൾ, അനുയോജ്യ ലോഹങ്ങൾ, ധാരണാ വിധി',
+      charityTitle: 'ദാനധർമ്മങ്ങൾ, സേവനം, ഈശ്വര പ്രാർത്ഥന'
+    }
+  },
+  Punjabi: {
+    career: {
+      title: 'ਰੋਜ਼ਗਾਰ, ਵਪਾਰ ਅਤੇ ਕੈਰੀਅਰ',
+      pathSuitabilityTitle: 'ਰਾਹ ਅਤੇ ਅਨੁਕੂਲਤਾ: ਨੌਕਰੀ ਜਾਂ ਕਾਰੋਬਾਰ',
+      timingTransitionsTitle: 'ਸਮਾਂ ਅਤੇ ਬਦਲਾਅ: ਤਰੱਕੀ ਅਤੇ ਨਵੇਂ ਕੰਮ ਦਾ ਸਮਾਂ',
+      obstaclesTitle: 'ਰੁਕਾਵਟਾਂ ਅਤੇ ਦੇਰੀ: ਹੱਲ ਅਤੇ ਰਣਨੀਤੀਆਂ'
+    },
+    relationships: {
+      title: 'ਰਿਸ਼ਤੇ ਅਤੇ ਵਿਆਹੁਤਾ ਜੀਵਨ',
+      timingTypeTitle: 'ਵਿਆਹ ਦਾ ਸਮਾਂ ਅਤੇ ਕਿਸਮ: ਪ੍ਰੇਮ ਜਾਂ ਪਰਿਵਾਰਕ ਵਿਆਹ',
+      partnerTraitsTitle: 'ਜੀਵਨ ਸਾਥੀ ਦੇ ਲੱਛਣ ਅਤੇ ਸੁਭਾਅ',
+      conflictResolutionTitle: 'ਆਪਸੀ ਤਾਲਮੇਲ ਅਤੇ ਮਨਮੁਟਾਵ ਦਾ ਹੱਲ'
+    },
+    finances: {
+      title: 'ਧਨ, ਸੰਪਤੀ ਅਤੇ ਆਰਥਿਕ ਖੁਸ਼ਹਾਲੀ',
+      earningPeriodsTitle: 'ਕਮਾਈ ਅਤੇ ਸਥਿਰਤਾ ਦਾ ਸਮਾਂ: ਧਨ ਲਾਭ ਦੇ ਯੋਗ',
+      investmentsRiskTitle: 'ਨਿਵੇਸ਼, ਜ਼ਮੀਨ-ਜਾਇਦਾਦ ਅਤੇ ਦੀਰਘਕਾਲੀਨ ਸੰਪਤੀ',
+      wealthProtectionTitle: 'ਵਿੱਤੀ ਜੋਖਮ ਪ੍ਰਬੰਧਨ ਅਤੇ ਧਨ ਦੀ ਰੱਖਿਆ'
+    },
+    health: {
+      title: 'ਸਿਹਤ, ਸਰੀਰਕ ਊਰਜਾ ਅਤੇ ਤੰਦਰੁਸਤੀ',
+      vulnerablePeriodsTitle: 'ਸਾਵਧਾਨੀ ਦੇ ਸਮੇਂ ਅਤੇ ਸਰੀਰਕ ਅੰਗ',
+      ayurvedaTitle: 'ਆਯੁਰਵੈਦਿਕ ਪ੍ਰਕਿਰਤੀ: ਵਾਤ, ਪਿੱਤ ਅਤੇ ਕਫ਼ ਸੰਤੁਲਨ',
+      lifestyleRemediesTitle: 'ਜੀਵਨ ਸ਼ੈਲੀ ਵਿੱਚ ਸੁਧਾਰ ਅਤੇ ਮਾਨਸਿਕ ਸ਼ਾਂਤੀ'
+    },
+    lifePurpose: {
+      title: 'ਜੀਵਨ ਦਾ ਉਦੇਸ਼, ਕਰਮ ਅਤੇ ਪ੍ਰਮੁੱਖ ਪੜਾਅ',
+      soulMissionTitle: 'ਆਤਮਕਾਰਕ ਗ੍ਰਹਿ ਅਤੇ ਆਤਮਿਕ ਯਾਤਰਾ ਦਾ ਟੀਚਾ',
+      foreignTravelTitle: 'ਵਿਦੇਸ਼ ਯਾਤਰਾ ਅਤੇ ਪੱਕੇ ਤੌਰ ਤੇ ਵਸਣ ਦੇ ਯੋਗ',
+      milestonesTitle: 'ਜੀਵਨ ਦੇ ਅਹਿਮ ਪੜਾਅ: ਔਲਾਦ ਸੁੱਖ ਅਤੇ ਕਾਨੂੰਨੀ ਮਾਮਲੇ'
+    },
+    remedies: {
+      title: 'ਸ਼ਾਸਤਰੀ ਵੈਦਿਕ ਉਪਾਅ ਅਤੇ ਸਾਧਨਾ',
+      mantrasTitle: 'ਪਵਿੱਤਰ ਬੀਜ ਮੰਤਰ ਅਤੇ ਨਿਤਨੇਮ ਜਪ',
+      gemstonesTitle: 'ਸ਼ੁੱਭ ਰਤਨ, ਢੁਕਵੀਂ ਧਾਤ ਅਤੇ ਧਾਰਨ ਕਰਨ ਦੀ ਵਿਧੀ',
+      charityTitle: 'ਦਾਨ ਪੁੰਨ, ਸੇਵਾ ਅਤੇ ਰੋਜ਼ਾਨਾ ਪ੍ਰਾਰਥਨਾ'
+    }
+  },
+  Odia: {
+    career: {
+      title: 'ଜୀବିକା, ବ୍ୟବସାୟ ଓ କର୍ମକ୍ଷେତ୍ର',
+      pathSuitabilityTitle: 'ମାର୍ଗ ଓ ଉପଯୁକ୍ତତା: ଚାକିରି ବା ବ୍ୟବସାୟ',
+      timingTransitionsTitle: 'ସମୟ ଓ ପରିବର୍ତ୍ତନ: ପଦୋନ୍ନତି ଓ ନୂତନ ଉଦ୍ୟୋଗର ଶୁଭ ସମୟ',
+      obstaclesTitle: 'ବାଧାବିଘ୍ନ ଓ ବିଳମ୍ବ: ସମସ୍ୟାର ସମାଧାନ'
+    },
+    relationships: {
+      title: 'ସମ୍ପର୍କ ଓ ଦାମ୍ପତ୍ୟ ଜୀବନ',
+      timingTypeTitle: 'ବିବାହ ସମୟ ଓ ପ୍ରକାର: ପ୍ରେମ ବା ପାରମ୍ପରିକ ବିବାହ',
+      partnerTraitsTitle: 'ଜୀବନସାଥୀଙ୍କ ଗୁଣ ଓ ପାରସ୍ପରିକ ସୁସମ୍ପର୍କ',
+      conflictResolutionTitle: 'ମତଭେଦ ଦୂରୀକରଣ ଓ ଭାବନାତ୍ମକ ସମନ୍ୱୟ'
+    },
+    finances: {
+      title: 'ଅର୍ଥ, ସମ୍ପତ୍ତି ଓ ଆର୍ଥିକ ଉନ୍ନତି',
+      earningPeriodsTitle: 'ଉପାର୍ଜନ ଓ ସ୍ଥିରତାର ସମୟ: ଧନଲାଭ ଯୋଗ',
+      investmentsRiskTitle: 'ନିବେଶ, ଜମି-ବାଡ଼ି ଓ ସମ୍ପତ୍ତି ସୃଷ୍ଟି',
+      wealthProtectionTitle: 'ଆର୍ଥିକ ସୁରକ୍ଷା ଓ ଧନ ସଂରକ୍ଷଣ'
+    },
+    health: {
+      title: 'ସ୍ୱାସ୍ଥ୍ୟ, ଜୀବନଶକ୍ତି ଓ ଆୟୁର୍ବେଦ',
+      vulnerablePeriodsTitle: 'ସତର୍କତା ସମୟ ଓ ଶାରୀରିକ ସ୍ୱାସ୍ଥ୍ୟ',
+      ayurvedaTitle: 'ଆୟୁର୍ବେଦିକ ପ୍ରକୃତି: ବାତ, ପିତ୍ତ ଓ କଫ ସନ୍ତୁଳନ',
+      lifestyleRemediesTitle: 'ଜୀବନଶୈଳୀ ପରିବର୍ତ୍ତନ ଓ ମାନସିକ ଶାନ୍ତି'
+    },
+    lifePurpose: {
+      title: 'ଜୀବନର ଉଦ୍ଦେଶ୍ୟ, ପ୍ରାରବ୍ଧ କର୍ମ ଓ ପ୍ରମୁଖ ପର୍ଯ୍ୟାୟ',
+      soulMissionTitle: 'ଆତ୍ମକାରକ ଓ ଆଧ୍ୟାତ୍ମିକ ଉନ୍ନତିର ଲକ୍ଷ୍ୟ',
+      foreignTravelTitle: 'ବିଦେଶ ଯାତ୍ରା ଓ ବସବାସ ଯୋଗ',
+      milestonesTitle: 'ପ୍ରମୁଖ ପର୍ଯ୍ୟାୟ: ସନ୍ତାନ ସୁଖ ଓ ଆଇନଗତ ସମାଧାନ'
+    },
+    remedies: {
+      title: 'ଶାସ୍ତ୍ରୀୟ ବୈଦିକ ପ୍ରତିକାର ଓ ସାଧନା',
+      mantrasTitle: 'ପବିତ୍ର ବୀଜ ମନ୍ତ୍ର ଓ ଜପ ବିଧାନ',
+      gemstonesTitle: 'ଶୁଭ ରତ୍ନ, ଧାତୁ ଓ ଧାରଣ ପଦ୍ଧତି',
+      charityTitle: 'ଦାନ, ଗୋସେବା ଓ ଈଶ୍ୱର ଆରାଧନା'
+    }
+  }
+};
+
+export const getSeekerPillars = (language: Language): SeekerPillarsLocale => {
+  return SEEKER_FIVE_PILLARS[language] || SEEKER_FIVE_PILLARS.English;
+};
